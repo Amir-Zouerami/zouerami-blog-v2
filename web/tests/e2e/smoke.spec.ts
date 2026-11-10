@@ -22,6 +22,13 @@ test('PocketBase is reachable through nginx under /pb', async ({ request }) => {
   expect(res.status()).toBe(200);
 });
 
+test('the PocketBase admin dashboard is not exposed through the public proxy', async ({
+  request,
+}) => {
+  const res = await request.get('/pb/_/', { maxRedirects: 0 });
+  expect(res.status()).toBe(404);
+});
+
 test('index answers 503 with a friendly message when PocketBase is down', async ({ request }) => {
   compose('stop pocketbase');
   try {

@@ -25,10 +25,12 @@ const T = (o: Rec): Rec => ({
 });
 
 /** Minimal stand-in for the two collections the data layer reads. */
+const calls: { name: string; opts: Rec }[] = [];
 function stub(posts: Rec[], trs: Rec[], fail?: Error): PocketBase {
   return {
     collection: (name: string) => ({
-      getFullList: async () => {
+      getFullList: async (opts: Rec = {}) => {
+        calls.push({ name, opts });
         if (fail) throw fail;
         return name === 'posts' ? posts : trs;
       },
@@ -45,6 +47,13 @@ function stub(posts: Rec[], trs: Rec[], fail?: Error): PocketBase {
 }
 
 describe('listPosts', () => {
+  it('does not fetch post bodies when listing', async () => {
+    calls.length = 0;
+    await listPosts({}, stub([P({})], [T({})]));
+    const tr = calls.find((c) => c.name === 'post_translations');
+    expect(tr?.opts.fields).toBeDefined();
+    expect(String(tr?.opts.fields)).not.toContain('body_md');
+  });
   it('maps a Persian-only post to titleLang fa with its Persian title', async () => {
     const pb = stub([P({ id: 'p1', slug: 'fa-only' })], [T({ lang: 'fa', title: 'عنوان' })]);
     const [post] = await listPosts({}, pb);

@@ -29,6 +29,10 @@ export const PostTranslationRecordSchema = z.object({
 });
 export type PostTranslationRecord = z.infer<typeof PostTranslationRecordSchema>;
 
+/** Translation row without the (potentially huge) body — what list queries fetch. */
+export const PostTranslationListSchema = PostTranslationRecordSchema.omit({ body_md: true });
+export type PostTranslationListItem = z.infer<typeof PostTranslationListSchema>;
+
 export type PostSummary = {
   slug: string;
   date: string;

@@ -7,6 +7,8 @@ import {
   type PostRecord,
   PostRecordSchema,
   type PostSummary,
+  type PostTranslationListItem,
+  PostTranslationListSchema,
   type PostTranslationRecord,
   PostTranslationRecordSchema,
   SlugSchema,
@@ -35,11 +37,11 @@ function upstream(error: unknown): never {
   );
 }
 
-function summarize(post: PostRecord, trs: PostTranslationRecord[]): PostSummary | null {
+function summarize(post: PostRecord, trs: PostTranslationListItem[]): PostSummary | null {
   const langs = LANG_ORDER.filter((l) => trs.some((t) => t.lang === l));
   const primary = langs[0];
   if (!primary) return null;
-  const tr = trs.find((t) => t.lang === primary) as PostTranslationRecord;
+  const tr = trs.find((t) => t.lang === primary) as PostTranslationListItem;
   return {
     slug: post.slug,
     date: post.date,
@@ -58,14 +60,16 @@ export async function listPosts(
   pb: PocketBase = getPb(),
 ): Promise<PostSummary[]> {
   let postRecords: PostRecord[];
-  let trRecords: PostTranslationRecord[];
+  let trRecords: PostTranslationListItem[];
   try {
     const [rawPosts, rawTrs] = await Promise.all([
       pb.collection('posts').getFullList({ sort: '-date', filter: 'status = "published"' }),
-      pb.collection('post_translations').getFullList({ filter: 'post.status = "published"' }),
+      pb
+        .collection('post_translations')
+        .getFullList({ filter: 'post.status = "published"', fields: 'id,post,lang,title,summary' }),
     ]);
     postRecords = rawPosts.map((r) => PostRecordSchema.parse(r));
-    trRecords = rawTrs.map((r) => PostTranslationRecordSchema.parse(r));
+    trRecords = rawTrs.map((r) => PostTranslationListSchema.parse(r));
   } catch (error) {
     upstream(error);
   }

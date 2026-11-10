@@ -32,7 +32,11 @@ services:
         HTTP_PROXY: ${BUILD_PROXY:-}
         HTTPS_PROXY: ${BUILD_PROXY:-}
     restart: unless-stopped
-    env_file: .env
+    # Only what the web app needs: never hand it the PocketBase superuser credentials.
+    environment:
+      PB_URL: ${PB_URL}
+      PB_PUBLIC_URL: ${PB_PUBLIC_URL}
+      SITE_URL: ${SITE_URL}
     depends_on:
       pocketbase:
         condition: service_healthy
