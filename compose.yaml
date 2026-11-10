@@ -1,0 +1,24 @@
+name: zouerami
+services:
+  pocketbase:
+    build:
+      context: ./pocketbase
+      # Optional: set BUILD_NETWORK=host and BUILD_PROXY=http://127.0.0.1:PORT in .env when the
+      # build container has no direct internet (e.g. a host-side proxy). Empty/default otherwise.
+      network: ${BUILD_NETWORK:-default}
+      args:
+        http_proxy: ${BUILD_PROXY:-}
+        https_proxy: ${BUILD_PROXY:-}
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - pb_data:/pb_data
+      - ./pocketbase/pb_migrations:/pb/pb_migrations:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8090/api/health']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  pb_data:

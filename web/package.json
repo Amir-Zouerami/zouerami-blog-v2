@@ -7,8 +7,9 @@
     "build": "astro build",
     "check": "biome check . && astro check",
     "test": "vitest run tests/unit",
-    "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test"
+    "test:integration": "bun --env-file=../.env x vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "seed": "bun --env-file=../.env scripts/seed.ts"
   },
   "dependencies": {
     "@astrojs/node": "11.1.11",
