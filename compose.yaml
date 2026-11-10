@@ -9,6 +9,8 @@ services:
       args:
         http_proxy: ${BUILD_PROXY:-}
         https_proxy: ${BUILD_PROXY:-}
+        HTTP_PROXY: ${BUILD_PROXY:-}
+        HTTPS_PROXY: ${BUILD_PROXY:-}
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -19,6 +21,32 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+
+  web:
+    build:
+      context: ./web
+      network: ${BUILD_NETWORK:-default}
+      args:
+        http_proxy: ${BUILD_PROXY:-}
+        https_proxy: ${BUILD_PROXY:-}
+        HTTP_PROXY: ${BUILD_PROXY:-}
+        HTTPS_PROXY: ${BUILD_PROXY:-}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      pocketbase:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    ports:
+      - '${HTTP_PORT:-8088}:80'
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - pocketbase
 
 volumes:
   pb_data:

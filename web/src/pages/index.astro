@@ -1,11 +1,36 @@
 ---
 import '../styles/global.css';
 import Ping from '../components/Ping';
+import { listPosts } from '../lib/posts';
+import { UpstreamError } from '../lib/pb';
+import type { PostSummary } from '../lib/schemas';
+
+let posts: PostSummary[] = [];
+let unavailable = false;
+try {
+  posts = await listPosts();
+} catch (error) {
+  if (!(error instanceof UpstreamError)) throw error;
+  unavailable = true;
+  Astro.response.status = 503;
+  console.error(error.message);
+}
 ---
 <html lang="en">
-  <head><meta charset="utf-8" /><title>zouerami</title></head>
-  <body>
+  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>zouerami</title></head>
+  <body class="p-6">
     <h1 class="text-3xl font-semibold">zouerami</h1>
     <Ping client:load />
+    {unavailable ? (
+      <p role="alert" class="mt-6">The blog is temporarily unavailable. Please try again in a minute.</p>
+    ) : (
+      <ul class="mt-6 space-y-2">
+        {posts.map((p) => (
+          <li dir={p.titleLang === 'fa' ? 'rtl' : 'ltr'}>
+            {p.title} <small class="opacity-60">[{p.langs.join(', ')}]</small>
+          </li>
+        ))}
+      </ul>
+    )}
   </body>
 </html>

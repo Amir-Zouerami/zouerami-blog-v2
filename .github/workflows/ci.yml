@@ -1,0 +1,39 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - name: Install
+        working-directory: web
+        run: bun install --frozen-lockfile
+      - name: Lint + typecheck
+        working-directory: web
+        run: bun run check
+      - name: Unit tests
+        working-directory: web
+        run: bun run test
+      - name: Start stack
+        run: |
+          cp .env.example .env
+          docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8090/api/health && break; sleep 2; done
+      - name: Seed
+        working-directory: web
+        run: bun run seed
+      - name: Integration tests
+        working-directory: web
+        run: REQUIRE_PB=1 bun run test:integration
+      - name: End-to-end smoke
+        working-directory: web
+        run: bun run test:e2e
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
