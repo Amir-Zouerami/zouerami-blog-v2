@@ -69,6 +69,7 @@ const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(s
     <slot />
     <Footer {locale} />
     <div id="wipe" transition:persist hidden aria-hidden="true"><div></div></div>
+    <script type="application/json" id="menu-labels" set:html={JSON.stringify(tr.menu)} />
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="langhint" id="langhint" hidden data-locale={locale}>
       <span>{t('fa').langHint.text} / {t('en').langHint.text}</span>

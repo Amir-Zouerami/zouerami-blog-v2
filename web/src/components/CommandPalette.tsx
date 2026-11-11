@@ -34,9 +34,10 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
   }, []);
 
   useEffect(() => {
-    const openIt = () => {
+    const openIt = (e?: Event) => {
       prev.current = document.activeElement as HTMLElement | null;
-      setQ('');
+      // the context menu can open the palette with a ready-made query ("Search for …")
+      setQ(((e as CustomEvent<{ query?: string }> | undefined)?.detail?.query ?? '').slice(0, 80));
       setSel(0);
       setOpen(true);
     };

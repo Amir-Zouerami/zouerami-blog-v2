@@ -42,3 +42,6 @@ Security model: the web app never holds PocketBase superuser credentials. Admin 
 
 ## Emails
 Verification, password reset and newsletter confirmation use one design ("Signal Dark", English only) defined in `web/scripts/emails/design.ts`. After editing it run `cd web && bun run build:emails` to regenerate `pocketbase/pb_hooks/emails/*` (a unit test fails if they drift). Dev mail lands in Mailpit at <http://127.0.0.1:8025>.
+
+## Right-click menus
+Links, images, selected text and headings on the public site, every row in the back office, and the Markdown editor have a custom context menu (keyboard: Menu key or Shift+F10; Shift+right-click for the browser's menu). See `docs/architecture.md`.

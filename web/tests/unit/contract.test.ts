@@ -48,8 +48,8 @@ describe('logging', () => {
     join(root, 'middleware.ts'),
   ].filter((p) => /\.(ts|astro)$/.test(p));
   it.each(serverFiles.map((p) => [rel(p), p]))('%s does not use console', (name, path) => {
-    // client-api.ts runs in the browser, where console is the right tool
-    if (name === 'lib/client-api.ts') return;
+    // browser-side modules (client-api, context-menu) log with console, which is the right tool there
+    if (name === 'lib/client-api.ts' || name.startsWith('lib/context-menu/')) return;
     expect(read(path), `${name} must log through pino (lib/log)`).not.toMatch(
       /\bconsole\.(log|warn|error|info|debug)\(/,
     );
