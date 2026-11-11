@@ -20,7 +20,7 @@ const size = rank === 0 ? 'xl' : rank === 1 ? 'lg' : 'sm';
     <span class="card-tags">{post.tags.slice(0, 2).map((t) => <span class="tagp">{t}</span>)}</span>
   </div>
   <div class="card-body">
-    <span class="mono muted card-meta">{formatDate(post.date, locale)}</span>
+    <span class="mono muted card-meta">{formatDate(post.date, locale)}<span class="card-langs" dir="ltr">{(['en', 'fa'] as const).map((l) => <span class={`lg ${post.langs.includes(l) ? '' : 'off'}`} title={post.langs.includes(l) ? undefined : (locale === 'fa' ? 'هنوز به این زبان نوشته نشده' : 'Not written in this language yet')}>{l.toUpperCase()}</span>)}</span></span>
     <h3 dir={dirOf(post.titleLang)} lang={post.titleLang}>{post.title}</h3>
     {post.summary && <p class="card-sum" dir={dirOf(post.titleLang)} lang={post.titleLang}>{post.summary}</p>}
   </div>

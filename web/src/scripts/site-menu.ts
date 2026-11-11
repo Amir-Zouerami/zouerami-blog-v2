@@ -1,5 +1,5 @@
 import { bindContextMenu, icons, type MenuEntry, NATIVE_MENU } from '../lib/context-menu';
-import { quoteLink } from '../lib/text-fragment';
+import { quoteLink, selectionQuote } from '../lib/text-fragment';
 import { applyTheme } from '../lib/theme';
 import { showToast } from './toast';
 
@@ -122,7 +122,11 @@ function resolve(target: Element, labels: Labels): MenuEntry[] | null {
               id: 'copy-highlight',
               label: labels.copyHighlight,
               icon: icons.link,
-              onSelect: () => copy(quoteLink(location.href, selected), labels),
+              onSelect: () =>
+                copy(
+                  quoteLink(location.href, selectionQuote(window.getSelection()) || selected),
+                  labels,
+                ),
             },
           ]
         : []),

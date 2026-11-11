@@ -33,3 +33,16 @@ describe('text fragments', () => {
     expect(quoteLink('http://x/blog/a', 'x')).toBe('http://x/blog/a');
   });
 });
+
+import { fragmentParts } from '../../src/lib/text-fragment';
+
+describe('fragmentParts', () => {
+  it('reads one or two parts from a text-fragment URL', () => {
+    expect(fragmentParts('http://x/a#:~:text=hello%20world')).toEqual(['hello world']);
+    expect(fragmentParts('http://x/a#:~:text=start%20here,end%20there')).toEqual([
+      'start here',
+      'end there',
+    ]);
+    expect(fragmentParts('http://x/a')).toBeNull();
+  });
+});

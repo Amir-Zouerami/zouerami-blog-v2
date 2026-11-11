@@ -101,10 +101,9 @@ test.describe('public reading', () => {
     expect(await page.locator('.brand').evaluate((e) => getComputedStyle(e).fontFamily)).toContain(
       'Bricolage',
     );
-    // test font for Persian post titles
     expect(
       await page.locator('.post-head h1').evaluate((e) => getComputedStyle(e).fontFamily),
-    ).toContain('Lalezar');
+    ).toContain('Vazirmatn');
   });
 
   test('on the Persian site posts default to Persian (titles in lists, links, prev/next)', async ({

@@ -36,20 +36,20 @@ test.describe('blog index', () => {
   }) => {
     await page.goto('/blog');
     await expect(page.locator('h1')).toContainText('Writing');
-    const titles = await page.locator('.row h3').allTextContents();
+    const titles = await page.locator('.card h3').allTextContents();
     expect(titles[0]).toContain('Why I rebuilt my blog');
     expect(titles.join('|')).not.toContain('An unfinished draft');
     await expect(page.locator('.year').first()).toHaveText('2026');
-    const persianOnly = page.locator('.row', { hasText: 'تایپوگرافی فارسی در وب' });
+    const persianOnly = page.locator('.card', { hasText: 'تایپوگرافی فارسی در وب' });
     await expect(persianOnly.locator('.lg.off')).toHaveText('EN');
   });
   test('tag filter and text search work server-side', async ({ page }) => {
     await page.goto('/blog?tag=DevOps');
-    const titles = await page.locator('.row h3').allTextContents();
+    const titles = await page.locator('.card h3').allTextContents();
     expect(titles.length).toBeGreaterThan(0);
     for (const t of titles) expect(t).toMatch(/PocketBase|Docker/);
     await page.goto('/blog?q=astro');
-    await expect(page.locator('.row h3')).toHaveCount(1);
+    await expect(page.locator('.card h3')).toHaveCount(1);
     await page.goto('/blog?q=zzzzzznotfound');
     await expect(page.getByText('No signal')).toBeVisible();
   });

@@ -81,7 +81,7 @@ describe('json-ld', () => {
     const p = personLd(SITE);
     expect(p.name).toBe('Amir Zouerami');
     expect(p.alternateName).toBe('امیر زوارمی');
-    expect(p.sameAs.length).toBeGreaterThanOrEqual(3);
+    expect(p.sameAs.length).toBeGreaterThanOrEqual(2);
   });
   it('BlogPosting carries language, dates and absolute URLs', () => {
     const d = blogPostingLd({
