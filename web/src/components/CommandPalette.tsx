@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { type Command, filterCommands, STATIC_COMMANDS } from '../lib/commands';
+import { type Locale, localePath } from '../i18n';
+import { type Command, filterCommands, staticCommands } from '../lib/commands';
 import { applyTheme } from '../lib/theme';
 
 type Hit = { title: string; slug: string; summary: string };
 
-export default function CommandPalette() {
+type Labels = {
+  placeholder: string;
+  navigate: string;
+  open: string;
+  close: string;
+  unavailable: string;
+  command: string;
+  post: string;
+  page: string;
+  action: string;
+};
+
+export default function CommandPalette({ locale, labels }: { locale: Locale; labels: Labels }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
@@ -75,7 +88,7 @@ export default function CommandPalette() {
   }, [q, open]);
 
   const items: (Command & { custom?: true })[] = [
-    ...filterCommands(STATIC_COMMANDS, q),
+    ...filterCommands(staticCommands(locale), q),
     ...hits.map((h) => ({
       id: `post-${h.slug}`,
       label: h.title,
@@ -122,7 +135,7 @@ export default function CommandPalette() {
         className="pal"
         role="dialog"
         aria-modal="true"
-        aria-label="Command palette"
+        aria-label={labels.command}
         ref={dialog}
         onKeyDown={onKey}
       >
@@ -133,13 +146,13 @@ export default function CommandPalette() {
             setQ(e.target.value);
             setSel(0);
           }}
-          placeholder="Type a command or search…"
+          placeholder={labels.placeholder}
           autoComplete="off"
-          aria-label="Command"
+          aria-label={labels.command}
         />
         <ul>
           {items.map((c, i) => (
-            // biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: keyboard handled on the dialog
+            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard handled on the dialog
             <li
               key={c.id}
               className={i === sel ? 'sel' : ''}
@@ -152,7 +165,7 @@ export default function CommandPalette() {
           ))}
           {searchError && (
             <li role="status">
-              <span className="muted">Search unavailable</span>
+              <span className="muted">{labels.unavailable}</span>
             </li>
           )}
           {!items.length && !searchError && (
@@ -162,9 +175,9 @@ export default function CommandPalette() {
           )}
         </ul>
         <div className="pal-foot">
-          <span>↑↓ navigate</span>
-          <span>↵ open</span>
-          <span>esc close</span>
+          <span>{labels.navigate}</span>
+          <span>{labels.open}</span>
+          <span>{labels.close}</span>
         </div>
       </div>
     </div>

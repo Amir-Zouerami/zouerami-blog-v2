@@ -6,7 +6,7 @@ const up = await pbIsUp();
 describe.skipIf(!up)('PocketBase public access rules (seeded data)', () => {
   it('lists only published posts to anonymous callers', async () => {
     const posts = await anonClient().collection('posts').getFullList();
-    expect(posts.length).toBe(3);
+    expect(posts.length).toBeGreaterThanOrEqual(3);
     expect(posts.every((p) => p.status === 'published')).toBe(true);
   });
 

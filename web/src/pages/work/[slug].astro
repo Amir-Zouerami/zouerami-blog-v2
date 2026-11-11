@@ -1,0 +1,5 @@
+---
+import ProjectView from '../../views/ProjectView.astro';
+const { slug } = Astro.params;
+---
+<ProjectView locale="en" slug={slug ?? ''} />

@@ -1,0 +1,5 @@
+---
+import PostView from '../../../views/PostView.astro';
+const { slug } = Astro.params;
+---
+<PostView locale="fa" slug={slug ?? ''} />

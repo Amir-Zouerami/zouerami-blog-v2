@@ -8,8 +8,10 @@ RUN apk add --no-cache unzip wget \
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates wget \
  && addgroup -S pb && adduser -S pb -G pb \
- && mkdir -p /pb_data /pb/pb_migrations && chown -R pb:pb /pb_data /pb
+ && mkdir -p /pb_data /pb/pb_migrations /pb/pb_hooks && chown -R pb:pb /pb_data /pb
 COPY --from=download /pb/pocketbase /pb/pocketbase
+COPY pb_migrations /pb/pb_migrations
+COPY pb_hooks /pb/pb_hooks
 COPY entrypoint.sh /pb/entrypoint.sh
 RUN chmod +x /pb/entrypoint.sh /pb/pocketbase
 USER pb

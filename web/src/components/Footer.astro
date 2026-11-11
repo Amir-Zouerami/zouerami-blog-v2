@@ -1,12 +1,15 @@
 ---
+import { type Locale, t } from '../i18n';
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
 const year = new Date().getFullYear();
 ---
 <footer class="foot pad">
-  <a class="foot-big" href="mailto:hello@zouerami.dev">Say <span class="it">hello</span> ↗</a>
+  <a class="foot-big" href="mailto:hello@zouerami.dev">{tr.footer.hello} <span class="it">{tr.footer.helloEm}</span> ↗</a>
   <div class="foot-row mono">
-    <span>© {year} Amir Zouerami</span>
-    <span class="live"><span data-clock></span></span>
-    <span><a href="https://github.com/amirzouerami" rel="me noopener">GitHub</a> / <a href="https://www.linkedin.com/in/amirzouerami" rel="me noopener">LinkedIn</a> / <a href="https://x.com/amirzouerami" rel="me noopener">X</a> / <a href="/rss.xml">RSS</a></span>
-    <a href="#top">Back to top ↑</a>
+    <span>{tr.footer.rights} · {year}</span>
+    <span class="live"><span data-clock data-label={tr.footer.local}></span></span>
+    <span dir="ltr"><a href="https://github.com/amirzouerami" rel="me noopener">GitHub</a> / <a href="https://www.linkedin.com/in/amirzouerami" rel="me noopener">LinkedIn</a> / <a href="https://x.com/amirzouerami" rel="me noopener">X</a> / <a href={locale === 'fa' ? '/fa/rss.xml' : '/rss.xml'}>RSS</a></span>
+    <a href="#top">{tr.footer.top}</a>
   </div>
 </footer>

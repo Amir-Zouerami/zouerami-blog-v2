@@ -1,0 +1,24 @@
+---
+import { stack, timeline, uses } from '../data/about';
+import { type Locale, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
+const words = tr.about.statement.split(' ');
+---
+<Base title={`${tr.about.title} — zouerami`} description={tr.about.description} {locale} nav="about">
+  <main id="main" class="pad">
+    <div style="padding-top:70px"><span class="mono muted">{tr.about.crumb}</span></div>
+    <h1 class="statement">{words.map((w) => <span class={`w ${w.startsWith('*') ? 'it' : ''} lit`}>{w.replace(/\*/g, '')} </span>)}</h1>
+    <div class="sec-label"><span class="mono">[01]</span><span class="mono">{tr.about.timeline}</span><span></span></div>
+    <div>{timeline[locale].map((row) => (
+      <div class="tl-row"><span class={`mono ${row.open ? 'now' : 'muted'}`}>{row.when}{row.open ? (locale === 'fa' ? ' ←' : ' →') : ''}</span><h3>{row.title}</h3><p class="muted">{row.text}</p></div>
+    ))}</div>
+    <div class="sec-label" style="margin-top:110px"><span class="mono">[02]</span><span class="mono">{tr.about.uses}</span><span></span></div>
+    <div class="stackgrid" dir="ltr">{uses.map((s) => <div>{s}</div>)}</div>
+    <div class="sec-label" style="margin-top:110px"><span class="mono">[03]</span><span class="mono">{tr.about.now}</span><span></span></div>
+    <p class="h-big" style="padding-block:40px;max-width:18ch">{tr.about.nowText} <span class="it" style="color:var(--acc)">{tr.about.nowEm}</span></p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn solid" href="/resume.pdf">{tr.about.resume}</a><a class="btn" href="mailto:hello@zouerami.dev">{tr.about.hello}</a></div>
+  </main>
+</Base>

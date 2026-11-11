@@ -1,13 +1,14 @@
 ---
 import { cover, seedOf } from '../lib/cover';
+import { type Locale, localePath } from '../i18n';
 import type { ProjectSummary } from '../lib/schemas';
 import { UP } from './Icons';
-interface Props { project: ProjectSummary; size: 'sz-a' | 'sz-b'; dim?: boolean }
-const { project, size, dim = false } = Astro.props;
+interface Props { project: ProjectSummary; size: 'sz-a' | 'sz-b'; locale: Locale; dim?: boolean }
+const { project, size, locale, dim = false } = Astro.props;
 ---
-<a class={`tile ${size} ${dim ? 'dim' : ''}`} href={`/work/${project.slug}`}>
+<a class={`tile ${size} ${dim ? 'dim' : ''}`} href={localePath(locale, `/work/${project.slug}`)}>
   <div class="viz" set:html={cover(seedOf(project.slug))}></div>
   <div class="top"><span class="tagp">{project.category}</span><span class="mono muted">{project.year}</span></div>
-  <div><h3>{project.name}</h3><p>{project.blurb}</p></div>
+  <div dir="ltr" lang={project.langs[0]} style={locale === 'fa' ? 'text-align:left' : undefined}><h3>{project.name}</h3><p>{project.blurb}</p></div>
   <span class="go" set:html={UP}></span>
 </a>

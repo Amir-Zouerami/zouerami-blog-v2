@@ -8,7 +8,6 @@ export function morphSettings(distance: number, radius = 300): string {
 
 const letters = (s: string) =>
   [...s].map((ch, i) => (
-    // biome-ignore lint/suspicious/noArrayIndexKey: static string, order never changes
     <span className="ch" key={i}>
       {ch}
     </span>

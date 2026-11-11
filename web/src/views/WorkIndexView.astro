@@ -1,0 +1,42 @@
+---
+import ProjectTile from '../components/ProjectTile.astro';
+import { stack } from '../data/about';
+import { formatNumber, type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { UpstreamError } from '../lib/pb';
+import { listProjects } from '../lib/projects';
+import type { ProjectSummary } from '../lib/schemas';
+import Unavailable from './Unavailable.astro';
+
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
+let all: ProjectSummary[] = [];
+let unavailable = false;
+try {
+  all = await listProjects({ lang: locale });
+} catch (error) {
+  if (!(error instanceof UpstreamError)) throw error;
+  console.error(error.message);
+  unavailable = true;
+}
+const cat = Astro.url.searchParams.get('cat') ?? 'all';
+const cats = [...new Set(all.map((p) => p.category))];
+const href = (c: string) => localePath(locale, '/work') + (c === 'all' ? '' : `?cat=${encodeURIComponent(c)}`);
+const count = (c: string) => (c === 'all' ? all.length : all.filter((p) => p.category === c).length);
+const SIZES = ['sz-a', 'sz-b', 'sz-b', 'sz-b', 'sz-b', 'sz-b'] as const;
+---
+{unavailable ? <Unavailable {locale} /> : (
+<Base title={`${tr.work.title} — zouerami`} description={tr.work.description} {locale} nav="work">
+  <main id="main" class="pad">
+    <div style="padding-block:70px 20px"><span class="mono muted">{tr.work.crumb}</span><h1 class="h-big" style="margin-top:14px">{tr.work.heading} <span class="it">{tr.work.headingEm}</span></h1></div>
+    <div class="filters">
+      {['all', ...cats].map((c) => (
+        <a class={`ftab ${c === cat ? 'on' : ''}`} href={href(c)} aria-current={c === cat ? 'true' : undefined}>{c === 'all' ? tr.work.all : c}<sup>{formatNumber(count(c), locale)}</sup></a>
+      ))}
+    </div>
+    <div class="bento">{all.map((p, i) => <ProjectTile project={p} size={SIZES[i % SIZES.length] as 'sz-a' | 'sz-b'} {locale} dim={cat !== 'all' && p.category !== cat} />)}</div>
+    <div class="sec-label" style="margin-top:100px"><span class="mono">[+]</span><span class="mono">{tr.work.stack}</span><span></span></div>
+    <div class="stackgrid" dir="ltr">{stack.map((s) => <div>{s}</div>)}</div>
+  </main>
+</Base>
+)}

@@ -86,21 +86,43 @@ export async function listPosts(
   return opts.limit ? items.slice(0, opts.limit) : items;
 }
 
-/** One published post in the requested language, or null (unknown slug, draft, or no such translation). */
+export interface GetPostOptions {
+  /** Serve another existing language when the requested one is missing. */
+  fallback?: boolean;
+  /** Draft preview token (matches the post's `preview_token`; PocketBase enforces it). */
+  token?: string;
+}
+
+/**
+ * One post in the requested language, or null (unknown slug, draft without a valid token,
+ * or no such translation and no fallback requested).
+ */
 export async function getPost(
   slug: string,
   lang: Lang,
   pb: PocketBase = getPb(),
+  opts: GetPostOptions = {},
 ): Promise<Post | null> {
   if (!SlugSchema.safeParse(slug).success) return null;
+  const query = opts.token ? { token: opts.token } : undefined;
   let record: PostRecord;
   let trs: PostTranslationRecord[];
   try {
     record = PostRecordSchema.parse(
-      await pb.collection('posts').getFirstListItem(`slug = "${slug}" && status = "published"`),
+      await pb
+        .collection('posts')
+        .getFirstListItem(
+          opts.token
+            ? pb.filter('slug = {:slug}', { slug })
+            : pb.filter('slug = {:slug} && status = "published"', { slug }),
+          { query },
+        ),
     );
     trs = (
-      await pb.collection('post_translations').getFullList({ filter: `post = "${record.id}"` })
+      await pb.collection('post_translations').getFullList({
+        filter: pb.filter('post = {:id}', { id: record.id }),
+        query,
+      })
     )
       .map((r) => PostTranslationRecordSchema.parse(r))
       .filter((t) => t.post === record.id);
@@ -108,17 +130,39 @@ export async function getPost(
     if ((error as { status?: number }).status === 404) return null;
     upstream(error);
   }
-  if (record.status !== 'published') return null;
-  const tr = trs.find((t) => t.lang === lang);
+  const preview = record.status !== 'published';
+  if (preview && !opts.token) return null;
+  let tr = trs.find((t) => t.lang === lang);
+  let fellBack = false;
+  if (!tr && opts.fallback) {
+    tr = LANG_ORDER.map((l) => trs.find((t) => t.lang === l)).find(Boolean);
+    fellBack = !!tr;
+  }
   const summary = summarize(record, trs);
   if (!tr || !summary) return null;
   return {
     ...summary,
+    id: record.id,
     title: tr.title,
     summary: tr.summary,
-    titleLang: lang,
-    lang,
+    titleLang: tr.lang,
+    lang: tr.lang,
+    fellBack,
     bodyMd: tr.body_md,
     images: record.images,
+    views: record.views,
+    preview,
   };
+}
+
+/** Neighbouring published posts by date (older = previous, newer = next), wrapping around. */
+export function adjacent(
+  all: PostSummary[],
+  slug: string,
+): { previous: PostSummary | null; next: PostSummary | null } {
+  const i = all.findIndex((p) => p.slug === slug);
+  if (i === -1 || all.length < 2) return { previous: null, next: null };
+  const newer = all[(i - 1 + all.length) % all.length] as PostSummary;
+  const older = all[(i + 1) % all.length] as PostSummary;
+  return { previous: older, next: newer };
 }

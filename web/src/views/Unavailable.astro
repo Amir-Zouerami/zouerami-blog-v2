@@ -1,0 +1,9 @@
+---
+import Base from '../layouts/Base.astro';
+import { type Locale, t } from '../i18n';
+const { locale } = Astro.props as { locale: Locale };
+Astro.response.status = 503;
+---
+<Base title={t(locale).siteName} {locale} noindex>
+  <main id="main" class="pad" style="min-height:60vh;padding-block:120px"><p role="alert">{t(locale).home.unavailable}</p></main>
+</Base>

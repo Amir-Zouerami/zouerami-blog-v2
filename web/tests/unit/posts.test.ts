@@ -42,6 +42,8 @@ function stub(posts: Rec[], trs: Rec[], fail?: Error): PocketBase {
         return hit;
       },
     }),
+    filter: (expr: string, params: Record<string, string> = {}) =>
+      expr.replace(/\{:(\w+)\}/g, (_, k: string) => `"${params[k]}"`),
     files: { getURL: (r: Rec, f: string) => `/pb/api/files/${r.id}/${f}` },
   } as unknown as PocketBase;
 }

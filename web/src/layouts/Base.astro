@@ -1,25 +1,47 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
+import CommandPalette from '../components/CommandPalette';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import CommandPalette from '../components/CommandPalette';
+import Seo, { type JsonLd } from '../components/Seo.astro';
+import { dirOf, type Locale, switchPath, t } from '../i18n';
 
 interface Props {
   title: string;
   description?: string;
+  locale?: Locale;
   nav?: 'home' | 'blog' | 'work' | 'about' | '';
   spotlight?: boolean;
+  /** Existing translations of this page (locale → path). Defaults to the same path in both locales. */
+  alternates?: Partial<Record<Locale, string>>;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  image?: string;
+  published?: string;
+  tags?: string[];
+  jsonLd?: JsonLd[];
+  /** Override the language of the page content (e.g. an English post inside the Persian chrome). */
+  path?: string;
 }
-const { title, description = 'Amir Zouerami: developer, writer, tinkerer.', nav = '', spotlight = false } = Astro.props;
+const { title, locale = 'en', nav = '', spotlight = false, description = t(locale).home.description, ...seo } = Astro.props;
+const tr = t(locale);
+const here = seo.path ?? Astro.url.pathname;
+const other: Locale = locale === 'en' ? 'fa' : 'en';
+const alternates = seo.alternates ?? { en: switchPath(here, 'en'), fa: switchPath(here, 'fa') };
+const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
 ---
 <!doctype html>
-<html lang="en" dir="ltr" data-theme="dark">
+<html lang={locale} dir={dirOf(locale)} data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title="RSS (English)" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="RSS (فارسی)" href="/fa/rss.xml" />
+    <Seo {title} {description} {locale} {alternates} path={here} {...seo} />
     <script is:inline>
       (function () {
         function theme() {
@@ -34,13 +56,20 @@ const { title, description = 'Amir Zouerami: developer, writer, tinkerer.', nav 
     </script>
     <ClientRouter />
   </head>
-  <body id="top" data-nav={nav}>
-    <Header nav={nav} />
+  <body id="top" data-nav={nav} data-locale={locale}>
+    <a class="skip" href="#main">{tr.skip}</a>
+    <Header nav={nav} {locale} {switchHref} />
     {spotlight && <div class="spot" id="spot"></div>}
     <slot />
-    <Footer />
+    <Footer {locale} />
     <div id="wipe" transition:persist hidden aria-hidden="true"><div></div></div>
-    <CommandPalette client:idle />
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="langhint" id="langhint" hidden data-locale={locale}>
+      <span>{t('fa').langHint.text} / {t('en').langHint.text}</span>
+      <a href={switchHref} hreflang={other} data-lang-go>{tr.langHint.go}</a>
+      <button type="button" data-lang-dismiss aria-label={tr.langHint.dismiss}>×</button>
+    </div>
+    <CommandPalette client:idle locale={locale} labels={tr.palette} />
     <script>
       import { initCursor } from '../scripts/cursor';
       import { initWipe } from '../scripts/wipe';
@@ -48,10 +77,16 @@ const { title, description = 'Amir Zouerami: developer, writer, tinkerer.', nav 
       initCursor();
       initWipe();
       const pad = (n: number) => String(n).padStart(2, '0');
+      const LANG_KEY = 'sig-lang';
+      const store = {
+        get: () => { try { return localStorage.getItem(LANG_KEY); } catch { return null; } },
+        set: (v: string) => { try { localStorage.setItem(LANG_KEY, v); } catch { /* ignore */ } },
+      };
       function tick() {
         const d = new Date();
         document.querySelectorAll('[data-clock]').forEach((e) => {
-          e.textContent = `Local ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+          const label = (e as HTMLElement).dataset.label ?? 'Local';
+          e.textContent = `${label} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
         });
       }
       setInterval(tick, 1000);
@@ -62,10 +97,28 @@ const { title, description = 'Amir Zouerami: developer, writer, tinkerer.', nav 
           applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
         } else if (t.closest('[data-palette-open]')) {
           window.dispatchEvent(new Event('palette:open'));
+        } else if (t.closest('[data-lang-switch]')) {
+          // remember the choice; navigation itself is a normal link: no auto-redirect anywhere
+          store.set((t.closest('[data-lang-switch]') as HTMLElement).dataset.langSwitch ?? 'en');
+        } else if (t.closest('[data-lang-go]')) {
+          store.set('fa');
+        } else if (t.closest('[data-lang-dismiss]')) {
+          store.set('en');
+          (document.getElementById('langhint') as HTMLElement).hidden = true;
+        } else if (t.closest('.copy')) {
+          const btn = t.closest('.copy') as HTMLElement;
+          const pre = btn.closest('.term')?.querySelector('pre');
+          void navigator.clipboard?.writeText(pre?.textContent ?? '').catch(() => {});
+          const old = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(() => { btn.textContent = old; }, 1200);
         }
       });
       document.addEventListener('astro:page-load', () => {
         tick();
+        // Gentle, dismissible hint for people who chose Persian before: never a redirect.
+        const hint = document.getElementById('langhint') as HTMLElement | null;
+        if (hint) hint.hidden = !(hint.dataset.locale === 'en' && store.get() === 'fa');
         const spot = document.getElementById('spot');
         if (spot && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
           let mx = innerWidth / 2, my = innerHeight / 3, x = mx, y = my;

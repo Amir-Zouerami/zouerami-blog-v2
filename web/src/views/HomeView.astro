@@ -1,0 +1,64 @@
+---
+import HeroName from '../components/HeroName';
+import PostRow from '../components/PostRow.astro';
+import ProjectTile from '../components/ProjectTile.astro';
+import { dirOf, localePath, type Locale, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { UpstreamError } from '../lib/pb';
+import { listPosts } from '../lib/posts';
+import { listProjects } from '../lib/projects';
+import type { PostSummary, ProjectSummary } from '../lib/schemas';
+
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
+let posts: PostSummary[] = [];
+let projects: ProjectSummary[] = [];
+let unavailable = false;
+try {
+  [posts, projects] = await Promise.all([listPosts({ limit: 5 }), listProjects({ limit: 6, lang: locale })]);
+} catch (error) {
+  if (!(error instanceof UpstreamError)) throw error;
+  unavailable = true;
+  Astro.response.status = 503;
+  console.error(error.message);
+}
+const latest = posts[0];
+const SIZES = ['sz-a', 'sz-b', 'sz-b', 'sz-b', 'sz-b', 'sz-b'] as const;
+const words = tr.home.marquee;
+---
+<Base title={tr.home.title} description={tr.home.description} {locale} nav="home">
+  <main id="main">
+    <section class="hero pad">
+      <div class="hero-top"><span class="mono live">{tr.home.available}</span><span class="mono muted">{tr.home.roles}</span></div>
+      <HeroName client:visible />
+      {locale === 'fa' && <p class="fa-name" lang="fa" dir="rtl">امیر زوارمی</p>}
+      <div class="hero-row">
+        <div><span class="mono muted">{tr.home.currently}</span><p>{tr.home.currentlyText}</p></div>
+        <div><span class="mono muted">{tr.home.latestNote}</span><p>{latest ? <a href={localePath(locale, `/blog/${latest.slug}`)} style="border-bottom:1px solid var(--acc)" dir={dirOf(latest.titleLang)} lang={latest.titleLang}>{latest.title} ↗</a> : '—'}</p></div>
+        <div><span class="mono muted">{tr.home.time}</span><p class="mono" data-clock data-label={tr.footer.local} style="font-size:15px" dir="ltr"></p></div>
+        <div><span class="mono muted">{tr.home.scroll}</span><p>↓</p></div>
+      </div>
+    </section>
+    <div class="marq" aria-hidden="true"><div>{[...words, ...words].map((w) => <span>{w}</span>)}</div></div>
+    {unavailable ? (
+      <section class="pad" style="padding-block:90px"><p role="alert">{tr.home.unavailable}</p></section>
+    ) : (
+      <>
+        <section class="pad" style="padding-top:90px">
+          <div class="sec-label"><span class="mono">[01]</span><span class="mono">{tr.home.latestWriting}</span><a class="mono" href={localePath(locale, '/blog')}>{tr.home.allPosts}</a></div>
+          <div class="rows">{posts.map((p, i) => <PostRow post={p} n={i + 1} {locale} />)}</div>
+        </section>
+        <section class="pad" style="padding-top:110px">
+          <div class="sec-label"><span class="mono">[02]</span><span class="mono">{tr.home.selectedWork}</span><a class="mono" href={localePath(locale, '/work')}>{tr.home.allProjects}</a></div>
+          <div class="bento" style="margin-top:22px">{projects.map((p, i) => <ProjectTile project={p} size={SIZES[i % SIZES.length] as 'sz-a' | 'sz-b'} {locale} />)}</div>
+        </section>
+      </>
+    )}
+    <section class="pad" style="padding-top:130px">
+      <div class="sec-label"><span class="mono">[03]</span><span class="mono">{tr.home.newsletter}</span><span></span></div>
+      <p class="h-big" style="padding-block:40px 34px;max-width:14ch">{tr.home.words} <span class="it" style="color:var(--acc)">{tr.home.occasionally}</span></p>
+      <form class="sub" method="post" action="/api/subscribe" data-subscribe><input type="email" required placeholder={tr.home.emailPlaceholder} aria-label="Email" name="email" dir="ltr" /><input type="hidden" name="locale" value={locale} /><button>{tr.home.subscribe}</button></form>
+      <p class="mono muted" id="sub-msg" role="status" style="margin-top:14px"></p>
+    </section>
+  </main>
+</Base>

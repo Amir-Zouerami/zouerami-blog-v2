@@ -1,17 +1,22 @@
 ---
+import { localePath, type Locale, LANG_NAMES, t } from '../i18n';
 import { MOON, SUN } from './Icons';
-const { nav = '' } = Astro.props;
-const NAV = [['home', '/', '01', 'Home'], ['blog', '/blog', '02', 'Blog'], ['work', '/work', '03', 'Work'], ['about', '/about', '04', 'About']] as const;
+interface Props { nav?: string; locale: Locale; switchHref: string }
+const { nav = '', locale, switchHref } = Astro.props;
+const tr = t(locale);
+const other: Locale = locale === 'en' ? 'fa' : 'en';
+const NAV = [['home', '/', '01', tr.nav.home], ['blog', '/blog', '02', tr.nav.blog], ['work', '/work', '03', tr.nav.work], ['about', '/about', '04', tr.nav.about]] as const;
 ---
 <header class="head pad">
-  <a class="brand" href="/">zouerami<sup>®</sup></a>
+  <a class="brand" href={localePath(locale, '/')}>zouerami<sup>®</sup></a>
   <nav class="nav" aria-label="Primary">
     {NAV.map(([k, href, n, label]) => (
-      <a href={href} class={k === nav ? 'on' : ''} aria-current={k === nav ? 'page' : undefined}><em>{n}</em>{label}</a>
+      <a href={localePath(locale, href)} class={k === nav ? 'on' : ''} aria-current={k === nav ? 'page' : undefined}><em>{n}</em>{label}</a>
     ))}
   </nav>
   <div class="tools">
-    <button class="kbd" data-palette-open type="button" aria-label="Open command palette"><span>Search</span> ⌘K</button>
-    <button class="sq" data-theme-toggle type="button" aria-label="Toggle theme"><Fragment set:html={SUN + MOON} /></button>
+    <button class="kbd" data-palette-open type="button" aria-label={tr.search}><span>{tr.search}</span> ⌘K</button>
+    <a class="sq lang" href={switchHref} hreflang={other} lang={other} data-lang-switch={other} aria-label={tr.switchLangLabel} data-astro-reload={undefined}>{LANG_NAMES[other].short}</a>
+    <button class="sq" data-theme-toggle type="button" aria-label={tr.toggleTheme}><Fragment set:html={SUN + MOON} /></button>
   </div>
 </header>

@@ -15,6 +15,7 @@ export const PostRecordSchema = z.object({
   status: StatusSchema,
   tags: z.array(z.string()),
   images: z.array(z.string()),
+  views: z.number().default(0),
 });
 export type PostRecord = z.infer<typeof PostRecordSchema>;
 
@@ -47,10 +48,17 @@ export type PostSummary = {
 };
 
 export type Post = PostSummary & {
-  /** The language of `bodyMd` (the one that was requested). */
+  /** The language of `bodyMd` / `title`. */
   lang: Lang;
+  /** True when `lang` is not the language that was asked for (only offered via `fallback`). */
+  fellBack: boolean;
   bodyMd: string;
   images: string[];
+  views: number;
+  /** Id of the post record (file URLs, counters). */
+  id: string;
+  /** True when served through a draft preview token. */
+  preview: boolean;
 };
 
 export const ProjectRecordSchema = z.object({

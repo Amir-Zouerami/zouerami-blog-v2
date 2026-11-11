@@ -1,0 +1,51 @@
+---
+import { loadEnv } from '../lib/env';
+import type { Locale } from '../i18n';
+
+export interface JsonLd { [key: string]: unknown }
+interface Props {
+  title: string;
+  description: string;
+  locale: Locale;
+  /** Path of this page (defaults to the current one). */
+  path?: string;
+  /** Existing translations of this page: locale → path. Drives hreflang. */
+  alternates?: Partial<Record<Locale, string>>;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+  image?: string;
+  published?: string;
+  tags?: string[];
+  jsonLd?: JsonLd[];
+}
+const { title, description, locale, alternates = {}, type = 'website', noindex = false, image, published, tags = [], jsonLd = [] } = Astro.props;
+const site = loadEnv().SITE_URL.replace(/\/$/, '');
+const abs = (p: string) => (/^https?:\/\//.test(p) ? p : `${site}${p}`);
+const path = Astro.props.path ?? Astro.url.pathname;
+const canonical = abs(path);
+const other: Locale = locale === 'en' ? 'fa' : 'en';
+const ogLocale = (l: Locale) => (l === 'fa' ? 'fa_IR' : 'en_US');
+const img = image ? abs(image) : abs('/og/default.png');
+---
+<link rel="canonical" href={canonical} />
+{alternates.en && <link rel="alternate" hreflang="en" href={abs(alternates.en)} />}
+{alternates.fa && <link rel="alternate" hreflang="fa" href={abs(alternates.fa)} />}
+{alternates.en && <link rel="alternate" hreflang="x-default" href={abs(alternates.en)} />}
+{noindex && <meta name="robots" content="noindex,nofollow" />}
+<meta property="og:site_name" content="zouerami" />
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:locale" content={ogLocale(locale)} />
+{alternates[other] && <meta property="og:locale:alternate" content={ogLocale(other)} />}
+<meta property="og:image" content={img} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={img} />
+{type === 'article' && published && <meta property="article:published_time" content={new Date(published.replace(' ', 'T')).toISOString()} />}
+{type === 'article' && tags.map((t) => <meta property="article:tag" content={t} />)}
+{jsonLd.map((d) => <script type="application/ld+json" set:html={JSON.stringify(d).replace(/</g, '\\u003c')} />)}

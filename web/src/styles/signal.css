@@ -1547,3 +1547,30 @@ html.tx-pending.tx-acc::after {
   font: var(--hw) clamp(56px, 14vw, 220px) / 0.85 var(--head);
   letter-spacing: var(--hls);
 }
+
+/* accessibility + language hint */
+.skip { position: fixed; inset-inline-start: 12px; top: -60px; z-index: 500; background: var(--acc); color: var(--on-acc); padding: 10px 16px; border-radius: 8px; font: 500 13px var(--mono); transition: top .2s; }
+.skip:focus { top: 12px; }
+.langhint { position: fixed; inset-inline: 12px; bottom: 12px; z-index: 300; display: flex; gap: 14px; align-items: center; justify-content: center; padding: 10px 16px; background: var(--bg2); border: 1px solid var(--line2); border-radius: var(--r); font: 500 13px var(--mono); }
+.langhint[hidden] { display: none; }
+.langhint a { color: var(--acc); border-bottom: 1px solid; }
+.langhint button { color: var(--muted); font-size: 18px; line-height: 1; }
+.sq.lang { width: auto; padding-inline: 12px; font: 500 12px var(--mono); }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+html[dir='rtl'] .row .arr, html[dir='rtl'] .tile .go svg, html[dir='rtl'] .btn svg { scale: -1 1; }
+
+/* language dropdown built from links (no JS needed to navigate) */
+.dd-menu a, .dd-menu span.off { display: flex; justify-content: space-between; gap: 18px; width: 100%; padding: 10px 12px; text-align: start; border-radius: calc(var(--r) / 2.5); font-size: 15px; }
+.dd-menu a:hover { background: var(--acc); color: var(--on-acc); }
+.dd-menu a.cur::after { content: '●'; color: var(--acc); } .dd-menu a.cur:hover::after { color: var(--on-acc); }
+.dd-menu span.off { color: var(--muted); cursor: not-allowed; } .dd-menu span.off .nm { text-decoration: line-through; } .dd-menu span.off small { font: 500 10px var(--mono); text-transform: uppercase; opacity: .8; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.footnotes { margin-top: 3em; padding-top: 1.2em; border-top: 1px solid var(--line); font-size: .85em; color: var(--muted); }
+.footnotes ol { padding-inline-start: 1.4em; } .footnotes li::before { content: none; } .footnotes li { border: 0; padding-block: 4px; }
+.prose sup a { border: 0; color: var(--acc); font-family: var(--mono); padding-inline: 2px; }
+.prose .term .shiki, .prose .term .shiki span { color: var(--shiki-dark); background: none; }
+.prose .term pre.shiki { background: none; }
+.prose figure img { width: 100%; border: 1px solid var(--line2); border-radius: var(--r); }
+.prose pre:not(.shiki) { white-space: pre-wrap; }
+.notice { margin-block: 0 24px; padding: 12px 16px; border: 1px solid var(--line2); border-inline-start: 3px solid var(--acc); border-radius: calc(var(--r) / 2); font: 500 13px var(--mono); color: var(--muted); }
+.fa-name { font: 800 clamp(32px, 6vw, 84px)/1.3 'Vazirmatn Variable', sans-serif; color: var(--acc); margin-top: 18px; }

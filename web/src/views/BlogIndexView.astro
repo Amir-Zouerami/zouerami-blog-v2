@@ -1,0 +1,68 @@
+---
+import PostRow from '../components/PostRow.astro';
+import { faDigits, formatNumber, type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { UpstreamError } from '../lib/pb';
+import { listPosts } from '../lib/posts';
+import type { PostSummary } from '../lib/schemas';
+import Unavailable from './Unavailable.astro';
+
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
+let all: PostSummary[] = [];
+let unavailable = false;
+try {
+  all = await listPosts();
+} catch (error) {
+  if (!(error instanceof UpstreamError)) throw error;
+  console.error(error.message);
+  unavailable = true;
+}
+const tag = Astro.url.searchParams.get('tag') ?? 'all';
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
+const tags = [...new Set(all.flatMap((p) => p.tags))].sort();
+const needle = q.toLowerCase();
+const list = all.filter(
+  (p) =>
+    (tag === 'all' || p.tags.includes(tag)) &&
+    (!needle || `${p.title} ${p.summary} ${p.tags.join(' ')}`.toLowerCase().includes(needle)),
+);
+const years = [...new Set(list.map((p) => p.date.slice(0, 4)))];
+const href = (t: string) => {
+  const u = new URLSearchParams();
+  if (t !== 'all') u.set('tag', t);
+  if (q) u.set('q', q);
+  const s = u.toString();
+  return localePath(locale, '/blog') + (s ? `?${s}` : '');
+};
+const count = (t: string) => (t === 'all' ? all.length : all.filter((p) => p.tags.includes(t)).length);
+const num = (n: number) => formatNumber(n, locale);
+let n = 0;
+---
+{unavailable ? <Unavailable {locale} /> : (
+<Base title={`${tr.blog.title} — zouerami`} description={tr.blog.description} {locale} nav="blog">
+  <main id="main" class="pad">
+    <div style="padding-block:70px 20px"><span class="mono muted">{tr.blog.crumb}</span><h1 class="h-big" style="margin-top:14px">{tr.blog.title}<sup class="mono" style="color:var(--acc);font-size:16px;vertical-align:top">{num(list.length)}</sup></h1></div>
+    <form class="search-in" method="get" action={localePath(locale, '/blog')} role="search">
+      <input name="q" value={q} placeholder={tr.blog.searchPlaceholder} autocomplete="off" aria-label={tr.search} />
+      {tag !== 'all' && <input type="hidden" name="tag" value={tag} />}
+      <kbd>/</kbd>
+    </form>
+    <div class="filters">
+      {['all', ...tags].map((tg) => (
+        <a class={`ftab ${tg === tag ? 'on' : ''}`} href={href(tg)} aria-current={tg === tag ? 'true' : undefined}>{tg === 'all' ? tr.blog.all : tg}<sup>{num(count(tg))}</sup></a>
+      ))}
+    </div>
+    <p class="mono muted" style="margin-bottom:14px">{tr.blog.legend}</p>
+    <div class="rows">
+      {list.length === 0 && <p class="mono muted" style="padding:50px 0">{tr.blog.empty}</p>}
+      {years.map((y) => (
+        <>
+          <div class="year it" dir="ltr">{locale === 'fa' ? faDigits(y) : y}</div>
+          {list.filter((p) => p.date.startsWith(y)).map((p) => { n += 1; return <PostRow post={p} n={n} {locale} />; })}
+        </>
+      ))}
+    </div>
+  </main>
+</Base>
+)}

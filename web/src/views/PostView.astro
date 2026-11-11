@@ -1,0 +1,166 @@
+---
+import { cover, seedOf } from '../lib/cover';
+import { dirOf, faDigits, formatDate, formatNumber, LANG_NAMES, LOCALES, type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { readingMinutes, renderMarkdown } from '../lib/markdown';
+import { UpstreamError } from '../lib/pb';
+import { adjacent, getPost, imageUrl, listPosts } from '../lib/posts';
+import type { Post, PostSummary } from '../lib/schemas';
+import NotFoundView from './NotFoundView.astro';
+import Unavailable from './Unavailable.astro';
+
+const { locale, slug } = Astro.props as { locale: Locale; slug: string };
+const tr = t(locale);
+const token = Astro.url.searchParams.get('token') ?? undefined;
+
+let post: Post | null = null;
+let all: PostSummary[] = [];
+let unavailable = false;
+try {
+  post = await getPost(slug, locale, undefined, { fallback: true, token });
+  if (post) all = await listPosts();
+} catch (error) {
+  if (!(error instanceof UpstreamError)) throw error;
+  console.error(error.message);
+  unavailable = true;
+}
+if (post?.preview) Astro.response.headers.set('cache-control', 'no-store');
+
+const rendered = post
+  ? await renderMarkdown(post.bodyMd, { resolveImage: (name) => imageUrl({ id: post.id }, name) })
+  : null;
+const { previous, next } = post ? adjacent(all, post.slug) : { previous: null, next: null };
+const minutes = post ? readingMinutes(post.bodyMd) : 0;
+const fmt = (n: number) => formatNumber(n, locale);
+const coverHtml = post ? cover(seedOf(post.slug)) : '';
+const nameOf = (l: Locale) => LANG_NAMES[l];
+const alternates = post
+  ? Object.fromEntries(post.langs.map((l) => [l, localePath(l, `/blog/${post.slug}`)]))
+  : {};
+const path = localePath(locale, `/blog/${slug}`);
+---
+{unavailable ? <Unavailable {locale} /> : !post || !rendered ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
+<Base
+  title={`${post.title} — zouerami`}
+  description={post.summary || post.title}
+  {locale}
+  nav="blog"
+  spotlight
+  type="article"
+  published={post.date}
+  tags={post.tags}
+  noindex={post.preview}
+  alternates={post.preview ? {} : alternates}
+  {path}
+  image={post.cover ?? undefined}
+>
+  <div class="rp"><i id="rp-bar"></i></div>
+  <main id="main" data-post-slug={post.slug} data-track={post.preview ? undefined : 'view'}>
+    <header class="post-head pad">
+      <div style="margin-bottom:26px">{post.tags.map((tg) => <span class="tagp">{tg}</span>)} </div>
+      <h1 dir={dirOf(post.lang)} lang={post.lang}>{post.title}</h1>
+      <div class="meta-grid">
+        <div><span class="mono muted">{tr.post.published}</span><p>{formatDate(post.date, locale, true)}</p></div>
+        <div><span class="mono muted">{tr.post.reading}</span><p>{fmt(minutes)} {tr.post.min}</p></div>
+        <div><span class="mono muted">{tr.post.views}</span><p id="views">{fmt(post.views)}</p></div>
+        <div><span class="mono muted">{tr.post.language}</span><br />
+          <div class="dd" id="dd">
+            <button class="dd-btn" type="button" aria-haspopup="true" aria-expanded="false" data-dd-toggle><span>{nameOf(post.lang).short} · {nameOf(post.lang).native}</span><i>▾</i></button>
+            <div class="dd-menu">
+              {LOCALES.map((l) => post.langs.includes(l)
+                ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}><span class="nm" lang={l}>{nameOf(l).native}</span></a>
+                : <span class="off" title={tr.post.notWritten}><span class="nm" lang={l}>{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="post-cover" aria-hidden="true">{post.cover ? <img src={post.cover} alt="" style="width:100%;height:100%;object-fit:cover" /> : <Fragment set:html={coverHtml} />}</div>
+    <div class="art pad">
+      <aside class="side">
+        <div class="ring"><svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true"><circle class="bg" cx="38" cy="38" r="32"/><circle class="fg" id="ring-fg" cx="38" cy="38" r="32"/></svg><b id="ring-num">0%</b></div>
+        <div class="mono muted" style="margin-bottom:10px">{tr.post.onThisPage}</div>
+        <div id="toc">{rendered.headings.map((hd) => <a href={`#${hd.id}`} dir={dirOf(post.lang)}>{hd.text}</a>)}</div>
+        <div class="acts" id="post-acts" data-post-id={post.id} data-slug={post.slug}>
+          <button type="button" data-share>{tr.post.share}</button>
+        </div>
+      </aside>
+      <article>
+        {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
+        {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(nameOf(post.lang).native)}</p>}
+        <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={rendered.html}></div>
+        <div id="comments" data-post-id={post.id}></div>
+      </article>
+      <div></div>
+    </div>
+    <nav class="nextprev" aria-label="Posts">
+      {previous ? <a href={localePath(locale, `/blog/${previous.slug}`)} rel="prev"><span class="mono muted">{tr.post.previous}</span><h3 dir={dirOf(previous.titleLang)} lang={previous.titleLang}>{previous.title}</h3></a> : <span></span>}
+      {next ? <a href={localePath(locale, `/blog/${next.slug}`)} rel="next"><span class="mono muted">{tr.post.next}</span><h3 dir={dirOf(next.titleLang)} lang={next.titleLang}>{next.title}</h3></a> : <span></span>}
+    </nav>
+  </main>
+  <script>
+    function init() {
+      const main = document.querySelector<HTMLElement>('main[data-post-slug]');
+      if (!main) return;
+      const bar = document.getElementById('rp-bar');
+      const ring = document.getElementById('ring-fg');
+      const num = document.getElementById('ring-num');
+      const prog = () => {
+        const h = document.documentElement;
+        const k = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
+        if (bar) bar.style.width = `${k * 100}%`;
+        ring?.setAttribute('style', `stroke-dashoffset:${201 * (1 - k)}`);
+        if (num) num.textContent = `${Math.round(k * 100)}%`;
+      };
+      addEventListener('scroll', prog, { passive: true });
+      prog();
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('#toc a')];
+      if ('IntersectionObserver' in window && links.length) {
+        const spy = new IntersectionObserver(
+          (es) => es.forEach((e) => { if (e.isIntersecting) links.forEach((a) => a.classList.toggle('on', a.hash === `#${e.target.id}`)); }),
+          { rootMargin: '-15% 0px -75% 0px' },
+        );
+        document.querySelectorAll('.prose h2[id]').forEach((h) => spy.observe(h));
+      }
+      // one view per visitor per post per day; the server ignores bots and drafts
+      const slug = main.dataset.postSlug;
+      if (main.dataset.track === 'view' && slug && !navigator.webdriver) {
+        const key = `sig-view-${slug}`;
+        const today = new Date().toISOString().slice(0, 10);
+        let seen: string | null = null;
+        try { seen = localStorage.getItem(key); } catch { /* storage blocked: count at most once per load */ }
+        if (seen !== today) {
+          try { localStorage.setItem(key, today); } catch { /* ignore */ }
+          void fetch(`/pb/api/views/${encodeURIComponent(slug)}`, { method: 'POST', keepalive: true }).catch(() => {});
+        }
+      }
+    }
+    document.addEventListener('astro:page-load', init);
+    // language dropdown + share (delegated, registered once)
+    const w = window as unknown as { __postUi?: boolean };
+    if (!w.__postUi) {
+      w.__postUi = true;
+      document.addEventListener('click', (e) => {
+        const t = e.target as Element;
+        const dd = document.getElementById('dd');
+        const btn = t.closest('[data-dd-toggle]');
+        if (btn && dd) {
+          const open = dd.classList.toggle('open');
+          btn.setAttribute('aria-expanded', String(open));
+        } else if (dd) {
+          dd.classList.remove('open');
+        }
+        if (t.closest('[data-share]')) {
+          void navigator.clipboard?.writeText(location.href.split('#')[0] ?? '').catch(() => {});
+          const toast = document.getElementById('toast');
+          if (toast) {
+            toast.textContent = document.documentElement.lang === 'fa' ? 'پیوند کپی شد' : 'Link copied';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+          }
+        }
+      });
+    }
+  </script>
+</Base>
+)}

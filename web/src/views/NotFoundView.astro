@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import { type Locale, localePath, t } from '../i18n';
+const { locale, path } = Astro.props as { locale: Locale; path: string };
+Astro.response.status = 404;
+let shown = path;
+try {
+  shown = decodeURIComponent(path);
+} catch {
+  /* keep the raw path */
+}
+const tr = t(locale).notFound;
+---
+<Base title={tr.title} {locale} noindex alternates={{}}>
+  <main id="main" class="pad nf">
+    <h1 dir="ltr"><span>4</span><span>0</span><span>4</span></h1>
+    <div class="tty" dir="ltr">
+      <div><span class="p">$</span> cd <span id="path">{shown}</span></div>
+      <div class="muted">{tr.missing}</div>
+      <div><span class="p">$</span> {tr.try} <a href={localePath(locale, '/')} style="color:var(--acc);border-bottom:1px solid">cd ~</a> <span class="caret"></span></div>
+    </div>
+    <div><a class="btn solid" href={localePath(locale, '/')}>{tr.home}</a></div>
+  </main>
+</Base>
