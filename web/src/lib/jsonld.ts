@@ -1,4 +1,7 @@
 import type { Locale } from '../i18n';
+import { absoluteUrl } from './url';
+
+export type JsonLd = Record<string, unknown>;
 
 export const SITE_NAME = 'zouerami';
 export const PERSON = {
@@ -11,16 +14,14 @@ export const PERSON = {
   ],
 };
 
-const abs = (site: string, path: string) => `${site.replace(/\/$/, '')}${path}`;
-
 export function personLd(site: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
-    '@id': abs(site, '/#person'),
+    '@id': absoluteUrl(site, '/#person'),
     name: PERSON.name,
     alternateName: PERSON.alternateName,
-    url: abs(site, '/'),
+    url: absoluteUrl(site, '/'),
     sameAs: PERSON.sameAs,
   };
 }
@@ -29,11 +30,11 @@ export function websiteLd(site: string, locale: Locale) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    '@id': abs(site, '/#website'),
+    '@id': absoluteUrl(site, '/#website'),
     name: SITE_NAME,
-    url: abs(site, locale === 'fa' ? '/fa' : '/'),
+    url: absoluteUrl(site, locale === 'fa' ? '/fa' : '/'),
     inLanguage: locale === 'fa' ? 'fa-IR' : 'en',
-    publisher: { '@id': abs(site, '/#person') },
+    publisher: { '@id': absoluteUrl(site, '/#person') },
   };
 }
 
@@ -63,11 +64,11 @@ export function blogPostingLd(i: PostLdInput) {
     datePublished: iso(i.date),
     dateModified: iso(i.modified ?? i.date),
     keywords: i.tags.join(', '),
-    image: abs(i.site, i.image),
-    url: abs(i.site, i.path),
-    mainEntityOfPage: abs(i.site, i.path),
-    author: { '@id': abs(i.site, '/#person') },
-    publisher: { '@id': abs(i.site, '/#person') },
+    image: absoluteUrl(i.site, i.image),
+    url: absoluteUrl(i.site, i.path),
+    mainEntityOfPage: absoluteUrl(i.site, i.path),
+    author: { '@id': absoluteUrl(i.site, '/#person') },
+    publisher: { '@id': absoluteUrl(i.site, '/#person') },
   };
 }
 
@@ -79,7 +80,7 @@ export function breadcrumbLd(site: string, items: { name: string; path: string }
       '@type': 'ListItem',
       position: idx + 1,
       name: it.name,
-      item: abs(site, it.path),
+      item: absoluteUrl(site, it.path),
     })),
   };
 }

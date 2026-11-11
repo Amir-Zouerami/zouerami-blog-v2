@@ -1,3 +1,5 @@
+import { getConfig } from './config';
+
 export interface TurnstileConfig {
   secret?: string;
   fetch?: typeof fetch;
@@ -10,7 +12,7 @@ export interface TurnstileConfig {
 export async function verifyTurnstile(
   token: string | undefined | null,
   remoteIp: string | undefined,
-  cfg: TurnstileConfig = { secret: process.env.TURNSTILE_SECRET },
+  cfg: TurnstileConfig = { secret: getConfig().turnstile.secret },
 ): Promise<boolean> {
   if (!cfg.secret) return true;
   if (!token) return false;

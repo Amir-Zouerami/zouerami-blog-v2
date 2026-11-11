@@ -1,5 +1,5 @@
 import type PocketBase from 'pocketbase';
-import { getPb, UpstreamError } from './pb';
+import { getPb, toUpstream } from './pb';
 import {
   type Lang,
   type Project,
@@ -12,17 +12,6 @@ import {
 } from './schemas';
 
 const LANG_ORDER: Lang[] = ['en', 'fa'];
-
-function upstream(error: unknown): never {
-  if (error instanceof UpstreamError) throw error;
-  if (error instanceof Error && error.name === '$ZodError') throw error;
-  const status = (error as { status?: number }).status;
-  const message = error instanceof Error ? error.message : String(error);
-  throw new UpstreamError(
-    `PocketBase request failed${status ? ` (${status})` : ''}: ${message}`,
-    error,
-  );
-}
 
 function summarize(p: ProjectRecord, trs: ProjectTranslationRecord[], prefer?: Lang) {
   const langs = LANG_ORDER.filter((l) => trs.some((t) => t.lang === l));
@@ -60,7 +49,7 @@ export async function listProjects(
     projects = rp.map((r) => ProjectRecordSchema.parse(r));
     trs = rt.map((r) => ProjectTranslationRecordSchema.parse(r));
   } catch (error) {
-    upstream(error);
+    toUpstream(error);
   }
   const out = projects
     .filter((p) => p.status === 'published')
@@ -95,7 +84,7 @@ export async function getProject(
       .filter((t) => t.project === rec.id);
   } catch (error) {
     if ((error as { status?: number }).status === 404) return null;
-    upstream(error);
+    toUpstream(error);
   }
   if (rec.status !== 'published') return null;
   const tr = trs.find((t) => t.lang === lang);

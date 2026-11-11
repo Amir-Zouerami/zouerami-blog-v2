@@ -4,26 +4,16 @@ import PostRow from '../components/PostRow.astro';
 import ProjectTile from '../components/ProjectTile.astro';
 import { dirOf, localePath, type Locale, t } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { UpstreamError } from '../lib/pb';
-import { listPosts } from '../lib/posts';
-import { listProjects } from '../lib/projects';
-import type { PostSummary, ProjectSummary } from '../lib/schemas';
+import { loadHome } from '../lib/pages';
 
 const { locale } = Astro.props as { locale: Locale };
 const tr = t(locale);
-let posts: PostSummary[] = [];
-let projects: ProjectSummary[] = [];
-let unavailable = false;
-try {
-  [posts, projects] = await Promise.all([listPosts({ limit: 5 }), listProjects({ limit: 6, lang: locale })]);
-} catch (error) {
-  if (!(error instanceof UpstreamError)) throw error;
-  unavailable = true;
-  Astro.response.status = 503;
-  console.error(error.message);
-}
+const page = await loadHome(locale);
+const unavailable = page.kind !== 'ok';
+if (unavailable) Astro.response.status = 503;
+const { posts, projects } = page.kind === 'ok' ? page.data : { posts: [], projects: [] };
 const q = Astro.url.searchParams.get('subscribe');
-const status = q === 'ok' || q === 'invalid' ? q : q === 'failed' ? 'failed' : null;
+const status = q === 'ok' || q === 'invalid' || q === 'failed' ? q : null;
 const latest = posts[0];
 const SIZES = ['sz-a', 'sz-b', 'sz-b', 'sz-b', 'sz-b', 'sz-b'] as const;
 const words = tr.home.marquee;
@@ -64,19 +54,6 @@ const words = tr.home.marquee;
     </section>
   </main>
   <script>
-    document.addEventListener('submit', async (e) => {
-      const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-subscribe]');
-      if (!form) return;
-      e.preventDefault();
-      const msg = document.getElementById('sub-msg');
-      const data = Object.fromEntries(new FormData(form).entries());
-      try {
-        const r = await fetch('/api/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
-        if (msg) msg.textContent = r.ok ? (form.dataset.ok ?? '') : r.status === 400 ? (form.dataset.invalid ?? '') : (form.dataset.failed ?? '');
-        if (r.ok) form.reset();
-      } catch {
-        if (msg) msg.textContent = form.dataset.failed ?? '';
-      }
-    });
+    import '../scripts/subscribe';
   </script>
 </Base>

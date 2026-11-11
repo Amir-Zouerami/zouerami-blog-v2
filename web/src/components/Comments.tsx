@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
 
 interface Comment {
   id: string;
@@ -89,7 +89,7 @@ export default function Comments({
     document.head.appendChild(s);
   }, [siteKey]);
 
-  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (busy || !text.trim()) return;
     setBusy(true);

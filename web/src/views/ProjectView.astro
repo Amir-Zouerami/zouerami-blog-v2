@@ -2,35 +2,18 @@
 import { cover, seedOf } from '../lib/cover';
 import { formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { renderMarkdown } from '../lib/markdown';
-import { UpstreamError } from '../lib/pb';
-import { getProject, listProjects } from '../lib/projects';
-import type { Project, ProjectSummary } from '../lib/schemas';
+import { loadProjectPage } from '../lib/pages';
 import NotFoundView from './NotFoundView.astro';
 import Unavailable from './Unavailable.astro';
 
 const { locale, slug } = Astro.props as { locale: Locale; slug: string };
 const tr = t(locale);
-let project: Project | null = null;
-let all: ProjectSummary[] = [];
-let unavailable = false;
-try {
-  // Case studies are written in English; the Persian site shows the English text inside Persian chrome.
-  project = (await getProject(slug, locale)) ?? (await getProject(slug, 'en'));
-  if (project) all = await listProjects({ lang: locale });
-} catch (error) {
-  if (!(error instanceof UpstreamError)) throw error;
-  console.error(error.message);
-  unavailable = true;
-}
-const rendered = project ? await renderMarkdown(project.bodyMd, { resolveImage: (n) => n }) : null;
-const idx = project ? all.findIndex((p) => p.slug === project?.slug) : -1;
-const nextProject = all.length > 1 && idx >= 0 ? all[(idx + 1) % all.length] : null;
-const fellBack = project ? project.lang !== locale : false;
-const alternates = project ? Object.fromEntries(project.langs.map((l) => [l, localePath(l, `/work/${project?.slug}`)])) : {};
+const page = await loadProjectPage(slug, locale);
+const data = page.kind === 'ok' ? page.data : null;
+const project = data?.project ?? null;
 ---
-{unavailable ? <Unavailable {locale} /> : !project || !rendered ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
-<Base title={`${project.name} — zouerami`} description={project.blurb} {locale} nav="work" alternates={Object.keys(alternates).length ? alternates : { [locale]: Astro.url.pathname }} path={localePath(locale, `/work/${project.slug}`)}>
+{page.kind === 'unavailable' ? <Unavailable {locale} /> : !data || !project ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
+<Base title={`${project.name} — zouerami`} description={project.blurb} {locale} nav="work" alternates={data.alternates} path={localePath(locale, `/work/${project.slug}`)}>
   <main id="main">
     <section class="pad p-hero"><a class="mono muted" href={localePath(locale, '/work')}>{tr.work.back}</a><h1 dir="ltr" style="text-align:start">{project.name}</h1></section>
     <div class="pad"><div class="shot" style="aspect-ratio:21/9;margin-top:0" aria-hidden="true" set:html={cover(seedOf(project.slug))}></div></div>
@@ -45,14 +28,14 @@ const alternates = project ? Object.fromEntries(project.langs.map((l) => [l, loc
         </dd></div>
       </dl></aside>
       <div>
-        {fellBack && <p class="notice" role="note">{tr.work.notTranslated}</p>}
+        {data.fellBack && <p class="notice" role="note">{tr.work.notTranslated}</p>}
         <div class="nums">
           <div><b>{formatNumber(project.metricValue, locale)}</b><span class="mono muted">{project.metricLabel}</span></div>
         </div>
-        <div class="prose" lang={project.lang} dir={project.lang === 'fa' ? 'rtl' : 'ltr'} set:html={rendered.html}></div>
+        <div class="prose" lang={project.lang} dir={project.lang === 'fa' ? 'rtl' : 'ltr'} set:html={data.html}></div>
       </div>
     </section>
-    {nextProject && <a class="big-next" href={localePath(locale, `/work/${nextProject.slug}`)}><span class="mono muted">{tr.work.nextProject}</span><h3 dir="ltr" style="text-align:start">{nextProject.name}</h3></a>}
+    {data.next && <a class="big-next" href={localePath(locale, `/work/${data.next.slug}`)}><span class="mono muted">{tr.work.nextProject}</span><h3 dir="ltr" style="text-align:start">{data.next.name}</h3></a>}
   </main>
 </Base>
 )}

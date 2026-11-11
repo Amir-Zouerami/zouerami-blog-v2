@@ -1,32 +1,38 @@
-import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { clearAuthCookies } from '../../lib/auth-cookies';
-import { anonPb, json, pbStatus, readBody, userPb } from '../../lib/http';
+import { clearAuthCookies } from '../../lib/auth/cookies';
+import { authed } from '../../lib/auth/guards';
+import { json, logError, readBody } from '../../lib/http';
+import { anonPb, isRejected, pbStatus } from '../../lib/pb';
 
 export const prerender = false;
-const Body = z.object({ password: z.string().min(1).max(128).optional() });
+const Body = z.object({ password: z.string().max(128).optional() });
 
-/** Deletes the signed-in account and everything it owns (comments, likes, bookmarks cascade in PocketBase). */
-export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
-  if (!locals.user) return json(401, { error: 'Sign in first' });
+/**
+ * Deletes the signed-in account and everything it owns (comments, likes and bookmarks cascade in PocketBase).
+ * Accounts with a password must confirm it; accounts that only ever signed in through GitHub/Google have none.
+ */
+export const DELETE = authed(async ({ request, cookies }, { user, pb }) => {
   const body = (await readBody(request, Body)) ?? {};
-  // Password users must confirm with their password; OAuth-only users have none to confirm.
-  if (body.password !== undefined) {
-    try {
-      await anonPb().collection('users').authWithPassword(locals.user.email, body.password);
-    } catch {
-      return json(403, { error: 'Wrong password' });
-    }
-  }
-  const pb = userPb(cookies);
-  if (!pb) return json(401, { error: 'Sign in again' });
   try {
-    await pb.collection('users').delete(locals.user.id);
+    const linked = await pb
+      .collection('_externalAuths')
+      .getList(1, 1, { filter: pb.filter('recordRef = {:id}', { id: user.id }), skipTotal: true });
+    const hasExternalAuth = linked.items.length > 0;
+    if (body.password || !hasExternalAuth) {
+      try {
+        await anonPb()
+          .collection('users')
+          .authWithPassword(user.email, body.password ?? '');
+      } catch (err) {
+        if (isRejected(pbStatus(err))) return json(403, { error: 'Wrong password' });
+        throw err;
+      }
+    }
+    await pb.collection('users').delete(user.id);
   } catch (err) {
-    return json(pbStatus(err) === 401 || pbStatus(err) === 403 ? 401 : 503, {
-      error: 'Could not delete the account',
-    });
+    logError('delete-account', err);
+    return json(isRejected(pbStatus(err)) ? 401 : 503, { error: 'Could not delete the account' });
   }
   clearAuthCookies(cookies);
   return json(204);
-};
+});

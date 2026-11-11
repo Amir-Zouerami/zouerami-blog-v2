@@ -42,3 +42,20 @@
   --c2: #0d0d0e;
   --c3: #c9c8bc;
 }
+
+/* Expose the Signal tokens to Tailwind utilities (bg-bg, text-fg, border-line, text-acc …). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-acc: var(--acc);
+  --color-on-acc: var(--on-acc);
+  --font-sans: var(--sans);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+  --font-code: var(--code);
+  --radius-signal: var(--r);
+}

@@ -1,6 +1,6 @@
 import type PocketBase from 'pocketbase';
-import { loadEnv } from './env';
-import { getPb, UpstreamError } from './pb';
+import { getConfig } from './config';
+import { getPb, toUpstream } from './pb';
 import {
   type Lang,
   type Post,
@@ -20,21 +20,9 @@ const LANG_ORDER: Lang[] = ['en', 'fa'];
 export function imageUrl(
   post: { id: string },
   filename: string,
-  publicUrl: string = loadEnv().PB_PUBLIC_URL,
+  publicUrl: string = getConfig().pbPublicUrl,
 ): string {
   return `${publicUrl}/api/files/posts/${post.id}/${filename}`;
-}
-
-function upstream(error: unknown): never {
-  if (error instanceof UpstreamError) throw error;
-  const status = (error as { status?: number }).status;
-  const message = error instanceof Error ? error.message : String(error);
-  // Zod validation errors are our own contract failures: surface them as-is.
-  if (error instanceof Error && error.name === '$ZodError') throw error;
-  throw new UpstreamError(
-    `PocketBase request failed${status ? ` (${status})` : ''}: ${message}`,
-    error,
-  );
 }
 
 function summarize(post: PostRecord, trs: PostTranslationListItem[]): PostSummary | null {
@@ -71,7 +59,7 @@ export async function listPosts(
     postRecords = rawPosts.map((r) => PostRecordSchema.parse(r));
     trRecords = rawTrs.map((r) => PostTranslationListSchema.parse(r));
   } catch (error) {
-    upstream(error);
+    toUpstream(error);
   }
   const items = postRecords
     .filter((p) => p.status === 'published' && (!opts.tag || p.tags.includes(opts.tag)))
@@ -128,7 +116,7 @@ export async function getPost(
       .filter((t) => t.post === record.id);
   } catch (error) {
     if ((error as { status?: number }).status === 404) return null;
-    upstream(error);
+    toUpstream(error);
   }
   const preview = record.status !== 'published';
   if (preview && !opts.token) return null;

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { anonPb, json, readBody } from '../../../lib/http';
+import { json, readBody } from '../../../lib/http';
+import { anonPb } from '../../../lib/pb';
 
 export const prerender = false;
 const Body = z.object({

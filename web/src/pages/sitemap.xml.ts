@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { loadEnv } from '../lib/env';
+import { getConfig } from '../lib/config';
 import { buildSitemap } from '../lib/feeds';
 import { UpstreamError } from '../lib/pb';
 import { listPosts } from '../lib/posts';
@@ -10,7 +10,7 @@ export const prerender = false;
 export const GET: APIRoute = async () => {
   try {
     const [posts, projects] = await Promise.all([listPosts(), listProjects()]);
-    return new Response(buildSitemap(loadEnv().SITE_URL, posts, projects), {
+    return new Response(buildSitemap(getConfig().siteUrl, posts, projects), {
       headers: {
         'content-type': 'application/xml; charset=utf-8',
         'cache-control': 'public, max-age=300',

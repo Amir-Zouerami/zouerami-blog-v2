@@ -1,8 +1,9 @@
 ---
-import { loadEnv } from '../lib/env';
+import { getConfig } from '../lib/config';
 import type { Locale } from '../i18n';
+import type { JsonLd } from '../lib/jsonld';
+import { absoluteUrl } from '../lib/url';
 
-export interface JsonLd { [key: string]: unknown }
 interface Props {
   title: string;
   description: string;
@@ -19,8 +20,8 @@ interface Props {
   jsonLd?: JsonLd[];
 }
 const { title, description, locale, alternates = {}, type = 'website', noindex = false, image, published, tags = [], jsonLd = [] } = Astro.props;
-const site = loadEnv().SITE_URL.replace(/\/$/, '');
-const abs = (p: string) => (/^https?:\/\//.test(p) ? p : `${site}${p}`);
+const site = getConfig().siteUrl;
+const abs = (p: string) => (/^https?:\/\//.test(p) ? p : absoluteUrl(site, p));
 const path = Astro.props.path ?? Astro.url.pathname;
 const canonical = abs(path);
 const other: Locale = locale === 'en' ? 'fa' : 'en';

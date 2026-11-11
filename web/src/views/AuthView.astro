@@ -1,13 +1,13 @@
 ---
 import { type Locale, localePath, t } from '../i18n';
+import { getConfig } from '../lib/config';
 import Base from '../layouts/Base.astro';
 
 export type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify' | 'confirm-subscription' | 'unsubscribe';
 const { locale, mode } = Astro.props as { locale: Locale; mode: Mode };
 const tr = t(locale);
 const a = tr.auth;
-const siteKey = process.env.TURNSTILE_SITE_KEY || '';
-const here = localePath(locale, '/');
+const siteKey = getConfig().turnstile.siteKey ?? '';
 const titles: Record<Mode, string> = {
   login: a.loginTitle,
   register: a.registerTitle,
