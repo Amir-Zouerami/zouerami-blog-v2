@@ -1,0 +1,17 @@
+---
+import { MOON, SUN } from './Icons';
+const { nav = '' } = Astro.props;
+const NAV = [['home', '/', '01', 'Home'], ['blog', '/blog', '02', 'Blog'], ['work', '/work', '03', 'Work'], ['about', '/about', '04', 'About']] as const;
+---
+<header class="head pad">
+  <a class="brand" href="/">zouerami<sup>®</sup></a>
+  <nav class="nav" aria-label="Primary">
+    {NAV.map(([k, href, n, label]) => (
+      <a href={href} class={k === nav ? 'on' : ''} aria-current={k === nav ? 'page' : undefined}><em>{n}</em>{label}</a>
+    ))}
+  </nav>
+  <div class="tools">
+    <button class="kbd" data-palette-open type="button" aria-label="Open command palette"><span>Search</span> ⌘K</button>
+    <button class="sq" data-theme-toggle type="button" aria-label="Toggle theme"><Fragment set:html={SUN + MOON} /></button>
+  </div>
+</header>

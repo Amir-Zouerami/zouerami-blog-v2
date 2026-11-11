@@ -1,36 +1,59 @@
 ---
-import '../styles/global.css';
-import Ping from '../components/Ping';
-import { listPosts } from '../lib/posts';
+import Base from '../layouts/Base.astro';
+import HeroName from '../components/HeroName';
+import PostRow from '../components/PostRow.astro';
+import ProjectTile from '../components/ProjectTile.astro';
 import { UpstreamError } from '../lib/pb';
-import type { PostSummary } from '../lib/schemas';
+import { listPosts } from '../lib/posts';
+import { listProjects } from '../lib/projects';
+import type { PostSummary, ProjectSummary } from '../lib/schemas';
 
 let posts: PostSummary[] = [];
+let projects: ProjectSummary[] = [];
 let unavailable = false;
 try {
-  posts = await listPosts();
+  [posts, projects] = await Promise.all([listPosts({ limit: 5 }), listProjects({ limit: 6 })]);
 } catch (error) {
   if (!(error instanceof UpstreamError)) throw error;
   unavailable = true;
   Astro.response.status = 503;
   console.error(error.message);
 }
+const latest = posts[0];
+const SIZES = ['sz-a', 'sz-b', 'sz-b', 'sz-b', 'sz-b', 'sz-b'] as const;
+const WORDS = ['Design', 'Engineering', 'Writing', 'Open source', 'Astro', 'Typography'];
 ---
-<html lang="en">
-  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>zouerami</title></head>
-  <body class="p-6">
-    <h1 class="text-3xl font-semibold">zouerami</h1>
-    <Ping client:load />
+<Base title="Amir Zouerami — developer, writer, tinkerer" nav="home">
+  <main>
+    <section class="hero pad">
+      <div class="hero-top"><span class="mono live">Available for work</span><span class="mono muted">Developer / Writer / Tinkerer</span></div>
+      <HeroName client:visible />
+      <div class="hero-row">
+        <div><span class="mono muted">Currently</span><p>Rebuilding this site, in public.</p></div>
+        <div><span class="mono muted">Latest note</span><p>{latest ? <a href={`/blog/${latest.slug}`} style="border-bottom:1px solid var(--acc)" dir={latest.titleLang === 'fa' ? 'rtl' : 'ltr'}>{latest.title} ↗</a> : '—'}</p></div>
+        <div><span class="mono muted">Time</span><p class="mono" data-clock style="font-size:15px"></p></div>
+        <div><span class="mono muted">Scroll</span><p>↓</p></div>
+      </div>
+    </section>
+    <div class="marq" aria-hidden="true"><div>{[...WORDS, ...WORDS].map((w) => <span>{w}</span>)}</div></div>
     {unavailable ? (
-      <p role="alert" class="mt-6">The blog is temporarily unavailable. Please try again in a minute.</p>
+      <section class="pad" style="padding-block:90px"><p role="alert">The blog is temporarily unavailable. Please try again in a minute.</p></section>
     ) : (
-      <ul class="mt-6 space-y-2">
-        {posts.map((p) => (
-          <li dir={p.titleLang === 'fa' ? 'rtl' : 'ltr'}>
-            {p.title} <small class="opacity-60">[{p.langs.join(', ')}]</small>
-          </li>
-        ))}
-      </ul>
+      <>
+        <section class="pad" style="padding-top:90px">
+          <div class="sec-label"><span class="mono">[01]</span><span class="mono">Latest writing</span><a class="mono" href="/blog">All posts</a></div>
+          <div class="rows">{posts.map((p, i) => <PostRow post={p} n={i + 1} />)}</div>
+        </section>
+        <section class="pad" style="padding-top:110px">
+          <div class="sec-label"><span class="mono">[02]</span><span class="mono">Selected work</span><a class="mono" href="/work">All projects</a></div>
+          <div class="bento" style="margin-top:22px">{projects.map((p, i) => <ProjectTile project={p} size={SIZES[i % SIZES.length] as 'sz-a' | 'sz-b'} />)}</div>
+        </section>
+      </>
     )}
-  </body>
-</html>
+    <section class="pad" style="padding-top:130px">
+      <div class="sec-label"><span class="mono">[03]</span><span class="mono">New posts, by email</span><span></span></div>
+      <p class="h-big" style="padding-block:40px 34px;max-width:14ch">Words, <span class="it" style="color:var(--acc)">occasionally.</span></p>
+      <form class="sub" method="post" action="/api/subscribe"><input type="email" required placeholder="you@email.com" aria-label="Email" name="email" /><button>Subscribe</button></form>
+    </section>
+  </main>
+</Base>

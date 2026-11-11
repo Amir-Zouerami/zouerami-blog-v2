@@ -25,3 +25,8 @@ Notes:
 - `@astrojs/react` is pinned to 7.1.5: 7.1.6 imports `@astrojs/internal-helpers/renderer`, which internal-helpers 0.13.1 does not export (build fails).
 - `typescript` is pinned to 6.0.3: `astro check` does not yet support TypeScript 7.
 - React Compiler is enabled with `react({ compiler: true })` + `oxc-transform-react` (the integration's documented path); `babel-plugin-react-compiler` is not used.
+
+## Added in Plans 2+
+Fonts (self-hosted via fontsource, versions in `web/package.json`): Bricolage Grotesque (wght+wdth), Instrument Serif, JetBrains Mono, Vazirmatn.
+Code font: JetBrains Mono Nerd Font Regular/Bold (OFL), converted from the TTFs on the dev machine (`~/.fonts`) to woff2 into `web/public/fonts/`.
+`jose` signs/verifies session JWTs.

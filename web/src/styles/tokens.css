@@ -1,0 +1,44 @@
+/* Signal refined tokens: dark default, light override. */
+:root {
+  --bg: #0a0a0b;
+  --bg2: #111113;
+  --fg: #ecece6;
+  --muted: #85857f;
+  --line: #232326;
+  --line2: #34343a;
+  --acc: #d4ff3a;
+  --on-acc: #0a0a0b;
+  --cv-bg: #111113;
+  --c1: #d4ff3a;
+  --c2: #ecece6;
+  --c3: #3a3a40;
+  --sans: "Bricolage Grotesque Variable", "Vazirmatn Variable", system-ui, sans-serif;
+  --head: var(--sans);
+  --serif: "Instrument Serif", Georgia, serif;
+  --mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --code: "JetBrainsMono Nerd Font", "JetBrains Mono Variable", ui-monospace, monospace;
+  --hw: 600;
+  --hls: -0.045em;
+  --r: 14px;
+  --rb: 999px;
+  --pad: clamp(18px, 3.2vw, 44px);
+  --h1: clamp(42px, 8.4vw, 150px);
+  --hero: clamp(64px, 17.5vw, 300px);
+  --rowt: clamp(19px, 2vw, 28px);
+  --body: 17px;
+  --prose: 19px;
+}
+[data-theme="light"] {
+  --bg: #f1f0ea;
+  --bg2: #e8e7df;
+  --fg: #0d0d0e;
+  --muted: #6d6d66;
+  --line: #d6d5cb;
+  --line2: #bdbcb0;
+  --acc: #2a3bff;
+  --on-acc: #fff;
+  --cv-bg: #e8e7df;
+  --c1: #2a3bff;
+  --c2: #0d0d0e;
+  --c3: #c9c8bc;
+}

@@ -31,6 +31,9 @@ jobs:
       - name: Integration tests
         working-directory: web
         run: REQUIRE_PB=1 bun run test:integration
+      - name: Install browser
+        working-directory: web
+        run: bunx playwright install --with-deps chromium
       - name: End-to-end smoke
         working-directory: web
         run: bun run test:e2e

@@ -1,0 +1,19 @@
+---
+import type { PostSummary } from '../lib/schemas';
+import { UP } from './Icons';
+interface Props { post: PostSummary; n: number; href?: string }
+const { post, n, href = `/blog/${post.slug}` } = Astro.props;
+const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(post.date));
+---
+<a class="row" href={href}>
+  <span class="no">{String(n).padStart(2, '0')}</span>
+  <h3 dir={post.titleLang === 'fa' ? 'rtl' : 'ltr'}>{post.title}</h3>
+  <span class="tags">
+    {(['en', 'fa'] as const).map((l) => (
+      <span class={`lg ${post.langs.includes(l) ? '' : 'off'}`} title={post.langs.includes(l) ? '' : 'Not written in this language yet'}>{l.toUpperCase()}</span>
+    ))}
+    {post.tags.map((t) => <span class="tagp">{t}</span>)}
+  </span>
+  <span class="when mono muted">{when}</span>
+  <span class="arr" set:html={UP}></span>
+</a>

@@ -52,3 +52,44 @@ export type Post = PostSummary & {
   bodyMd: string;
   images: string[];
 };
+
+export const ProjectRecordSchema = z.object({
+  id: z.string(),
+  slug: SlugSchema,
+  name: z.string(),
+  cover: z.string(),
+  year: z.number(),
+  category: z.string(),
+  stack: z.array(z.string()),
+  link_live: z.string(),
+  link_repo: z.string(),
+  metric_value: z.number(),
+  sort: z.number(),
+  status: StatusSchema,
+});
+export type ProjectRecord = z.infer<typeof ProjectRecordSchema>;
+
+export const ProjectTranslationRecordSchema = z.object({
+  id: z.string(),
+  project: z.string(),
+  lang: LangSchema,
+  blurb: z.string(),
+  body_md: z.string(),
+  metric_label: z.string(),
+});
+export type ProjectTranslationRecord = z.infer<typeof ProjectTranslationRecordSchema>;
+
+export type ProjectSummary = {
+  slug: string;
+  name: string;
+  year: number;
+  category: string;
+  stack: string[];
+  blurb: string;
+  metricValue: number;
+  metricLabel: string;
+  linkLive: string;
+  linkRepo: string;
+  langs: Lang[];
+};
+export type Project = ProjectSummary & { lang: Lang; bodyMd: string };

@@ -6,7 +6,7 @@ import { loadEnv } from '../../../lib/env';
 
 export const prerender = false;
 
-const Body = z.object({ email: z.string().email(), password: z.string().min(1) });
+const Body = z.object({ email: z.email(), password: z.string().min(1) });
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });

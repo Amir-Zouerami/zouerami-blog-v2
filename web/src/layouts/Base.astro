@@ -1,0 +1,78 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import CommandPalette from '../components/CommandPalette';
+
+interface Props {
+  title: string;
+  description?: string;
+  nav?: 'home' | 'blog' | 'work' | 'about' | '';
+  spotlight?: boolean;
+}
+const { title, description = 'Amir Zouerami: developer, writer, tinkerer.', nav = '', spotlight = false } = Astro.props;
+---
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <script is:inline>
+      (function () {
+        function theme() {
+          try { return localStorage.getItem('sig-theme') === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; }
+        }
+        document.documentElement.dataset.theme = theme();
+        // keep the theme across client-router swaps (no flash)
+        document.addEventListener('astro:before-swap', function (e) {
+          e.newDocument.documentElement.dataset.theme = document.documentElement.dataset.theme;
+        });
+      })();
+    </script>
+    <ClientRouter />
+  </head>
+  <body id="top" data-nav={nav}>
+    <Header nav={nav} />
+    {spotlight && <div class="spot" id="spot"></div>}
+    <slot />
+    <Footer />
+    <div id="wipe" transition:persist hidden aria-hidden="true"><div></div></div>
+    <CommandPalette client:idle />
+    <script>
+      import { initCursor } from '../scripts/cursor';
+      import { initWipe } from '../scripts/wipe';
+      import { applyTheme } from '../lib/theme';
+      initCursor();
+      initWipe();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      function tick() {
+        const d = new Date();
+        document.querySelectorAll('[data-clock]').forEach((e) => {
+          e.textContent = `Local ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        });
+      }
+      setInterval(tick, 1000);
+      // delegated: works regardless of when the router swaps the DOM
+      document.addEventListener('click', (e) => {
+        const t = e.target as Element;
+        if (t.closest('[data-theme-toggle]')) {
+          applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+        } else if (t.closest('[data-palette-open]')) {
+          window.dispatchEvent(new Event('palette:open'));
+        }
+      });
+      document.addEventListener('astro:page-load', () => {
+        tick();
+        const spot = document.getElementById('spot');
+        if (spot && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          let mx = innerWidth / 2, my = innerHeight / 3, x = mx, y = my;
+          addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; spot.classList.add('on'); });
+          (function l() { if (!spot.isConnected) return; x += (mx - x) * 0.14; y += (my - y) * 0.14; spot.style.transform = `translate(${x}px,${y}px)`; requestAnimationFrame(l); })();
+        }
+      });
+    </script>
+  </body>
+</html>
