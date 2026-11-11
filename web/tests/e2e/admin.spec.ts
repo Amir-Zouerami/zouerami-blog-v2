@@ -31,9 +31,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  for (const p of await su
-    .collection('posts')
-    .getFullList({ filter: `slug ~ "e2e-post-${stamp}"` }))
+  for (const p of await su.collection('posts').getFullList({ filter: `slug ~ "${stamp}"` }))
     await su.collection('posts').delete(p.id);
   for (const u of await su.collection('users').getFullList({ filter: `email = "${userEmail}"` }))
     await su.collection('users').delete(u.id);
@@ -274,7 +272,7 @@ test.describe('back office UI', () => {
     const slugC = `e2e-date-${stamp}`;
     await page.goto('/admin#/posts/new');
     await page.getByLabel('Slug (URL)').fill(slugC);
-    await page.locator('.adm-title').fill('Date picker test');
+    await page.locator('.adm-title').fill(`Date picker test ${stamp}`);
     // pick the 15th at 09:30 through the popover
     await page.getByRole('button', { name: /^Publish date:/ }).click();
     const dialog = page.getByRole('dialog', { name: 'Publish date calendar' });
@@ -298,8 +296,8 @@ test.describe('back office UI', () => {
 
     // list filter: a range that excludes the 15th hides it, one that includes it shows it
     await page.goto('/admin#/posts');
-    await expect(page.getByRole('link', { name: 'Date picker test' })).toBeVisible();
-    const row = page.getByRole('link', { name: 'Date picker test' });
+    await expect(page.getByRole('link', { name: `Date picker test ${stamp}` })).toBeVisible();
+    const row = page.getByRole('link', { name: `Date picker test ${stamp}` });
     await page.getByRole('button', { name: /^Published from/ }).click();
     const cal = page.getByRole('dialog', { name: 'Published from calendar' });
     await cal.locator('.dtp-day:not(.out)').nth(19).click(); // from the 20th
