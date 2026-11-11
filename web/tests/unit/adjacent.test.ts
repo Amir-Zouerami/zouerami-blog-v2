@@ -4,6 +4,7 @@ import type { PostSummary } from '../../src/lib/schemas';
 
 const p = (slug: string): PostSummary => ({
   slug,
+  featured: false,
   date: '2026-01-01',
   tags: [],
   langs: ['en'],

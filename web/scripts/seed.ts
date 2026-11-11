@@ -22,6 +22,7 @@ for (const p of posts) {
     status: p.status,
     tags: p.tags,
     preview_token: p.preview_token ?? '',
+    featured: p.featured ?? false,
   };
   let rec = existing
     ? await pb.collection('posts').update(existing.id, data)

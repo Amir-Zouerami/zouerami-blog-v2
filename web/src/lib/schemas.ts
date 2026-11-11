@@ -16,6 +16,7 @@ export const PostRecordSchema = z.object({
   tags: z.array(z.string()),
   images: z.array(z.string()),
   views: z.number().default(0),
+  featured: z.boolean().default(false),
 });
 export type PostRecord = z.infer<typeof PostRecordSchema>;
 
@@ -36,6 +37,8 @@ export type PostTranslationListItem = z.infer<typeof PostTranslationListSchema>;
 
 export type PostSummary = {
   slug: string;
+  /** Marked in the back office to appear in the blog page's featured collage. */
+  featured: boolean;
   date: string;
   tags: string[];
   /** Languages this post exists in, in display-priority order (en before fa). */

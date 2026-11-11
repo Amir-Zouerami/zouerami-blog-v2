@@ -8,11 +8,13 @@ interface Props {
   locale: Locale;
   /** Visual weight in the home grid: 0 = hero card, 1 = second, others = small. */
   rank?: number;
+  /** Extra classes, e.g. a grid span override. */
+  extra?: string;
 }
-const { post, locale, rank = 9 } = Astro.props;
+const { post, locale, rank = 9, extra = '' } = Astro.props;
 const size = rank === 0 ? 'xl' : rank === 1 ? 'lg' : 'sm';
 ---
-<a class={`card card-${size}`} href={localePath(locale, `/blog/${post.slug}`)}>
+<a class={`card card-${size} ${extra}`} href={localePath(locale, `/blog/${post.slug}`)}>
   <div class="card-img">
     {post.cover
       ? <img src={post.cover} alt="" loading="lazy" decoding="async" />

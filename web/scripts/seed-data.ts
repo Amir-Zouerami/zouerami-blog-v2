@@ -6,6 +6,7 @@ export type PostSeed = {
   status: 'draft' | 'published';
   tags: string[];
   preview_token?: string;
+  featured?: boolean;
   tr: TrSeed[];
 };
 
@@ -261,6 +262,7 @@ const genericFa = (title: string) => `${title}؛ موضوعی که کوچک به
 export const posts: PostSeed[] = [
   {
     slug: 'hello-bilingual',
+    featured: true,
     date: '2026-11-02 12:00:00.000Z',
     status: 'published',
     tags: ['Notes', 'Web'],
@@ -296,6 +298,7 @@ export const posts: PostSeed[] = [
   },
   {
     slug: 'designing-interfaces-that-melt',
+    featured: true,
     date: '2026-09-27 12:00:00.000Z',
     status: 'published',
     tags: ['Design'],
@@ -317,6 +320,7 @@ export const posts: PostSeed[] = [
   },
   {
     slug: 'astro-islands-less-javascript',
+    featured: true,
     date: '2026-09-03 12:00:00.000Z',
     status: 'published',
     tags: ['Web'],
@@ -345,6 +349,7 @@ export const posts: PostSeed[] = [
   },
   {
     slug: 'docker-nginx-tiny-vps',
+    featured: true,
     date: '2026-07-21 12:00:00.000Z',
     status: 'published',
     tags: ['DevOps'],
@@ -393,6 +398,7 @@ export const posts: PostSeed[] = [
   },
   {
     slug: 'diagrams-demo',
+    featured: true,
     date: '2026-04-01 12:00:00.000Z',
     status: 'published',
     tags: ['Notes'],

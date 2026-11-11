@@ -48,6 +48,8 @@ export const en = {
   },
   pager: { prev: 'Previous', next: 'Next', label: 'Pages' },
   blog: {
+    featured: 'Featured',
+    recent: 'Recent',
     title: 'Writing',
     description: 'Notes on the web, design, DevOps and Persian typography.',
     crumb: 'Index / Writing',
