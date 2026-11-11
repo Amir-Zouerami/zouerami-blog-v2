@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getConfig } from '../lib/config';
 import { rssXml } from '../lib/feeds';
+import { getLog } from '../lib/log';
 import { UpstreamError } from '../lib/pb';
 import { listPosts } from '../lib/posts';
 
@@ -26,8 +27,10 @@ export const GET: APIRoute = async () => {
       },
     });
   } catch (err) {
-    if (err instanceof UpstreamError)
+    if (err instanceof UpstreamError) {
+      getLog().error({ err }, 'rss (en) unavailable');
       return new Response('Unavailable', { status: 503, headers: { 'cache-control': 'no-store' } });
+    }
     throw err;
   }
 };

@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import PocketBase from 'pocketbase';
+import { dataOf } from './envelope';
 
 const compose = (cmd: string) =>
   execSync(`docker compose -f compose.yaml -f compose.dev.yaml ${cmd}`, {
@@ -103,7 +104,11 @@ test('login sets an httpOnly JWT cookie; /me then works with PocketBase STOPPED'
   compose('stop pocketbase');
   const me = await request.get('/api/auth/me');
   expect(me.status()).toBe(200);
-  expect((await me.json()).user).toMatchObject({ id: userId, email, name: 'E2E User' });
+  expect((await dataOf<{ user: object }>(me)).user).toMatchObject({
+    id: userId,
+    email,
+    name: 'E2E User',
+  });
   compose('start pocketbase');
   await waitForPb();
 });

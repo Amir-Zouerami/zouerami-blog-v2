@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { formatDate } from '../../../i18n';
+import { getLog } from '../../../lib/log';
 import { renderOg } from '../../../lib/og';
 import { UpstreamError } from '../../../lib/pb';
 import { getPost } from '../../../lib/posts';
@@ -40,8 +41,10 @@ export const GET: APIRoute = async ({ params }) => {
       }),
     );
   } catch (err) {
-    if (err instanceof UpstreamError)
+    if (err instanceof UpstreamError) {
+      getLog().error({ err }, 'og image unavailable');
       return new Response('Unavailable', { status: 503, headers: { 'cache-control': 'no-store' } });
+    }
     throw err;
   }
 };

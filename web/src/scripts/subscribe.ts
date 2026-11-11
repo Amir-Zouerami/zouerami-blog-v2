@@ -1,3 +1,5 @@
+import { api } from '../lib/client-api';
+
 /** Newsletter form: posts JSON, reports the outcome inline. Falls back to a normal form post without JS. */
 document.addEventListener('submit', async (e) => {
   const form = (e.target as HTMLElement).closest<HTMLFormElement>('form[data-subscribe]');
@@ -7,21 +9,15 @@ document.addEventListener('submit', async (e) => {
   const say = (text: string) => {
     if (msg) msg.textContent = text;
   };
-  try {
-    const res = await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
-    });
-    say(
-      res.ok
-        ? (form.dataset.ok ?? '')
-        : res.status === 400
-          ? (form.dataset.invalid ?? '')
-          : (form.dataset.failed ?? ''),
-    );
-    if (res.ok) form.reset();
-  } catch {
-    say(form.dataset.failed ?? '');
-  }
+  const res = await api('/api/subscribe', {
+    json: Object.fromEntries(new FormData(form).entries()),
+  });
+  say(
+    res.ok
+      ? (form.dataset.ok ?? '')
+      : res.status === 400
+        ? (form.dataset.invalid ?? '')
+        : (form.dataset.failed ?? ''),
+  );
+  if (res.ok) form.reset();
 });

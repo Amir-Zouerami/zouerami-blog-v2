@@ -11,6 +11,7 @@ onRecordCreateRequest((e) => {
     name = String($app.findRecordById('users', user).get('name') || 'Anonymous').slice(0, 80);
   } catch (_) {}
   e.record.set('author_name', name);
+  $app.logger().info('comment submitted', 'userId', user, 'status', e.record.get('status'));
   e.next();
 }, 'comments');
 
@@ -55,27 +56,33 @@ onRecordAfterCreateSuccess((e) => {
 }, 'subscribers');
 
 routerAdd('POST', '/api/subscribers/confirm', (e) => {
-  const body = e.requestInfo().body || {};
-  const token = String(body.token || '');
-  if (token.length < 20) return e.json(400, { error: 'invalid' });
+  const { traceIdOf, respond } = require(`${__hooks}/lib/envelope.js`);
+  const traceId = traceIdOf(e);
+  const token = String((e.requestInfo().body || {}).token || '');
+  if (token.length < 20) return respond(e, traceId, 400, 'invalid_token', null, 'This link is invalid or already used.');
   try {
     const rec = $app.findFirstRecordByFilter('subscribers', 'token = {:t}', { t: token });
     $app.db().newQuery('UPDATE subscribers SET confirmed = 1 WHERE id = {:id}').bind({ id: rec.id }).execute();
-    return e.json(200, { ok: true });
+    $app.logger().info('newsletter subscription confirmed', 'traceId', traceId, 'subscriberId', rec.id);
+    return respond(e, traceId, 200, 'ok', null, 'Subscription confirmed.');
   } catch (_) {
-    return e.json(400, { error: 'invalid' });
+    $app.logger().warn('newsletter confirmation with unknown token', 'traceId', traceId);
+    return respond(e, traceId, 400, 'invalid_token', null, 'This link is invalid or already used.');
   }
 });
 
 routerAdd('POST', '/api/subscribers/unsubscribe', (e) => {
-  const body = e.requestInfo().body || {};
-  const token = String(body.token || '');
-  if (token.length < 20) return e.json(400, { error: 'invalid' });
+  const { traceIdOf, respond } = require(`${__hooks}/lib/envelope.js`);
+  const traceId = traceIdOf(e);
+  const token = String((e.requestInfo().body || {}).token || '');
+  if (token.length < 20) return respond(e, traceId, 400, 'invalid_token', null, 'This link is invalid or already used.');
   try {
     const rec = $app.findFirstRecordByFilter('subscribers', 'token = {:t}', { t: token });
     $app.delete(rec);
-    return e.json(200, { ok: true });
+    $app.logger().info('newsletter unsubscribed', 'traceId', traceId, 'subscriberId', rec.id);
+    return respond(e, traceId, 200, 'ok', null, 'You have been unsubscribed.');
   } catch (_) {
-    return e.json(400, { error: 'invalid' });
+    $app.logger().warn('newsletter unsubscribe with unknown token', 'traceId', traceId);
+    return respond(e, traceId, 400, 'invalid_token', null, 'This link is invalid or already used.');
   }
 });

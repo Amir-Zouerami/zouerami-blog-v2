@@ -32,6 +32,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_PRETTY: 'false' # JSON lines for log shipping
     depends_on:
       pocketbase: { condition: service_healthy }
     cap_drop: [ALL]

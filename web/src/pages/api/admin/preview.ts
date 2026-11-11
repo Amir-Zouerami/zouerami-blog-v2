@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { ok, readJson } from '../../../lib/api';
 import { adminOnly } from '../../../lib/auth/guards';
-import { json, readBody } from '../../../lib/http';
 import { renderMarkdown } from '../../../lib/markdown';
 import { imageUrl } from '../../../lib/posts';
 
@@ -15,10 +15,10 @@ const Body = z.object({
 
 /** Renders markdown with the exact pipeline the public site uses (admin-only). */
 export const POST = adminOnly(async ({ request }) => {
-  const body = await readBody(request, Body);
-  if (!body) return json(400, { error: 'Invalid request' });
-  const { html, headings } = await renderMarkdown(body.markdown, {
-    resolveImage: (name) => (body.postId ? imageUrl({ id: body.postId }, name) : name),
+  const body = await readJson(request, Body, 'Invalid request.');
+  if (!body.ok) return body.response;
+  const { html, headings } = await renderMarkdown(body.data.markdown, {
+    resolveImage: (name) => (body.data.postId ? imageUrl({ id: body.data.postId }, name) : name),
   });
-  return json(200, { html, headings });
+  return ok({ html, headings });
 });

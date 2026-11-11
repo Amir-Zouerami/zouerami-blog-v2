@@ -43,6 +43,8 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_PRETTY: ${LOG_PRETTY:-false}
     depends_on:
       pocketbase:
         condition: service_healthy

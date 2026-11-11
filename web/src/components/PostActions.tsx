@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../lib/client-api';
 
 interface State {
   likes: number;
@@ -31,39 +32,31 @@ export default function PostActions({
 
   useEffect(() => {
     let alive = true;
-    fetch(`/api/interactions/${postId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => alive && d && setS(d as State))
-      .catch(() => {});
+    api<State>(`/api/interactions/${postId}`).then((r) => {
+      if (alive && r.ok && r.data) setS(r.data);
+    });
     return () => {
       alive = false;
     };
   }, [postId]);
 
   const toggle = async (kind: 'like' | 'bookmark') => {
-    if (!s?.signedIn) {
+    if (!s) return; // state still loading: ignore early clicks instead of bouncing to the login page
+    if (!s.signedIn) {
       location.assign(`${loginHref}?next=${encodeURIComponent(location.pathname)}`);
       return;
     }
     if (busy) return;
     setBusy(true);
-    try {
-      const r = await fetch(`/api/interactions/${postId}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ kind }),
-      });
-      if (r.status === 401) {
-        location.assign(`${loginHref}?next=${encodeURIComponent(location.pathname)}`);
-        return;
-      }
-      if (r.ok) {
-        const next = (await r.json()) as State;
-        if (kind === 'like' && next.liked && !s.liked) burst();
-        setS(next);
-      }
-    } finally {
-      setBusy(false);
+    const r = await api<State>(`/api/interactions/${postId}`, { json: { kind } });
+    setBusy(false);
+    if (r.status === 401) {
+      location.assign(`${loginHref}?next=${encodeURIComponent(location.pathname)}`);
+      return;
+    }
+    if (r.ok && r.data) {
+      if (kind === 'like' && r.data.liked && !s.liked) burst();
+      setS(r.data);
     }
   };
 

@@ -36,3 +36,6 @@ See [`docs/deploy.md`](docs/deploy.md) and `compose.prod.yaml` / `nginx/prod.con
 Write and manage everything without touching PocketBase's dashboard: posts (split Markdown editor with a live preview rendered by the same pipeline as the site, image upload/paste/drop, EN/FA tabs, draft preview links, publish/unpublish), projects, comment moderation, subscribers (CSV export) and users.
 Make an account an admin: `cd web && bun run make-admin you@example.com` (creates the user with a password as a 2nd arg if it doesn't exist). In dev, `bun run seed` creates `dev-admin@example.com` / `dev-admin-password-1`.
 Security model: the web app never holds PocketBase superuser credentials. Admin requests go through `/api/admin/pb/*`, which forwards the signed-in user's own PocketBase token; PocketBase rules (`role = "admin"`) are the real gate, and only content collections are reachable.
+
+## Logs and trace ids
+`docker compose -f compose.yaml -f compose.dev.yaml logs -f web` shows coloured pino logs (`LOG_LEVEL`, `LOG_PRETTY` in `.env`). Every API response carries a `traceId` (also the `x-trace-id` header); grep it in the logs to see that request's story. Browser failures print `[api] … trace=<id>` in the console, and server-side failures show `(ref xxxxxxxx)` in the UI.

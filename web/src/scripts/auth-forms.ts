@@ -1,3 +1,5 @@
+import { api, describe } from '../lib/client-api';
+
 /** Progressive enhancement for the account forms: posts JSON, shows messages, never leaves the page on error. */
 const w = window as unknown as { __authForms?: boolean };
 
@@ -24,13 +26,11 @@ async function submit(form: HTMLFormElement) {
   if (btn) btn.disabled = true;
   say(form, '', 'ok');
   try {
-    const res = await fetch(form.dataset.endpoint ?? '', {
+    const res = await api(form.dataset.endpoint ?? '', {
       method: form.dataset.method ?? 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(data),
+      json: data,
     });
-    const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
-    if (res.ok || res.status === 204) {
+    if (res.ok) {
       const action = form.dataset.onOk;
       if (action === 'redirect') {
         const safe =
@@ -44,18 +44,19 @@ async function submit(form: HTMLFormElement) {
         location.assign(form.dataset.home || '/');
         return;
       }
-      say(form, msgs.ok ?? '', 'ok');
+      say(form, msgs.ok ?? res.message, 'ok');
       if (form.dataset.reset !== undefined) form.reset();
-    } else if (body.code === 'unverified') {
-      say(form, msgs.unverified ?? body.error ?? '');
+    } else if (res.code === 'unverified') {
+      say(form, msgs.unverified ?? res.message);
       form.querySelector<HTMLElement>('[data-resend]')?.removeAttribute('hidden');
-    } else if (res.status === 401 && form.dataset.endpoint?.endsWith('/login')) {
-      say(form, msgs.bad ?? body.error ?? '');
+    } else if (res.code === 'invalid_credentials') {
+      say(form, msgs.bad ?? res.message);
     } else {
-      say(form, body.error ?? msgs.generic ?? '');
+      say(
+        form,
+        res.status >= 500 || !res.message ? describe(res, msgs.generic ?? '') : res.message,
+      );
     }
-  } catch {
-    say(form, msgs.generic ?? '');
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -77,18 +78,16 @@ if (!w.__authForms) {
       const email = (form?.querySelector('input[name=email]') as HTMLInputElement | null)?.value;
       if (form && email) {
         const msgs = JSON.parse(form.dataset.msgs ?? '{}') as Msgs;
-        void fetch('/api/auth/resend', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email }),
-        }).then(() => say(form, msgs.resent ?? '', 'ok'));
+        void api('/api/auth/resend', { json: { email } }).then((res) =>
+          say(form, msgs.resent ?? res.message, 'ok'),
+        );
       }
     }
-    if (t.closest('[data-signout]')) {
-      void fetch('/api/auth/logout', { method: 'POST' }).then(() =>
-        location.assign((t.closest('[data-signout]') as HTMLElement).dataset.home || '/'),
+    const out = t.closest<HTMLElement>('[data-signout]');
+    if (out)
+      void api('/api/auth/logout', { method: 'POST', body: '{}' }).then(() =>
+        location.assign(out.dataset.home || '/'),
       );
-    }
   });
 }
 
@@ -104,13 +103,7 @@ export function runTokenPage() {
     out.dataset.kind = kind;
   };
   if (!token) return set(root.dataset.fail ?? '', 'err');
-  void fetch(root.dataset.endpoint ?? '', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ token }),
-  })
-    .then((r) =>
-      set(r.ok ? (root.dataset.ok ?? '') : (root.dataset.fail ?? ''), r.ok ? 'ok' : 'err'),
-    )
-    .catch(() => set(root.dataset.fail ?? '', 'err'));
+  void api(root.dataset.endpoint ?? '', { json: { token } }).then((res) =>
+    set(res.ok ? (root.dataset.ok ?? '') : (root.dataset.fail ?? ''), res.ok ? 'ok' : 'err'),
+  );
 }

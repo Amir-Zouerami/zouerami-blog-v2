@@ -16,6 +16,9 @@ const Schema = z.object({
     .refine((s) => !PLACEHOLDER.test(s), 'must not be the example placeholder'),
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET: z.string().optional(),
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
+  /** Colourised, human-readable logs (dev). JSON lines otherwise. */
+  LOG_PRETTY: z.enum(['true', 'false']).default('false'),
 });
 
 export interface Config {
@@ -27,6 +30,7 @@ export interface Config {
   secureCookies: boolean;
   authSecret: string;
   turnstile: { siteKey?: string; secret?: string };
+  log: { level: string; pretty: boolean };
 }
 
 /** Validates the environment once and returns typed, normalised settings. Throws naming every bad variable. */
@@ -39,6 +43,8 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
     AUTH_SECRET: blank(source.AUTH_SECRET),
     TURNSTILE_SITE_KEY: blank(source.TURNSTILE_SITE_KEY),
     TURNSTILE_SECRET: blank(source.TURNSTILE_SECRET),
+    LOG_LEVEL: blank(source.LOG_LEVEL),
+    LOG_PRETTY: blank(source.LOG_PRETTY),
   });
   if (!result.success) {
     const problems = result.error.issues.map((i) => `${i.path.join('.')} (${i.message})`);
@@ -54,6 +60,7 @@ export function parseConfig(source: Record<string, string | undefined>): Config 
     secureCookies: site.protocol === 'https:',
     authSecret: e.AUTH_SECRET,
     turnstile: { siteKey: e.TURNSTILE_SITE_KEY, secret: e.TURNSTILE_SECRET },
+    log: { level: e.LOG_LEVEL, pretty: e.LOG_PRETTY === 'true' },
   };
 }
 

@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto';
 import type { Locale } from '../i18n';
 import { localePath } from '../i18n';
-import { logError } from './http';
+import { getLog } from './log';
 import { Lru } from './lru';
 import { readingMinutes, renderMarkdown } from './markdown';
 import { UpstreamError } from './pb';
@@ -23,7 +23,7 @@ export async function load<T>(scope: string, fn: () => Promise<T | null>): Promi
     return data === null ? { kind: 'notfound' } : { kind: 'ok', data };
   } catch (err) {
     if (!(err instanceof UpstreamError)) throw err;
-    logError(scope, err);
+    getLog().error({ err, scope }, 'page data unavailable');
     return { kind: 'unavailable' };
   }
 }

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { json, readBody } from '../../../lib/http';
+import { fail, ok, readJson } from '../../../lib/api';
+import { getLog } from '../../../lib/log';
 import { anonPb } from '../../../lib/pb';
 
 export const prerender = false;
@@ -10,14 +11,17 @@ const Body = z.object({
 });
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = await readBody(request, Body);
-  if (!body) return json(400, { error: 'Use a password of at least 10 characters.' });
+  const log = getLog();
+  const body = await readJson(request, Body, 'Use a password of at least 10 characters.');
+  if (!body.ok) return body.response;
   try {
     await anonPb()
       .collection('users')
-      .confirmPasswordReset(body.token, body.password, body.password);
-    return json(200, { ok: true });
-  } catch {
-    return json(400, { error: 'This link is invalid or has expired' });
+      .confirmPasswordReset(body.data.token, body.data.password, body.data.password);
+    log.info('password reset completed');
+    return ok(null, { message: 'Password updated.' });
+  } catch (err) {
+    log.warn({ err }, 'password reset failed (invalid or expired token)');
+    return fail(400, 'invalid_token', 'This link is invalid or has expired.');
   }
 };

@@ -1,3 +1,4 @@
+import { api } from '../lib/client-api';
 import { applyTheme } from '../lib/theme';
 import { initCursor } from './cursor';
 import { onPage } from './page-lifecycle';
@@ -42,10 +43,9 @@ async function showAccount(): Promise<void> {
     return;
   }
   try {
-    const res = await fetch('/api/auth/me', { headers: { accept: 'application/json' } });
-    if (!res.ok) return;
-    const { user } = (await res.json()) as { user: { name: string } | null };
-    if (!user) return;
+    const res = await api<{ user: { name: string } }>('/api/auth/me');
+    const user = res.data?.user;
+    if (!res.ok || !user) return;
     link.href = link.dataset.accountHref ?? '/account';
     link.textContent = user.name.length > 14 ? `${user.name.slice(0, 13)}…` : user.name;
     link.dataset.signedIn = '';
