@@ -7,7 +7,7 @@ import { imageUrl } from '../../../lib/posts';
 export const prerender = false;
 const Body = z.object({
   markdown: z.string().max(500_000),
-  numerals: z.enum(['latin', 'fa']).optional(),
+  lang: z.enum(['en', 'fa']).optional(),
   postId: z
     .string()
     .regex(/^[a-z0-9]{15}$/)
@@ -19,7 +19,7 @@ export const POST = adminOnly(async ({ request }) => {
   const body = await readJson(request, Body, 'Invalid request.');
   if (!body.ok) return body.response;
   const { html, headings } = await renderMarkdown(body.data.markdown, {
-    numerals: body.data.numerals,
+    lang: body.data.lang,
     resolveImage: (name) => (body.data.postId ? imageUrl({ id: body.data.postId }, name) : name),
   });
   return ok({ html, headings });

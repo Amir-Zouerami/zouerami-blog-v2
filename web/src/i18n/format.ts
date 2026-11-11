@@ -29,3 +29,15 @@ export function formatDate(iso: string, locale: Locale, long = false): string {
 export function formatNumber(n: number, locale: Locale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(n);
 }
+
+/** The year a date belongs to *in the reader's calendar*: Jalali (۱۴۰۵) on the Persian site, Gregorian otherwise. */
+export function yearLabel(iso: string, locale: Locale): string {
+  const d = new Date(
+    iso.includes('T') || iso.includes(' ') ? iso.replace(' ', 'T') : `${iso}T12:00:00Z`,
+  );
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR-u-ca-persian' : 'en-GB', {
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(d);
+}

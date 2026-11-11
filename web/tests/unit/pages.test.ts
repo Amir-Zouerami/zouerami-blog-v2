@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allTags, filterPosts, load, yearsOf } from '../../src/lib/pages';
+import { allTags, filterPosts, groupByYear, load } from '../../src/lib/pages';
 import { UpstreamError } from '../../src/lib/pb';
 import type { PostSummary } from '../../src/lib/schemas';
 
@@ -48,6 +48,11 @@ describe('blog filtering', () => {
   });
   it('lists sorted unique tags and years in order of appearance', () => {
     expect(allTags(posts)).toEqual(['DevOps', 'Web']);
-    expect(yearsOf(posts)).toEqual(['2026', '2025']);
+    expect(groupByYear(posts, 'en').map((g) => g.year)).toEqual(['2026', '2025']);
+  });
+  it('groups by Jalali year on the Persian site (2026-11-02 is 1405, 2025-01-01 is 1403)', () => {
+    const groups = groupByYear(posts, 'fa');
+    expect(groups.map((g) => g.year)).toEqual(['۱۴۰۵', '۱۴۰۳']);
+    expect(groups[0]?.posts.map((p) => p.slug)).toEqual(['a']);
   });
 });

@@ -10,7 +10,7 @@ describe('renderMarkdown', { timeout: 30000 }, () => {
       { id: 'one', text: 'One' },
       { id: 'two', text: 'Two' },
     ]);
-    expect(html).toContain('<h2 id="one"><span>/01</span>One</h2>');
+    expect(html).toContain('<h2 id="one"><span>/01</span>One<a class="anchor"');
     expect(html).toContain('<span>/02</span>Two');
   });
 

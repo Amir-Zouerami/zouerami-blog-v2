@@ -25,6 +25,7 @@ interface Labels {
   none: string;
   failed: string;
   loadFailed: string;
+  loadMore: string;
 }
 
 function ago(iso: string, locale: 'en' | 'fa'): string {
@@ -62,6 +63,7 @@ export default function Comments({
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [shown, setShown] = useState(3);
   const composerRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
@@ -116,6 +118,7 @@ export default function Comments({
     setText('');
     setReplyTo(null);
     setNote(r.data?.pending ? labels.pendingNote : '');
+    setShown(Number.MAX_SAFE_INTEGER); // make sure the comment just written is on screen
     await load();
   };
 
@@ -208,13 +211,25 @@ export default function Comments({
       </div>
       {failed && <p className="mono muted">{labels.loadFailed}</p>}
       {items && roots.length === 0 && !failed && <p className="mono muted">{labels.none}</p>}
-      {roots.map((c) => (
+      {roots.slice(0, shown).map((c) => (
         <div key={c.id}>
           {row(c)}
           {replies(c.id).map((r) => row(r, true))}
           {signedIn && replyTo === c.id && composer(c)}
         </div>
       ))}
+      {roots.length > shown && (
+        <div className="cmt-more">
+          <button
+            type="button"
+            className="btn"
+            data-load-more
+            onClick={() => setShown((n) => n + 10)}
+          >
+            {labels.loadMore}
+          </button>
+        </div>
+      )}
       {note && (
         <p className="notice" role="status">
           {note}

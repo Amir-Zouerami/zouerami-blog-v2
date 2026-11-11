@@ -2,7 +2,7 @@
 import PostRow from '../components/PostRow.astro';
 import { faDigits, formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { allTags, filterPosts, loadBlogIndex, yearsOf } from '../lib/pages';
+import { allTags, filterPosts, groupByYear, loadBlogIndex } from '../lib/pages';
 import Unavailable from './Unavailable.astro';
 
 const { locale } = Astro.props as { locale: Locale };
@@ -12,7 +12,7 @@ const all = page.kind === 'ok' ? page.data : [];
 const tag = Astro.url.searchParams.get('tag') ?? 'all';
 const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
 const list = filterPosts(all, { tag, q });
-const years = yearsOf(list);
+const groups = groupByYear(list, locale);
 const tags = allTags(all);
 const href = (t: string) => {
   const u = new URLSearchParams();
@@ -42,10 +42,10 @@ let n = 0;
     <p class="mono muted" style="margin-bottom:14px">{tr.blog.legend}</p>
     <div class="rows">
       {list.length === 0 && <p class="mono muted" style="padding:50px 0">{tr.blog.empty}</p>}
-      {years.map((y) => (
+      {groups.map((g) => (
         <>
-          <div class="year it" dir="ltr">{locale === 'fa' ? faDigits(y) : y}</div>
-          {list.filter((p) => p.date.startsWith(y)).map((p) => { n += 1; return <PostRow post={p} n={n} {locale} />; })}
+          <div class="year" dir={locale === 'fa' ? 'rtl' : 'ltr'} lang={locale}>{g.year}</div>
+          {g.posts.map((p) => { n += 1; return <PostRow post={p} n={n} {locale} />; })}
         </>
       ))}
     </div>

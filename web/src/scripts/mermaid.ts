@@ -186,6 +186,18 @@ function enhance(block: HTMLElement, source: string, markup: string, l: Labels):
     zoomScaleSensitivity: 0.3,
   });
   instances.set(block, pz);
+  // while Ctrl/⌘ is held over a diagram the page must not scroll under it: lock the root (the scrollbar gutter is reserved so nothing shifts)
+  const setLock = (on: boolean) => {
+    if (!block.classList.contains('is-full'))
+      document.documentElement.classList.toggle('mm-lock', on);
+  };
+  view.addEventListener('pointerenter', (e) => setLock(e.ctrlKey || e.metaKey));
+  view.addEventListener('pointerleave', () => setLock(false));
+  view.addEventListener('pointermove', (e) => setLock(e.ctrlKey || e.metaKey));
+  view.addEventListener('wheel', (e) => (e.ctrlKey || e.metaKey) && e.preventDefault(), {
+    passive: false,
+    capture: true,
+  });
   view.addEventListener(
     'wheel',
     (e) => {

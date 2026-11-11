@@ -1,3 +1,4 @@
+import { cleanQuote, quoteLink } from '../lib/text-fragment';
 import { onPage } from './page-lifecycle';
 import { showToast } from './toast';
 
@@ -56,10 +57,69 @@ function tocSpy(): (() => void) | undefined {
   return () => spy.disconnect();
 }
 
+const fa = () => document.documentElement.lang === 'fa';
+
+/** A floating "Copy link to quote" button next to any selection inside the article. */
+function quoteButton(signal: AbortSignal): void {
+  let btn: HTMLButtonElement | null = null;
+  const hide = () => {
+    btn?.remove();
+    btn = null;
+  };
+  document.addEventListener(
+    'selectionchange',
+    () => {
+      const sel = getSelection();
+      const text = cleanQuote(sel?.toString() ?? '');
+      const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      const inProse =
+        range && document.querySelector('.prose')?.contains(range.commonAncestorContainer);
+      if (!text || !range || !inProse) return hide();
+      const r = range.getBoundingClientRect();
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'quote-btn';
+        btn.dataset.quote = '';
+        btn.textContent = fa() ? 'کپی پیوند نقل‌قول' : 'Copy link to quote';
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('click', () => {
+          const t = getSelection()?.toString() ?? '';
+          void navigator.clipboard?.writeText(quoteLink(location.href, t)).catch(() => {});
+          showToast(fa() ? 'پیوند نقل‌قول کپی شد' : 'Quote link copied');
+          hide();
+        });
+        document.body.append(btn);
+      }
+      btn.style.top = `${scrollY + r.top - 42}px`;
+      btn.style.left = `${Math.max(8, Math.min(scrollX + r.left + r.width / 2 - 60, scrollX + innerWidth - 170))}px`;
+    },
+    { signal },
+  );
+  signal.addEventListener('abort', hide);
+}
+
+/** Fonts and diagrams change the layout after load, which leaves a #hash target off-screen: scroll again once they settle. */
+function keepHash(signal: AbortSignal): void {
+  const go = () => {
+    if (!location.hash || location.hash.startsWith('#:~:')) return;
+    try {
+      document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+    } catch {
+      /* malformed hash */
+    }
+  };
+  void document.fonts?.ready.then(() => !signal.aborted && go());
+  const t = setTimeout(go, 1200);
+  signal.addEventListener('abort', () => clearTimeout(t));
+}
+
 onPage((signal) => {
   const main = document.querySelector<HTMLElement>('main[data-post-slug]');
   if (!main) return undefined;
   reading(signal);
+  quoteButton(signal);
+  keepHash(signal);
   const stopSpy = tocSpy();
   const slug = main.dataset.postSlug;
   if (main.dataset.track === 'view' && slug && !navigator.webdriver) countView(slug);
@@ -68,6 +128,11 @@ onPage((signal) => {
     'click',
     (e) => {
       const target = e.target as Element;
+      const anchor = target.closest<HTMLAnchorElement>('.prose a.anchor');
+      if (anchor) {
+        void navigator.clipboard?.writeText(new URL(anchor.href).href).catch(() => {});
+        showToast(fa() ? 'پیوند کپی شد' : 'Link copied');
+      }
       if (target.closest('[data-share]')) {
         void navigator.clipboard?.writeText(location.href.split('#')[0] ?? '').catch(() => {});
         showToast(document.documentElement.lang === 'fa' ? 'پیوند کپی شد' : 'Link copied');

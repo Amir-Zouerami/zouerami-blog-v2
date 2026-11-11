@@ -111,4 +111,12 @@ async function burst() {
     ? { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }
     : { y: 0.7 };
   for (const { delay, ...wave } of burstPlan(origin)) setTimeout(() => void confetti(wave), delay);
+  // browsers pause animation frames in a background tab, which would freeze the pieces mid-air: drop them instead
+  const stop = () => {
+    if (!document.hidden) return;
+    confetti.reset();
+    document.removeEventListener('visibilitychange', stop);
+  };
+  document.addEventListener('visibilitychange', stop);
+  setTimeout(() => document.removeEventListener('visibilitychange', stop), 6000);
 }

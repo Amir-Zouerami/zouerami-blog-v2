@@ -5,7 +5,7 @@
 
 import { createHash } from 'node:crypto';
 import type { Locale } from '../i18n';
-import { localePath } from '../i18n';
+import { localePath, yearLabel } from '../i18n';
 import { getLog } from './log';
 import { Lru } from './lru';
 import { readingMinutes, renderMarkdown } from './markdown';
@@ -37,7 +37,7 @@ async function renderPostBody(post: Post) {
   if (hit) return hit;
   const fresh = await renderMarkdown(post.bodyMd, {
     resolveImage: (name) => imageUrl({ id: post.id }, name),
-    numerals: post.lang === 'fa' ? 'fa' : 'latin',
+    lang: post.lang,
   });
   postBodies.set(key, fresh);
   return fresh;
@@ -75,9 +75,20 @@ export function filterPosts(all: PostSummary[], { tag, q }: BlogFilter): PostSum
 
 export const allTags = (posts: PostSummary[]): string[] =>
   [...new Set(posts.flatMap((p) => p.tags))].sort();
-export const yearsOf = (posts: PostSummary[]): string[] => [
-  ...new Set(posts.map((p) => p.date.slice(0, 4))),
-];
+/** Posts (already newest-first) grouped by the year in the reader's calendar: Jalali on the Persian site. */
+export function groupByYear(
+  posts: PostSummary[],
+  locale: Locale,
+): { year: string; posts: PostSummary[] }[] {
+  const groups: { year: string; posts: PostSummary[] }[] = [];
+  for (const p of posts) {
+    const year = yearLabel(p.date, locale);
+    const last = groups.at(-1);
+    if (last && last.year === year) last.posts.push(p);
+    else groups.push({ year, posts: [p] });
+  }
+  return groups;
+}
 
 export const loadBlogIndex = (locale: Locale) =>
   load<PostSummary[]>('blog-index', async () => listPosts({ lang: locale }));
@@ -95,9 +106,15 @@ export interface PostPage {
   alternates: Alternates;
 }
 
-export const loadPostPage = (slug: string, locale: Locale, token?: string) =>
+/** `contentLang`: the language of the text (chosen with the in-post toggle); the page chrome stays in `locale`. */
+export const loadPostPage = (
+  slug: string,
+  locale: Locale,
+  token?: string,
+  contentLang: Locale = locale,
+) =>
   load<PostPage>('post', async () => {
-    const post = await getPost(slug, locale, undefined, { fallback: true, token });
+    const post = await getPost(slug, contentLang, undefined, { fallback: true, token });
     if (!post) return null;
     const [all, body] = await Promise.all([listPosts({ lang: locale }), renderPostBody(post)]);
     return {
@@ -127,7 +144,7 @@ export const loadProjectPage = (slug: string, locale: Locale) =>
     if (!project) return null;
     const [all, rendered] = await Promise.all([
       listProjects({ lang: locale }),
-      renderMarkdown(project.bodyMd, { resolveImage: (n) => n }),
+      renderMarkdown(project.bodyMd, { resolveImage: (n) => n, lang: project.lang }),
     ]);
     const i = all.findIndex((p) => p.slug === project.slug);
     return {

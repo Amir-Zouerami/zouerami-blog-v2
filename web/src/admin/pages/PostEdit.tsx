@@ -318,6 +318,22 @@ export default function PostEdit({ id }: { id: string | null }) {
             Unsaved changes
           </span>
         )}
+        {dirty && id && (
+          <button
+            type="button"
+            className="adm-btn"
+            disabled={saving}
+            data-discard
+            onClick={() => {
+              if (!confirm('Discard all unsaved changes and go back to the last saved version?'))
+                return;
+              draft.clear();
+              void load();
+            }}
+          >
+            Discard changes
+          </button>
+        )}
         <button type="button" className="adm-btn" disabled={saving} onClick={() => void save()}>
           {saving ? 'Saving…' : 'Save (Ctrl+S)'}
         </button>

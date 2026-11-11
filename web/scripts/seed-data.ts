@@ -105,6 +105,73 @@ sequenceDiagram
   S-->>W: Preview
 ${FENCE}
 
+## More diagram types
+
+${FENCE}mermaid
+classDiagram
+  class Post { +string slug +publish() }
+  class Translation { +string lang +string body }
+  Post "1" --> "*" Translation
+${FENCE}
+
+${FENCE}mermaid
+stateDiagram-v2
+  [*] --> Draft
+  Draft --> Published: publish
+  Published --> Draft: unpublish
+${FENCE}
+
+${FENCE}mermaid
+erDiagram
+  USER ||--o{ COMMENT : writes
+  POST ||--o{ COMMENT : has
+${FENCE}
+
+${FENCE}mermaid
+gantt
+  title Launch
+  dateFormat YYYY-MM-DD
+  section Build
+  Write :a1, 2026-04-01, 5d
+  Ship :after a1, 3d
+${FENCE}
+
+${FENCE}mermaid
+pie title Time
+  "Writing" : 55
+  "Code" : 35
+  "Coffee" : 10
+${FENCE}
+
+${FENCE}mermaid
+mindmap
+  root((Blog))
+    Writing
+    Code
+    Design
+${FENCE}
+
+${FENCE}mermaid
+timeline
+  title Milestones
+  2024 : Idea
+  2025 : Prototype
+  2026 : Launch
+${FENCE}
+
+${FENCE}mermaid
+gitGraph
+  commit
+  branch feature
+  commit
+  checkout main
+  merge feature
+${FENCE}
+
+:::tip[Callouts work too]
+Use \`:::info\`, \`note\`, \`tip\`, \`success\`, \`warning\` or \`danger\`.
+:::
+
 ## Headings
 
 ### Third level

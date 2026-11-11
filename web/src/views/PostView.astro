@@ -12,7 +12,10 @@ import Unavailable from './Unavailable.astro';
 
 const { locale, slug } = Astro.props as { locale: Locale; slug: string };
 const tr = t(locale);
-const page = await loadPostPage(slug, locale, Astro.url.searchParams.get('token') ?? undefined);
+// The in-post toggle only switches the language of the text (?lang=), never the site language.
+const asked = Astro.url.searchParams.get('lang');
+const contentLang: Locale = asked === 'en' || asked === 'fa' ? asked : locale;
+const page = await loadPostPage(slug, locale, Astro.url.searchParams.get('token') ?? undefined, contentLang);
 const data = page.kind === 'ok' ? page.data : null;
 const post = data?.post ?? null;
 if (post?.preview) Astro.response.headers.set('cache-control', 'no-store');
@@ -20,16 +23,26 @@ if (post?.preview) Astro.response.headers.set('cache-control', 'no-store');
 const fmt = (n: number) => formatNumber(n, locale);
 const nameOf = (l: Locale) => LANG_NAMES[l];
 const path = localePath(locale, `/blog/${slug}`);
+/** Where a language button leads: same page, same chrome; only `?lang` changes (the preview token is kept). */
+const langHref = (l: Locale) => {
+  const q = new URLSearchParams();
+  if (l !== locale) q.set('lang', l);
+  const token = Astro.url.searchParams.get('token');
+  if (token) q.set('token', token);
+  const qs = q.toString();
+  return `${path}${qs ? `?${qs}` : ''}`;
+};
+const canonicalPath = post ? localePath(post.lang, `/blog/${slug}`) : path;
 const site = getConfig().siteUrl;
 const jsonLd =
   post && !post.preview
     ? [
         personLd(site),
-        blogPostingLd({ site, slug: post.slug, title: post.title, description: post.summary || post.title, lang: post.lang, date: post.date, tags: post.tags, image: `/og/${post.lang}/${post.slug}.png`, path }),
+        blogPostingLd({ site, slug: post.slug, title: post.title, description: post.summary || post.title, lang: post.lang, date: post.date, tags: post.tags, image: `/og/${post.lang}/${post.slug}.png`, path: canonicalPath }),
         breadcrumbLd(site, [
           { name: tr.nav.home, path: localePath(locale, '/') },
           { name: tr.nav.blog, path: localePath(locale, '/blog') },
-          { name: post.title, path },
+          { name: post.title, path: canonicalPath },
         ]),
       ]
     : [];
@@ -48,6 +61,7 @@ const jsonLd =
   {jsonLd}
   alternates={post.preview ? {} : data.alternates}
   {path}
+  canonical={canonicalPath}
   image={post.preview ? undefined : `/og/${post.lang}/${post.slug}.png`}
 >
   <div class="rp"><i id="rp-bar"></i></div>
@@ -73,12 +87,12 @@ const jsonLd =
         <div class="langbar">
           <div class="langseg" role="group" aria-label={tr.post.language}>
             {LOCALES.map((l) => post.langs.includes(l)
-              ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}>{nameOf(l).native}</a>
+              ? <a class={l === post.lang ? 'cur' : ''} href={langHref(l)} hreflang={l} lang={l} data-content-lang={l} aria-current={l === post.lang ? 'true' : undefined}>{nameOf(l).native}</a>
               : <span class="off" lang={l} title={tr.post.notWritten} aria-disabled="true"><span class="nm">{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
           </div>
         </div>
         {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
-        {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(nameOf(post.lang).native)}</p>}
+        {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(tr.post.langNames[post.lang])}</p>}
         <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={data.html}></div>
         {!post.preview && <Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} siteKey={getConfig().turnstile.siteKey} />}
       </article>

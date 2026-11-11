@@ -3,7 +3,7 @@ import { fa } from './fa';
 import type { Locale } from './locale';
 
 export type { Dict } from './en';
-export { faDigits, formatDate, formatNumber } from './format';
+export { faDigits, formatDate, formatNumber, yearLabel } from './format';
 export {
   dirOf,
   LANG_NAMES,

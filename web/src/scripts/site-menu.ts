@@ -1,4 +1,5 @@
 import { bindContextMenu, icons, type MenuEntry, NATIVE_MENU } from '../lib/context-menu';
+import { quoteLink } from '../lib/text-fragment';
 import { applyTheme } from '../lib/theme';
 import { showToast } from './toast';
 
@@ -18,6 +19,7 @@ interface Labels {
   copyImage: string;
   copy: string;
   copySection: string;
+  copyHighlight: string;
   copied: string;
   label: string;
 }
@@ -114,6 +116,16 @@ function resolve(target: Element, labels: Labels): MenuEntry[] | null {
         shortcut: 'Ctrl+C',
         onSelect: () => copy(selected, labels),
       },
+      ...(target.closest('.prose')
+        ? [
+            {
+              id: 'copy-highlight',
+              label: labels.copyHighlight,
+              icon: icons.link,
+              onSelect: () => copy(quoteLink(location.href, selected), labels),
+            },
+          ]
+        : []),
       {
         id: 'search-sel',
         label: labels.searchFor.replace('{q}', short),
@@ -126,7 +138,7 @@ function resolve(target: Element, labels: Labels): MenuEntry[] | null {
     );
   }
 
-  const heading = target.closest<HTMLElement>('.prose h2[id]');
+  const heading = target.closest<HTMLElement>('.prose :is(h2,h3,h4,h5,h6)[id]');
   if (heading) {
     if (context.length) context.push({ type: 'separator' });
     context.push({
