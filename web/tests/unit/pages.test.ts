@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { allTags, filterPosts, load, yearsOf } from '../../src/lib/pages';
 import { UpstreamError } from '../../src/lib/pb';
 import type { PostSummary } from '../../src/lib/schemas';
@@ -19,14 +19,11 @@ describe('load', () => {
   it('maps null to notfound, data to ok and UpstreamError to unavailable', async () => {
     expect(await load('t', async () => null)).toEqual({ kind: 'notfound' });
     expect(await load('t', async () => 5)).toEqual({ kind: 'ok', data: 5 });
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(
       await load('t', async () => {
         throw new UpstreamError('down');
       }),
     ).toEqual({ kind: 'unavailable' });
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
   });
   it('lets programming errors bubble up', async () => {
     await expect(

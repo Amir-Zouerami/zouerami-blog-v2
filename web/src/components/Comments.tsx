@@ -1,4 +1,5 @@
 import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { api, describe } from '../lib/client-api';
 
 interface Comment {
   id: string;
@@ -62,18 +63,17 @@ export default function Comments({
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    try {
-      const [c, me] = await Promise.all([
-        fetch(`/api/comments?post=${postId}`),
-        fetch('/api/auth/me').then((r) => r.ok),
-      ]);
-      if (!c.ok) throw new Error('x');
-      setItems(((await c.json()) as { comments: Comment[] }).comments);
-      setSignedIn(me);
-      setFailed(false);
-    } catch {
+    const [list, me] = await Promise.all([
+      api<{ comments: Comment[] }>(`/api/comments?post=${postId}`),
+      api('/api/auth/me'),
+    ]);
+    if (!list.ok || !list.data) {
       setFailed(true);
+      return;
     }
+    setItems(list.data.comments);
+    setSignedIn(me.ok);
+    setFailed(false);
   }, [postId]);
 
   useEffect(() => {
@@ -96,31 +96,23 @@ export default function Comments({
     setError('');
     const turnstile =
       (new FormData(e.currentTarget).get('cf-turnstile-response') as string | null) ?? undefined;
-    try {
-      const r = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ post: postId, body: text, parent: replyTo ?? undefined, turnstile }),
-      });
-      const d = (await r.json().catch(() => ({}))) as { error?: string; pending?: boolean };
-      if (!r.ok) {
-        setError(d.error ?? labels.failed);
-        return;
-      }
-      setText('');
-      setReplyTo(null);
-      setNote(d.pending ? labels.pendingNote : '');
-      await load();
-    } catch {
-      setError(labels.failed);
-    } finally {
-      setBusy(false);
+    const r = await api<{ pending: boolean }>('/api/comments', {
+      json: { post: postId, body: text, parent: replyTo ?? undefined, turnstile },
+    });
+    setBusy(false);
+    if (!r.ok) {
+      setError(describe(r, labels.failed));
+      return;
     }
+    setText('');
+    setReplyTo(null);
+    setNote(r.data?.pending ? labels.pendingNote : '');
+    await load();
   };
 
   const remove = async (id: string) => {
-    const r = await fetch(`/api/comments?id=${id}`, { method: 'DELETE' });
-    if (r.ok || r.status === 204) await load();
+    const r = await api(`/api/comments?id=${id}`, { method: 'DELETE' });
+    if (r.ok) await load();
   };
 
   const roots = (items ?? []).filter((c) => !c.parent);
@@ -179,7 +171,7 @@ export default function Comments({
         </p>
       )}
       {signedIn && (
-        <form onSubmit={submit} style={{ marginTop: 20 }} className="auth-form">
+        <form onSubmit={submit} style={{ marginTop: 20 }} className="auth-form" data-astro-reload>
           <textarea
             className="area"
             rows={3}

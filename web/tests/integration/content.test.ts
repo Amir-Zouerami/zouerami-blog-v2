@@ -59,7 +59,8 @@ describe.skipIf(!up)('draft preview + view counter (real PocketBase rules)', () 
       method: 'POST',
       headers: { 'user-agent': human },
     });
-    expect(draft.status).toBe(204); // no information leak
+    expect(draft.status).toBe(200); // same answer as for a published post's ignored view: no information leak
+    expect(((await draft.json()) as { data: { counted: boolean } }).data.counted).toBe(false);
     const admin = await adminClient();
     if (admin) {
       const d = await admin.collection('posts').getFirstListItem('slug = "draft-post"');

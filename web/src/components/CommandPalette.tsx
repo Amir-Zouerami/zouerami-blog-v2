@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Locale, localePath } from '../i18n';
+import { api } from '../lib/client-api';
 import { type Command, filterCommands, staticCommands } from '../lib/commands';
 import { applyTheme } from '../lib/theme';
 
@@ -69,11 +70,11 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
     const ctl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, {
+        const r = await api<{ results: Hit[] }>(`/api/search?q=${encodeURIComponent(q.trim())}`, {
           signal: ctl.signal,
         });
-        if (!r.ok) throw new Error(String(r.status));
-        setHits(((await r.json()) as { results: Hit[] }).results);
+        if (!r.ok || !r.data) throw new Error(r.code);
+        setHits(r.data.results);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
           setHits([]);

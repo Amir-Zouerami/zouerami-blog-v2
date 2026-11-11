@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import PocketBase from 'pocketbase';
+import { dataOf } from './envelope';
 
 const PB = process.env.PB_TEST_URL ?? 'http://127.0.0.1:8090';
 const stamp = Date.now();
@@ -128,7 +129,7 @@ test.describe('access control', () => {
     const r = await request.post('/api/admin/preview', {
       data: { markdown: '## Hi\n\n<script>alert(1)</script>\n\n```ts\nconst a = 1\n```' },
     });
-    const { html } = await r.json();
+    const { html } = await dataOf<{ html: string }>(r);
     expect(html).toContain('<span>/01</span>Hi');
     expect(html).toContain('class="term"');
     expect(html).not.toContain('<script');

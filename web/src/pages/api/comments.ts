@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
+import { created, fail, ok, readJson } from '../../lib/api';
 import { authed } from '../../lib/auth/guards';
-import { json, logError, readBody } from '../../lib/http';
+import { getLog } from '../../lib/log';
 import { anonPb, isRejected, pbStatus, userPb } from '../../lib/pb';
 import { verifyTurnstile } from '../../lib/turnstile';
 
@@ -29,7 +30,8 @@ interface Row {
 /** Approved comments for a post, plus the signed-in user's own held ones. Plain text only (never rendered as HTML). */
 export const GET: APIRoute = async ({ url, cookies, locals }) => {
   const post = Id.safeParse(url.searchParams.get('post'));
-  if (!post.success) return json(400, { error: 'Invalid post' });
+  if (!post.success)
+    return fail(400, 'validation_failed', 'Invalid post.', { post: 'Expected a post id' });
   const pb = (locals.user && userPb(cookies)) || anonPb();
   try {
     const rows = (await pb.collection('comments').getFullList({
@@ -37,7 +39,7 @@ export const GET: APIRoute = async ({ url, cookies, locals }) => {
       sort: 'created',
       fields: 'id,body,created,parent,user,status,author_name',
     })) as unknown as Row[];
-    return json(200, {
+    return ok({
       comments: rows.map((r) => ({
         id: r.id,
         body: r.body,
@@ -49,49 +51,65 @@ export const GET: APIRoute = async ({ url, cookies, locals }) => {
       })),
     });
   } catch (err) {
-    logError('comments-list', err);
-    return json(503, { error: 'Comments are temporarily unavailable' });
+    getLog().error({ err, postId: post.data }, 'listing comments failed');
+    return fail(503, 'upstream_unavailable', 'Comments are temporarily unavailable.');
   }
 };
 
 export const POST = authed(async ({ request, clientAddress }, { user, pb }) => {
-  const body = await readBody(request, Create);
-  if (!body) return json(400, { error: 'Write between 1 and 2000 characters.' });
-  if (!(await verifyTurnstile(body.turnstile, clientAddress))) {
-    return json(400, { error: 'Verification failed. Please try again.' });
+  const log = getLog();
+  const body = await readJson(request, Create, 'Write between 1 and 2000 characters.');
+  if (!body.ok) return body.response;
+  if (!(await verifyTurnstile(body.data.turnstile, clientAddress))) {
+    log.warn({ userId: user.id }, 'comment refused: Turnstile verification failed');
+    return fail(400, 'verification_failed', 'Verification failed. Please try again.');
   }
   try {
-    let parent = body.parent;
+    let parent = body.data.parent;
     if (parent) {
       const p = (await pb.collection('comments').getOne(parent)) as unknown as Row;
-      if (p.post !== body.post) return json(400, { error: 'Invalid reply' });
+      if (p.post !== body.data.post)
+        return fail(400, 'validation_failed', 'Invalid reply.', {
+          parent: 'Belongs to another post',
+        });
       if (p.parent) parent = p.parent; // threads are one level deep
     }
     const rec = (await pb.collection('comments').create({
-      post: body.post,
+      post: body.data.post,
       user: user.id,
-      body: body.body,
+      body: body.data.body,
       ...(parent ? { parent } : {}),
     })) as unknown as Row;
-    return json(201, { id: rec.id, pending: rec.status !== 'approved' });
+    const pending = rec.status !== 'approved';
+    log.info(
+      { userId: user.id, commentId: rec.id, postId: body.data.post, pending, reply: !!parent },
+      'comment created',
+    );
+    return created({ id: rec.id, pending });
   } catch (err) {
     const status = pbStatus(err);
-    if (status === 401) return json(401, { error: 'Sign in again' });
-    if (isRejected(status)) return json(403, { error: 'Verify your email before commenting.' });
-    logError('comments-create', err);
-    return json(503, { error: 'Comments are temporarily unavailable' });
+    if (status === 401) return fail(401, 'unauthorized', 'Please sign in again.');
+    if (isRejected(status)) {
+      log.warn({ err, userId: user.id }, 'comment rejected by PocketBase rules');
+      return fail(403, 'forbidden', 'Verify your email before commenting.');
+    }
+    log.error({ err, userId: user.id }, 'creating comment failed');
+    return fail(503, 'upstream_unavailable', 'Comments are temporarily unavailable.');
   }
 });
 
-export const DELETE = authed(async ({ url }, { pb }) => {
+export const DELETE = authed(async ({ url }, { user, pb }) => {
+  const log = getLog();
   const id = Id.safeParse(url.searchParams.get('id'));
-  if (!id.success) return json(400, { error: 'Invalid comment' });
+  if (!id.success)
+    return fail(400, 'validation_failed', 'Invalid comment.', { id: 'Expected a comment id' });
   try {
     await pb.collection('comments').delete(id.data);
-    return json(204);
+    log.info({ userId: user.id, commentId: id.data }, 'comment deleted by its author');
+    return ok(null, { message: 'Comment deleted.' });
   } catch (err) {
-    if (isRejected(pbStatus(err))) return json(404, { error: 'Not found' });
-    logError('comments-delete', err);
-    return json(503, { error: 'Could not delete' });
+    if (isRejected(pbStatus(err))) return fail(404, 'not_found', 'Comment not found.');
+    log.error({ err, commentId: id.data }, 'deleting comment failed');
+    return fail(503, 'upstream_unavailable', 'Could not delete the comment.');
   }
 });

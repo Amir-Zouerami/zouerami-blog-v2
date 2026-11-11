@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { json } from '../../lib/http';
-import { anonPb } from '../../lib/pb';
+import { fail, ok, readJson } from '../../lib/api';
+import { getLog, maskEmail } from '../../lib/log';
+import { anonPb, pbStatus } from '../../lib/pb';
 import { verifyTurnstile } from '../../lib/turnstile';
 
 export const prerender = false;
@@ -11,45 +12,60 @@ const Body = z.object({
   turnstile: z.string().optional(),
 });
 
+/** Reads the sign-up from JSON (island) or from a plain HTML form post (no JS). */
+async function readSubscription(request: Request, isForm: boolean) {
+  if (!isForm) return readJson(request, Body, 'Please enter a valid email address.');
+  const form = await request.formData().catch(() => null);
+  const parsed = Body.safeParse(
+    form && {
+      email: form.get('email'),
+      locale: form.get('locale') ?? 'en',
+      turnstile: form.get('cf-turnstile-response') ?? undefined,
+    },
+  );
+  return parsed.success
+    ? ({ ok: true, data: parsed.data } as const)
+    : ({
+        ok: false,
+        response: fail(400, 'validation_failed', 'Please enter a valid email address.', {
+          email: 'Invalid email address',
+        }),
+      } as const);
+}
+
 /**
  * Newsletter sign-up (double opt-in: PocketBase mails a confirmation link).
- * Works with JSON (island) and with a plain HTML form post (no JS). Duplicate addresses get the same answer.
+ * Works with JSON and with a plain HTML form post. Duplicate addresses get the same answer.
  */
 export const POST: APIRoute = async ({ request, redirect, clientAddress }) => {
+  const log = getLog();
   const isForm = (request.headers.get('content-type') ?? '').includes('form');
-  let raw: unknown = null;
-  if (isForm) {
-    const f = await request.formData().catch(() => null);
-    raw = f && {
-      email: f.get('email'),
-      locale: f.get('locale') ?? 'en',
-      turnstile: f.get('cf-turnstile-response') ?? undefined,
-    };
-  } else {
-    raw = await request.json().catch(() => null);
-  }
-  const body = Body.safeParse(raw);
-  if (!body.success)
+  const body = await readSubscription(request, isForm);
+  const back = (status: 'ok' | 'invalid' | 'failed', locale: string) =>
+    redirect(`${locale === 'fa' ? '/fa' : ''}/?subscribe=${status}#sub`, 303);
+  if (!body.ok) return isForm ? back('invalid', 'en') : body.response;
+
+  const { email, locale, turnstile } = body.data;
+  if (!(await verifyTurnstile(turnstile, clientAddress))) {
+    log.warn('subscription refused: Turnstile verification failed');
     return isForm
-      ? redirect('/?subscribe=invalid#sub')
-      : json(400, { error: 'Please enter a valid email address.' });
-  if (!(await verifyTurnstile(body.data.turnstile, clientAddress))) {
-    return isForm
-      ? redirect('/?subscribe=failed#sub')
-      : json(400, { error: 'Verification failed. Please try again.' });
+      ? back('failed', locale)
+      : fail(400, 'verification_failed', 'Verification failed. Please try again.');
   }
   try {
-    await anonPb()
-      .collection('subscribers')
-      .create({ email: body.data.email.trim().toLowerCase(), locale: body.data.locale });
+    await anonPb().collection('subscribers').create({ email: email.trim().toLowerCase(), locale });
+    log.info({ email: maskEmail(email), locale }, 'newsletter subscription requested');
   } catch (err) {
-    const status = (err as { status?: number }).status;
-    // duplicate address (400) looks like success; outages do not
-    if (status !== 400)
+    if (pbStatus(err) !== 400) {
+      log.error({ err }, 'newsletter subscription failed');
       return isForm
-        ? redirect('/?subscribe=failed#sub')
-        : json(503, { error: 'Sign-up is temporarily unavailable' });
+        ? back('failed', locale)
+        : fail(503, 'upstream_unavailable', 'Sign-up is temporarily unavailable.');
+    }
+    log.info(
+      { email: maskEmail(email) },
+      'newsletter subscription for an existing address (answered as success)',
+    );
   }
-  const back = body.data.locale === 'fa' ? '/fa' : '';
-  return isForm ? redirect(`${back}/?subscribe=ok#sub`, 303) : json(200, { ok: true });
+  return isForm ? back('ok', locale) : ok(null, { message: 'Check your inbox to confirm.' });
 };

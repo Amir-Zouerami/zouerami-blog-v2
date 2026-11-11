@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import PocketBase from 'pocketbase';
+import { dataOf, envelope } from './envelope';
 
 const PB = process.env.PB_TEST_URL ?? 'http://127.0.0.1:8090';
 const MAIL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:8025';
@@ -61,7 +62,7 @@ test('register → cannot sign in unverified → verify by email → sign in', a
 
   const login1 = await request.post('/api/auth/login', { data: { email, password } });
   expect(login1.status()).toBe(403);
-  expect((await login1.json()).code).toBe('unverified');
+  expect((await envelope(login1)).meta.code).toBe('unverified');
 
   const html = await mailTo(email, 'Verify');
   const link = linkIn(html, '/verify');
@@ -74,8 +75,8 @@ test('register → cannot sign in unverified → verify by email → sign in', a
 test('forgot → reset password by email → old password stops working', async ({ request }) => {
   expect(
     (await request.post('/api/auth/forgot', { data: { email: 'nobody@example.com' } })).status(),
-  ).toBe(204);
-  expect((await request.post('/api/auth/forgot', { data: { email } })).status()).toBe(204);
+  ).toBe(200);
+  expect((await request.post('/api/auth/forgot', { data: { email } })).status()).toBe(200);
   const link = linkIn(await mailTo(email, 'Reset'), '/reset');
   const token = new URL(link).searchParams.get('token');
   const fresh = 'brand-new-password-3';
@@ -108,24 +109,22 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
   });
   expect(anon.status()).toBe(401);
 
-  const before = (await (await request.get(`/api/interactions/${post.id}`)).json()) as {
-    likes: number;
-  };
-  const liked = (await (
-    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'like' } })
-  ).json()) as { likes: number; liked: boolean };
+  const before = await dataOf<{ likes: number }>(await request.get(`/api/interactions/${post.id}`));
+  const liked = await dataOf<{ likes: number; liked: boolean }>(
+    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'like' } }),
+  );
   expect(liked).toMatchObject({ liked: true, likes: before.likes + 1 });
-  const unliked = (await (
-    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'like' } })
-  ).json()) as { likes: number; liked: boolean };
+  const unliked = await dataOf<{ likes: number; liked: boolean }>(
+    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'like' } }),
+  );
   expect(unliked).toMatchObject({ liked: false, likes: before.likes });
-  const saved = (await (
-    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'bookmark' } })
-  ).json()) as { bookmarked: boolean };
+  const saved = await dataOf<{ bookmarked: boolean }>(
+    await request.post(`/api/interactions/${post.id}`, { data: { kind: 'bookmark' } }),
+  );
   expect(saved.bookmarked).toBe(true);
-  const bm = (await (await request.get('/api/bookmarks?lang=en')).json()) as {
-    bookmarks: { slug: string }[];
-  };
+  const bm = await dataOf<{ bookmarks: { slug: string }[] }>(
+    await request.get('/api/bookmarks?lang=en'),
+  );
   expect(bm.bookmarks.map((b) => b.slug)).toContain('english-only');
 
   // first comment is held: author sees it as pending, others do not
@@ -133,16 +132,16 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
     data: { post: post.id, body: 'First! <b>bold</b>' },
   });
   expect(c1.status()).toBe(201);
-  expect((await c1.json()).pending).toBe(true);
-  const mine = (await (await request.get(`/api/comments?post=${post.id}`)).json()) as {
+  expect((await dataOf<{ pending: boolean }>(c1)).pending).toBe(true);
+  const mine = await dataOf<{
     comments: { id: string; body: string; pending: boolean; mine: boolean }[];
-  };
+  }>(await request.get(`/api/comments?post=${post.id}`));
   expect(mine.comments.find((c) => c.mine)?.pending).toBe(true);
   expect(mine.comments.find((c) => c.mine)?.body).toBe('First! <b>bold</b>'); // stored verbatim; escaped when rendered
   const mineId = mine.comments.find((c) => c.mine)?.id;
-  const publicView = (await (
-    await page.request.get(`/api/comments?post=${post.id}`, { headers: { cookie: '' } })
-  ).json()) as { comments: { id: string }[] };
+  const publicView = await dataOf<{ comments: { id: string }[] }>(
+    await page.request.get(`/api/comments?post=${post.id}`, { headers: { cookie: '' } }),
+  );
   expect(publicView.comments.map((c) => c.id)).not.toContain(mineId);
 
   // moderator approves → public; the next comment publishes immediately
@@ -151,14 +150,14 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
     .collection('comments')
     .getFirstListItem(`post = "${post.id}" && user = "${me.id}"`);
   await admin.collection('comments').update(held.id, { status: 'approved' });
-  const pubAfter = (await (
-    await page.request.get(`/api/comments?post=${post.id}`, { headers: { cookie: '' } })
-  ).json()) as { comments: { author: string }[] };
+  const pubAfter = await dataOf<{ comments: { author: string }[] }>(
+    await page.request.get(`/api/comments?post=${post.id}`, { headers: { cookie: '' } }),
+  );
   expect(pubAfter.comments[0]?.author).toBe('Acct Tester');
   const c2 = await request.post('/api/comments', {
     data: { post: post.id, body: 'Second', parent: held.id },
   });
-  expect((await c2.json()).pending).toBe(false);
+  expect((await dataOf<{ pending: boolean }>(c2)).pending).toBe(false);
 
   // rejects: empty, too long, bad ids, spoofed status
   expect(
@@ -194,10 +193,10 @@ test('comments UI: posting from the page works and cross-site writes are blocked
   await page.goto('/blog/english-only');
   await page.locator('.nextprev').scrollIntoViewIfNeeded(); // the comments island hydrates when visible
   const box = page.locator('textarea.area');
-  await box.fill(`From the UI ${stamp} <img src=x onerror="window.__pwned=1"> 3 < 4`);
+  await box.fill(`From the UI ${stamp} <img src=x onerror="window.__pwned=1"> 3 < 4 ${stamp}`);
   await page.getByRole('button', { name: 'Post comment' }).click();
   await expect(page.getByText(`From the UI ${stamp}`)).toBeVisible();
-  await expect(page.getByText('3 < 4', { exact: false })).toBeVisible(); // angle brackets survive as text
+  await expect(page.getByText(`3 < 4 ${stamp}`, { exact: false })).toBeVisible(); // angle brackets survive as text
   expect(await page.locator('.cmt img').count()).toBe(0); // and are never parsed as markup
   expect(
     await page.evaluate(() => (window as never as { __pwned?: number }).__pwned),
@@ -217,7 +216,9 @@ test('like button toggles in the UI; signed-out users are sent to login', async 
 }) => {
   await page.request.post('/api/auth/login', { data: { email, password: 'brand-new-password-3' } });
   await page.goto('/blog/english-only');
+  const loaded = page.waitForResponse((r) => r.url().includes('/api/interactions/'));
   await page.locator('.nextprev').scrollIntoViewIfNeeded();
+  await loaded;
   const like = page.locator('[data-like]');
   await expect(like).toHaveAttribute('aria-pressed', 'false');
   await like.click();
@@ -246,7 +247,7 @@ test('delete account removes it, its comments and bookmarks; password required',
   const u = await admin.collection('users').getFirstListItem(`email = "${email}"`);
   expect(
     (await request.delete('/api/account', { data: { password: 'brand-new-password-3' } })).status(),
-  ).toBe(204);
+  ).toBe(200);
   await expect(admin.collection('users').getOne(u.id)).rejects.toMatchObject({ status: 404 });
   expect(
     (await admin.collection('comments').getFullList({ filter: `user = "${u.id}"` })).length,

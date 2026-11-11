@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { cleanText, json, readBody } from '../../../lib/http';
+import { created, fail, readJson } from '../../../lib/api';
+import { cleanText } from '../../../lib/http';
+import { getLog, maskEmail } from '../../../lib/log';
 import { anonPb, pbStatus } from '../../../lib/pb';
 import { verifyTurnstile } from '../../../lib/turnstile';
 
@@ -15,34 +17,53 @@ export const Body = z.object({
 
 /** Creates the account and emails a verification link. Existing addresses get the same answer (no enumeration). */
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-  const body = await readBody(request, Body);
-  if (!body)
-    return json(400, {
-      error: 'Please check the form: valid email, name and a password of at least 10 characters.',
-    });
-  if (!(await verifyTurnstile(body.turnstile, clientAddress)))
-    return json(400, { error: 'Verification failed. Please try again.' });
+  const log = getLog();
+  const body = await readJson(
+    request,
+    Body,
+    'Please check the form: valid email, name and a password of at least 10 characters.',
+  );
+  if (!body.ok) return body.response;
+  if (!(await verifyTurnstile(body.data.turnstile, clientAddress))) {
+    log.warn('register refused: Turnstile verification failed');
+    return fail(400, 'verification_failed', 'Verification failed. Please try again.');
+  }
 
   const pb = anonPb();
-  const email = body.email.trim().toLowerCase();
+  const email = body.data.email.trim().toLowerCase();
+  const sent = created({ verificationSent: true }, 'Check your inbox for a verification link.');
   try {
-    await pb.collection('users').create({
+    const user = await pb.collection('users').create({
       email,
-      password: body.password,
-      passwordConfirm: body.password,
-      name: cleanText(body.name),
+      password: body.data.password,
+      passwordConfirm: body.data.password,
+      name: cleanText(body.data.name),
       emailVisibility: false,
     });
     await pb.collection('users').requestVerification(email);
+    log.info(
+      { userId: user.id, email: maskEmail(email) },
+      'account created; verification email requested',
+    );
+    return sent;
   } catch (err) {
     const data = (err as { response?: { data?: Record<string, { code?: string }> } }).response
       ?.data;
     if (pbStatus(err) === 400 && data?.email?.code === 'validation_not_unique') {
-      return json(201, { ok: true }); // pretend success: do not reveal registered addresses
+      log.info(
+        { email: maskEmail(email) },
+        'register for an existing address (answered as success to avoid enumeration)',
+      );
+      return sent;
     }
-    if (pbStatus(err) === 400)
-      return json(400, { error: 'Please check the form and try a stronger password.' });
-    return json(503, { error: 'Sign-up is temporarily unavailable' });
+    if (pbStatus(err) === 400) {
+      log.warn(
+        { err, fields: Object.keys(data ?? {}) },
+        'register rejected by PocketBase validation',
+      );
+      return fail(400, 'validation_failed', 'Please check the form and try a stronger password.');
+    }
+    log.error({ err }, 'register failed: PocketBase unavailable');
+    return fail(503, 'upstream_unavailable', 'Sign-up is temporarily unavailable.');
   }
-  return json(201, { ok: true });
 };

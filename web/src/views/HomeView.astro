@@ -49,7 +49,7 @@ const words = tr.home.marquee;
     <section class="pad" style="padding-top:130px">
       <div class="sec-label"><span class="mono">[03]</span><span class="mono">{tr.home.newsletter}</span><span></span></div>
       <p class="h-big" style="padding-block:40px 34px;max-width:14ch">{tr.home.words} <span class="it" style="color:var(--acc)">{tr.home.occasionally}</span></p>
-      <form class="sub" id="sub" method="post" action="/api/subscribe" data-subscribe data-ok={tr.subscribe.ok} data-invalid={tr.subscribe.invalid} data-failed={tr.subscribe.failed}><input type="email" required placeholder={tr.home.emailPlaceholder} aria-label="Email" name="email" dir="ltr" /><input type="hidden" name="locale" value={locale} /><button>{tr.home.subscribe}</button></form>
+      <form class="sub" id="sub" data-astro-reload method="post" action="/api/subscribe" data-subscribe data-ok={tr.subscribe.ok} data-invalid={tr.subscribe.invalid} data-failed={tr.subscribe.failed}><input type="email" required placeholder={tr.home.emailPlaceholder} aria-label="Email" name="email" dir="ltr" /><input type="hidden" name="locale" value={locale} /><button>{tr.home.subscribe}</button></form>
       <p class="mono muted" id="sub-msg" role="status" aria-live="polite" style="margin-top:14px">{status && tr.subscribe[status]}</p>
     </section>
   </main>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../lib/client-api';
 import Comments from './pages/Comments';
 import Dashboard from './pages/Dashboard';
 import PostEdit from './pages/PostEdit';
@@ -33,10 +34,9 @@ export default function AdminApp() {
   const [me, setMe] = useState<{ name: string; role: string } | null | undefined>(undefined);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setMe(d?.user ?? null))
-      .catch(() => setMe(null));
+    api<{ user: { name: string; role: string } }>('/api/auth/me').then((r) =>
+      setMe(r.data?.user ?? null),
+    );
   }, []);
 
   if (me === undefined)

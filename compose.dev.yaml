@@ -1,4 +1,8 @@
 services:
+  web:
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_PRETTY: 'true' # colourised, human-readable logs for `docker compose logs -f web`
   pocketbase:
     ports:
       - '127.0.0.1:8090:8090'

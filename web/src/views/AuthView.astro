@@ -43,7 +43,7 @@ const tp = mode in tokenPages ? tokenPages[mode as keyof typeof tokenPages] : nu
       </div>
     ) : (
       <>
-      <form class="auth-form" data-endpoint={`/api/auth/${mode}`} data-msgs={msgs} data-on-ok={mode === 'login' ? 'redirect' : undefined} data-home={localePath(locale, '/account')} data-use-token={mode === 'reset' ? '' : undefined} data-reset="" method="post" novalidate={false}>
+      <form class="auth-form" data-astro-reload data-endpoint={`/api/auth/${mode}`} data-msgs={msgs} data-on-ok={mode === 'login' ? 'redirect' : undefined} data-home={localePath(locale, '/account')} data-use-token={mode === 'reset' ? '' : undefined} data-reset="" method="post" novalidate={false}>
         {mode === 'register' && <label><span class="mono muted">{a.name}</span><input name="name" required maxlength="60" autocomplete="nickname" /></label>}
         {mode !== 'reset' && <label><span class="mono muted">{a.email}</span><input type="email" name="email" required autocomplete="email" dir="ltr" /></label>}
         {(mode === 'login' || mode === 'register') && <label><span class="mono muted">{a.password}</span><input type="password" name="password" required minlength={mode === 'register' ? 10 : 1} maxlength="128" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} dir="ltr" />{mode === 'register' && <small class="muted">{a.passwordHint}</small>}</label>}

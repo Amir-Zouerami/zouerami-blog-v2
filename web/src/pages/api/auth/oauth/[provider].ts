@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { SignJWT } from 'jose';
 import { getConfig } from '../../../../lib/config';
 import { safeNext } from '../../../../lib/http';
+import { getLog } from '../../../../lib/log';
 import { anonPb } from '../../../../lib/pb';
 
 export const prerender = false;
@@ -13,7 +14,10 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
   try {
     const methods = await anonPb().collection('users').listAuthMethods();
     const provider = methods.oauth2.providers.find((p) => p.name === name);
-    if (!provider) return redirect(`/login?error=oauth&next=${encodeURIComponent(next)}`);
+    if (!provider) {
+      getLog().warn({ provider: name }, 'oauth provider not configured');
+      return redirect(`/login?error=oauth&next=${encodeURIComponent(next)}`);
+    }
     const redirectUrl = `${getConfig().siteUrl}/api/auth/oauth/callback`;
     const flow = await new SignJWT({
       p: provider.name,
@@ -32,7 +36,8 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
       maxAge: 600,
     });
     return redirect(provider.authURL + encodeURIComponent(redirectUrl));
-  } catch {
+  } catch (err) {
+    getLog().error({ err }, 'oauth start failed');
     return redirect('/login?error=unavailable');
   }
 };
