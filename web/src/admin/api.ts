@@ -33,19 +33,6 @@ export function slugify(s: string): string {
     .slice(0, 80);
 }
 
-/** PocketBase stores UTC as "YYYY-MM-DD HH:mm:ss.SSSZ". These convert to/from <input type=datetime-local>. */
-export function toLocalInput(pbDate: string): string {
-  if (!pbDate) return '';
-  const d = new Date(pbDate.replace(' ', 'T'));
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-export function fromLocalInput(v: string): string {
-  const d = v ? new Date(v) : new Date();
-  return d.toISOString().replace('T', ' ');
-}
-
 export function randomToken(n = 24): string {
   const a = new Uint8Array(n);
   crypto.getRandomValues(a);

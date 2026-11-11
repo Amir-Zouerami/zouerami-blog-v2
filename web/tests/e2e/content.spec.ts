@@ -57,19 +57,28 @@ test.describe('post page', () => {
       .evaluate((i: HTMLImageElement) => i.naturalWidth > 0);
     expect(loaded).toBe(true);
   });
-  test('language dropdown links to the other language and crosses out a missing one', async ({
+  test('a visible language control links to the other language and crosses out a missing one', async ({
     page,
   }) => {
     await page.goto('/blog/hello-bilingual');
-    await page.locator('[data-dd-toggle]').click();
-    await expect(page.locator('.dd-menu a[hreflang="fa"]')).toHaveAttribute(
+    const seg = page.locator('.langseg');
+    await expect(seg.locator('a[hreflang="fa"]')).toBeVisible();
+    await expect(seg.locator('a[hreflang="fa"]')).toHaveAttribute(
       'href',
       '/fa/blog/hello-bilingual',
     );
+    await expect(seg.locator('a.cur')).toHaveText('English');
+    await seg.locator('a[hreflang="fa"]').click();
+    await page.waitForURL('**/fa/blog/hello-bilingual');
+    await expect(page.locator('.langseg a.cur')).toHaveText('فارسی');
+    await expect(page.locator('.langseg a[hreflang="en"]')).toHaveAttribute(
+      'href',
+      '/blog/hello-bilingual',
+    );
+
     await page.goto('/blog/english-only');
-    await page.locator('[data-dd-toggle]').click();
-    await expect(page.locator('.dd-menu span.off')).toContainText('not written yet');
-    await expect(page.locator('.dd-menu a')).toHaveCount(1);
+    await expect(page.locator('.langseg .off')).toContainText('not written yet');
+    await expect(page.locator('.langseg a')).toHaveCount(1);
   });
   test('Persian post: RTL, Jalali date, Persian title', async ({ page }) => {
     await page.goto('/fa/blog/hello-bilingual');
@@ -171,12 +180,35 @@ test.describe('language switching', () => {
     await page.goto('/blog');
     await expect(page).toHaveURL(/\/blog$/);
   });
-  test('toggle on an English-only post points at the Persian blog home, not a dead URL', async ({
+  test('the header switch stays on the same page, even where no translation exists', async ({
     page,
   }) => {
     await page.goto('/blog/english-only');
-    const href = await page.locator('a[data-lang-switch]').getAttribute('href');
-    expect(href).toBe('/fa');
+    await expect(page.locator('a[data-lang-switch]')).toHaveAttribute(
+      'href',
+      '/fa/blog/english-only',
+    );
+    await page.locator('a[data-lang-switch]').click();
+    await page.waitForURL('**/fa/blog/english-only');
+    await expect(page.locator('.notice')).toBeVisible(); // English text inside the Persian chrome, with a notice
+    await expect(page.locator('a[data-lang-switch]')).toHaveAttribute('href', '/blog/english-only');
+  });
+  test('switching language keeps the page and its query string', async ({ page }) => {
+    for (const [from, to] of [
+      ['/blog?tag=Web', '/fa/blog?tag=Web'],
+      ['/work?cat=Tool', '/fa/work?cat=Tool'],
+      ['/about', '/fa/about'],
+      ['/work/lumen', '/fa/work/lumen'],
+      ['/privacy', '/fa/privacy'],
+      ['/fa/blog', '/blog'],
+      ['/fa', '/'],
+    ] as const) {
+      await page.goto(from);
+      await expect(page.locator('a[data-lang-switch]'), from).toHaveAttribute('href', to);
+    }
+    await page.goto('/blog?tag=Web');
+    await page.locator('a[data-lang-switch]').click();
+    await page.waitForURL('**/fa/blog?tag=Web');
   });
   test('Persian home shows the Persian name as visible text and keeps the Latin hero', async ({
     page,

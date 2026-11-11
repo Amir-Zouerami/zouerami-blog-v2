@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errText, pb, type Rec } from '../api';
+import DateRange from '../DateRange';
+import { inRange } from '../date';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 export default function Subscribers() {
   const toast = useToast();
   const [rows, setRows] = useState<Rec[] | null>(null);
+  const [range, setRange] = useState({ from: '', to: '' });
+  const visible = (rows ?? []).filter((r) => inRange(r.created, range.from, range.to));
   const load = useCallback(() => {
     pb.collection('subscribers')
       .getFullList({ sort: '-created' })
@@ -15,23 +19,24 @@ export default function Subscribers() {
   const csv = () => {
     const lines = [
       'email,confirmed,locale,created',
-      ...(rows ?? []).map((r) => `${r.email},${r.confirmed},${r.locale},${r.created}`),
+      ...visible.map((r) => `${r.email},${r.confirmed},${r.locale},${r.created}`),
     ];
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
     a.download = 'subscribers.csv';
     a.click();
   };
-  const confirmed = (rows ?? []).filter((r) => r.confirmed).length;
+  const confirmed = visible.filter((r) => r.confirmed).length;
   return (
     <>
       <div className="adm-bar">
         <h1>Subscribers</h1>
         <span className="grow" />
+        <DateRange label="Joined" from={range.from} to={range.to} onChange={setRange} />
         <span className="mono muted">
-          {confirmed} confirmed / {rows?.length ?? 0} total
+          {confirmed} confirmed / {visible.length} shown
         </span>
-        <button type="button" className="adm-btn" onClick={csv} disabled={!rows?.length}>
+        <button type="button" className="adm-btn" onClick={csv} disabled={!visible.length}>
           Export CSV
         </button>
       </div>
@@ -49,7 +54,7 @@ export default function Subscribers() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {visible.map((r) => (
               <tr key={r.id}>
                 <td>{r.email}</td>
                 <td>{r.confirmed ? '✓' : '—'}</td>
@@ -63,7 +68,7 @@ export default function Subscribers() {
                 </td>
               </tr>
             ))}
-            {!rows.length && (
+            {!visible.length && (
               <tr>
                 <td colSpan={5} className="muted">
                   No subscribers yet.

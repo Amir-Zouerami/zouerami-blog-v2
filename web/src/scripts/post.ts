@@ -68,10 +68,6 @@ onPage((signal) => {
     'click',
     (e) => {
       const target = e.target as Element;
-      const dd = document.getElementById('dd');
-      const toggle = target.closest('[data-dd-toggle]');
-      if (toggle && dd) toggle.setAttribute('aria-expanded', String(dd.classList.toggle('open')));
-      else dd?.classList.remove('open');
       if (target.closest('[data-share]')) {
         void navigator.clipboard?.writeText(location.href.split('#')[0] ?? '').catch(() => {});
         showToast(document.documentElement.lang === 'fa' ? 'پیوند کپی شد' : 'Link copied');

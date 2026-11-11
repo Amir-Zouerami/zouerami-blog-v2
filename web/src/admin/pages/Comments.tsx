@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errText, pb, type Rec } from '../api';
+import DateRange from '../DateRange';
+import { inRange } from '../date';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 const postSlug = (c: Rec): string =>
@@ -10,6 +12,8 @@ export default function Comments() {
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [rows, setRows] = useState<Rec[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [range, setRange] = useState({ from: '', to: '' });
+  const visible = (rows ?? []).filter((r) => inRange(r.created, range.from, range.to));
 
   const load = useCallback(async () => {
     try {
@@ -52,7 +56,7 @@ export default function Comments() {
     void load();
   };
   const approveAll = async () => {
-    for (const r of rows ?? [])
+    for (const r of visible)
       await pb
         .collection('comments')
         .update(r.id, { status: 'approved' })
@@ -66,6 +70,7 @@ export default function Comments() {
       <div className="adm-bar">
         <h1>Comments</h1>
         <span className="grow" />
+        <DateRange label="Posted" from={range.from} to={range.to} onChange={setRange} />
         {(['pending', 'approved', 'rejected'] as const).map((s) => (
           <button
             key={s}
@@ -76,7 +81,7 @@ export default function Comments() {
             {s} {counts[s] !== undefined ? `(${counts[s]})` : ''}
           </button>
         ))}
-        {status === 'pending' && !!rows?.length && (
+        {status === 'pending' && !!visible.length && (
           <button type="button" className="adm-btn" onClick={() => void approveAll()}>
             Approve all
           </button>
@@ -86,7 +91,7 @@ export default function Comments() {
         <p className="mono muted">Loading…</p>
       ) : (
         <div className="adm-cmts">
-          {rows.map((c) => (
+          {visible.map((c) => (
             <article key={c.id} className="adm-cmt">
               <header className="mono muted">
                 {c.author_name} · {(c.expand?.user as Rec | undefined)?.email} ·{' '}
@@ -121,7 +126,7 @@ export default function Comments() {
               </div>
             </article>
           ))}
-          {!rows.length && <p className="muted">No {status} comments.</p>}
+          {!visible.length && <p className="muted">No {status} comments.</p>}
         </div>
       )}
     </>

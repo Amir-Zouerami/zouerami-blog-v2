@@ -238,6 +238,85 @@ test.describe('back office UI', () => {
     await expect(page.getByRole('link', { name: 'E2E hello world' })).toHaveCount(0);
   });
 
+  test('status banner and preview token: generating saves immediately; the draft is hidden and the token works', async ({
+    page,
+    request,
+  }) => {
+    const slugB = `e2e-banner-${stamp}`;
+    const post = await su
+      .collection('posts')
+      .create({ slug: slugB, date: '2026-01-01 00:00:00.000Z', status: 'draft', tags: [] });
+    await su
+      .collection('post_translations')
+      .create({ post: post.id, lang: 'en', title: 'Banner test', summary: '', body_md: 'Hi' });
+    await page.goto(`/admin#/posts/${post.id}`);
+    await expect(page.locator('.adm-status')).toContainText('Draft');
+    await expect(page.locator('.adm-status')).toContainText('Hidden from the public');
+    await expect(page.locator('select')).toHaveCount(0); // no status dropdown that can silently stay unsaved
+    await page.locator('.adm-field button', { hasText: /^generate$/i }).click();
+    await expect(page.locator('.adm-toast', { hasText: 'Preview link saved' })).toBeVisible();
+    const token = (await su.collection('posts').getOne(post.id)).preview_token as string;
+    expect(token).toHaveLength(24);
+    expect((await request.get(`/blog/${slugB}`)).status()).toBe(404);
+    expect((await request.get(`/blog/${slugB}?token=${token}`)).status()).toBe(200);
+    expect((await request.get(`/blog/${slugB}?token=wrong`)).status()).toBe(404);
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    await expect(page.locator('.adm-status')).toContainText('Published');
+    expect((await request.get(`/blog/${slugB}`)).status()).toBe(200);
+    await page.getByRole('button', { name: 'Unpublish' }).click();
+    await expect(page.locator('.adm-status')).toContainText('Draft');
+    expect((await request.get(`/blog/${slugB}`)).status()).toBe(404);
+  });
+
+  test('date picker: calendar + time for the publish date, and calendar range filters on the lists', async ({
+    page,
+  }) => {
+    const slugC = `e2e-date-${stamp}`;
+    await page.goto('/admin#/posts/new');
+    await page.getByLabel('Slug (URL)').fill(slugC);
+    await page.locator('.adm-title').fill('Date picker test');
+    // pick the 15th at 09:30 through the popover
+    await page.getByRole('button', { name: /^Publish date:/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Publish date calendar' });
+    await expect(dialog).toBeVisible();
+    await dialog.locator('.dtp-day:not(.out)').nth(14).click();
+    await dialog.getByLabel('Hour').selectOption('9');
+    await dialog.getByLabel('Minute').selectOption('30');
+    await dialog.getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('button', { name: /^Publish date:/ })).toContainText(
+      /15 \w{3} \d{4}, 09:30/,
+    );
+    await page.getByRole('button', { name: /^Save/ }).click();
+    await page.waitForURL(/#\/posts\/[a-z0-9]{15}$/);
+    const saved = await su.collection('posts').getFirstListItem(`slug = "${slugC}"`);
+    const local = new Date(saved.date.replace(' ', 'T'));
+    expect([local.getDate(), local.getHours(), local.getMinutes()]).toEqual([15, 9, 30]);
+    await page.reload();
+    await expect(page.getByRole('button', { name: /^Publish date:/ })).toContainText(
+      /15 \w{3} \d{4}, 09:30/,
+    );
+
+    // list filter: a range that excludes the 15th hides it, one that includes it shows it
+    await page.goto('/admin#/posts');
+    await expect(page.getByRole('link', { name: 'Date picker test' })).toBeVisible();
+    const row = page.getByRole('link', { name: 'Date picker test' });
+    await page.getByRole('button', { name: /^Published from/ }).click();
+    const cal = page.getByRole('dialog', { name: 'Published from calendar' });
+    await cal.locator('.dtp-day:not(.out)').nth(19).click(); // from the 20th
+    await expect(row).toHaveCount(0);
+    await page.getByRole('button', { name: 'Clear Published from' }).click();
+    await expect(row).toBeVisible();
+    await page.getByRole('button', { name: /^Published to/ }).click();
+    await page
+      .getByRole('dialog', { name: 'Published to calendar' })
+      .locator('.dtp-day:not(.out)')
+      .nth(14)
+      .click(); // up to the 15th, inclusive
+    await expect(row).toBeVisible();
+    await page.getByRole('button', { name: 'Clear Published to' }).click();
+    await page.keyboard.press('Escape');
+  });
+
   test('validation: bad slug and missing title are refused with a message', async ({ page }) => {
     await page.goto('/admin#/posts/new');
     await page.getByLabel('Slug (URL)').fill('Bad Slug!');
