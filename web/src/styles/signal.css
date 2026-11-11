@@ -1591,3 +1591,11 @@ html[dir='rtl'] .row .arr, html[dir='rtl'] .tile .go svg, html[dir='rtl'] .btn s
 .linkbtn { justify-self: start; color: var(--acc); border-bottom: 1px solid; font: 500 13px var(--mono); }
 .oauth { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 40px; }
 .me-link[data-signed-in] { color: var(--acc); }
+
+/* The Latin hero name is always LTR (per-letter inline-blocks would otherwise render reversed); sit it at the inline end in RTL pages. */
+html[dir='rtl'] .hero h1 { text-align: right; }
+
+/* backdrop-filter on .head made it the containing block of the fixed mobile nav (pill stuck inside the header, hiding brand and tools).
+   Blur lives on a pseudo-element instead, so the nav is positioned against the viewport. */
+.head { background: none; backdrop-filter: none; }
+.head::before { content: ''; position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px); }

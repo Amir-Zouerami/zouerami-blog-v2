@@ -43,7 +43,7 @@ export default function HeroName() {
     };
   }, []);
   return (
-    <h1 id="heroName" ref={ref} aria-label="Amir Zouerami">
+    <h1 id="heroName" ref={ref} aria-label="Amir Zouerami" dir="ltr">
       <span aria-hidden="true">
         {letters('Amir')}
         <br />

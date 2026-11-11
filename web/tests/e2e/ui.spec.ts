@@ -214,3 +214,32 @@ test.describe('home and 404', () => {
     await expect(page.getByRole('link', { name: 'Home' }).last()).toBeVisible();
   });
 });
+
+test.describe('visual regressions found in review', () => {
+  test('Persian home keeps the Latin hero name left-to-right (not reversed)', async ({ page }) => {
+    await page.goto('/fa');
+    const h1 = page.locator('h1#heroName');
+    await expect(h1).toHaveAttribute('dir', 'ltr');
+    const letters = await h1.locator('.ch').allTextContents();
+    expect(letters.join('')).toBe('AmirZouerami');
+    // visually: the "A" of Amir is left of the "r" that ends it
+    const first = await h1.locator('.ch').first().boundingBox();
+    const fourth = await h1.locator('.ch').nth(3).boundingBox();
+    expect((first?.x ?? 0) < (fourth?.x ?? 0)).toBe(true);
+  });
+
+  test('on a phone the nav sits at the bottom and does not cover the brand or tools', async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
+    const page = await ctx.newPage();
+    await page.goto('/');
+    const nav = await page.locator('nav.nav').boundingBox();
+    const brand = await page.locator('.brand').boundingBox();
+    const theme = await page.locator('[data-theme-toggle]').boundingBox();
+    expect((nav?.y ?? 0) > 600).toBe(true);
+    expect(brand && brand.y < 64 && brand.width > 20).toBe(true);
+    expect(theme && theme.y < 64).toBe(true);
+    await ctx.close();
+  });
+});

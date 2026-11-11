@@ -71,7 +71,7 @@ docker compose -f compose.prod.yaml up -d
 Rollback: check out the previous commit/tag and repeat. Migrations are forward-only; the pre-deploy nightly backup is the safety net.
 
 ## Security notes
-- `/pb/_/`, superuser auth, and PocketBase's own end-user auth endpoints are blocked at nginx; the web app talks to PocketBase on the private Docker network.
+- Through nginx the browser can reach only four PocketBase endpoints (uploaded files, the view beacon, newsletter confirm/unsubscribe, health); every other `/pb/*` path is 404, so sign-up, comments and writes always go through the web app (Turnstile, validation, rate limits). The web app talks to PocketBase on the private Docker network.
 - Rate limits: sign-in/up/reset 10 req/min/IP, writes 30/min, pages 600/min (nginx `limit_req`).
 - Cookies: `session` (10 min JWT) and `refresh` are httpOnly, SameSite=Lax, Secure over HTTPS; state-changing API calls also check `Origin`.
 - CSP allows only self + Cloudflare Turnstile; there are no third-party fonts or analytics.
