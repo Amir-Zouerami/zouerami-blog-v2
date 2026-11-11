@@ -43,6 +43,10 @@ onBootstrap((e) => {
       users.verificationTemplate.body = mail.html('verify', siteURL + '/verify?token={TOKEN}', siteURL);
       users.resetPasswordTemplate.subject = mail.subjectOf('reset');
       users.resetPasswordTemplate.body = mail.html('reset', siteURL + '/reset?token={TOKEN}', siteURL);
+      // PocketBase's "new login" alert would report OUR server's address and user agent (the web app logs the
+      // visitor in on their behalf), never the visitor's, and uses an off-brand template. Switched off.
+      users.authAlert.enabled = false;
+      users.otp.enabled = false;
       $app.save(users);
     }
   } catch (err) {

@@ -22,6 +22,13 @@ describe.each(EMAIL_KINDS)('email: %s', (kind) => {
     expect(html).toContain('role="presentation"');
     expect(html).toMatch(/style="[^"]*background:#0a0a0b/);
   });
+  it('fills the viewport with the dark background (no white strip below short emails)', () => {
+    expect(html).toMatch(/html,body\{[^}]*height:100%/);
+    expect(html).toMatch(/<table[^>]*height="100%"/);
+  });
+  it('never signs off as a team or leaks server details', () => {
+    expect(html).not.toMatch(/\bteam\b|Bun\/|node\/|\b\d{1,3}(\.\d{1,3}){3}\b/i);
+  });
   it('carries the inbox preview text and a plain-text twin', () => {
     expect(html).toContain(COPY[kind].preheader);
     const text = renderText(kind);
