@@ -13,6 +13,8 @@ services:
         HTTPS_PROXY: ${BUILD_PROXY:-}
     restart: unless-stopped
     env_file: .env
+    environment:
+      SITE_URL: ${SITE_URL}
     volumes:
       - pb_data:/pb_data
       - ./pocketbase/pb_migrations:/pb/pb_migrations:ro
@@ -39,6 +41,8 @@ services:
       PB_PUBLIC_URL: ${PB_PUBLIC_URL}
       SITE_URL: ${SITE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
     depends_on:
       pocketbase:
         condition: service_healthy

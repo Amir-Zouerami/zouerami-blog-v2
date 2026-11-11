@@ -11,8 +11,28 @@ import { getAuthSecret, REFRESH_COOKIE, SESSION_COOKIE, verifySession } from './
  * `locals.user` comes from the short-lived signed access cookie (no DB/Redis call).
  * Only when it is missing/expired do we use the refresh cookie, which asks PocketBase once.
  */
+const SAFE = new Set(['GET', 'HEAD', 'OPTIONS']);
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { cookies } = context;
+  // CSRF: state-changing API calls must come from this site (SameSite=Lax is the second layer).
+  if (!SAFE.has(context.request.method) && context.url.pathname.startsWith('/api/')) {
+    const origin = context.request.headers.get('origin');
+    if (origin) {
+      let host = '';
+      try {
+        host = new URL(origin).host;
+      } catch {
+        /* malformed origin is rejected below */
+      }
+      if (host !== context.url.host) {
+        return new Response(JSON.stringify({ error: 'Cross-site request blocked' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+  }
   const access = cookies.get(SESSION_COOKIE)?.value;
   context.locals.user = access ? await verifySession(access, getAuthSecret()) : null;
 

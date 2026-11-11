@@ -7,6 +7,6 @@ export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   integrations: [react({ compiler: true })],
-  vite: { plugins: [tailwindcss()] },
+  vite: { plugins: [tailwindcss()], ssr: { external: ['@resvg/resvg-js'] } },
   server: { host: true, port: 4321 },
 });

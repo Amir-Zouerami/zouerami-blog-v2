@@ -92,8 +92,8 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
     ...hits.map((h) => ({
       id: `post-${h.slug}`,
       label: h.title,
-      hint: 'post',
-      href: `/blog/${h.slug}`,
+      hint: labels.post,
+      href: localePath(locale, `/blog/${h.slug}`),
     })),
   ];
 

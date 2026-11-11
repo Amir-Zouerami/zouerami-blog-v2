@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const pb = new PocketBase(loadEnv().PB_URL);
   pb.autoCancellation(false);
-  let record: { id: string; email: string; name?: string };
+  let record: { id: string; email: string; name?: string; verified?: boolean };
   try {
     ({ record } = await pb
       .collection('users')
@@ -31,6 +31,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json(503, { error: 'Sign-in is temporarily unavailable' });
   }
 
+  if (!record.verified) {
+    return json(403, { error: 'Please verify your email first', code: 'unverified' });
+  }
   const user = toSessionUser(record);
   await setAccessCookie(cookies, user);
   setRefreshCookie(cookies, pb.authStore.token);

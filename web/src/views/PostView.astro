@@ -1,7 +1,11 @@
 ---
 import { cover, seedOf } from '../lib/cover';
 import { dirOf, faDigits, formatDate, formatNumber, LANG_NAMES, LOCALES, type Locale, localePath, t } from '../i18n';
+import Comments from '../components/Comments';
+import PostActions from '../components/PostActions';
 import Base from '../layouts/Base.astro';
+import { blogPostingLd, breadcrumbLd, personLd } from '../lib/jsonld';
+import { loadEnv } from '../lib/env';
 import { readingMinutes, renderMarkdown } from '../lib/markdown';
 import { UpstreamError } from '../lib/pb';
 import { adjacent, getPost, imageUrl, listPosts } from '../lib/posts';
@@ -38,6 +42,8 @@ const alternates = post
   ? Object.fromEntries(post.langs.map((l) => [l, localePath(l, `/blog/${post.slug}`)]))
   : {};
 const path = localePath(locale, `/blog/${slug}`);
+const site = loadEnv().SITE_URL;
+const jsonLd = post && !post.preview ? [personLd(site), blogPostingLd({ site, slug: post.slug, title: post.title, description: post.summary || post.title, lang: post.lang, date: post.date, tags: post.tags, image: `/og/${post.lang}/${post.slug}.png`, path }), breadcrumbLd(site, [{ name: tr.nav.home, path: localePath(locale, '/') }, { name: tr.nav.blog, path: localePath(locale, '/blog') }, { name: post.title, path }])] : [];
 ---
 {unavailable ? <Unavailable {locale} /> : !post || !rendered ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
 <Base
@@ -50,9 +56,10 @@ const path = localePath(locale, `/blog/${slug}`);
   published={post.date}
   tags={post.tags}
   noindex={post.preview}
+  {jsonLd}
   alternates={post.preview ? {} : alternates}
   {path}
-  image={post.cover ?? undefined}
+  image={post.preview ? undefined : `/og/${post.lang}/${post.slug}.png`}
 >
   <div class="rp"><i id="rp-bar"></i></div>
   <main id="main" data-post-slug={post.slug} data-track={post.preview ? undefined : 'view'}>
@@ -81,15 +88,13 @@ const path = localePath(locale, `/blog/${slug}`);
         <div class="ring"><svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true"><circle class="bg" cx="38" cy="38" r="32"/><circle class="fg" id="ring-fg" cx="38" cy="38" r="32"/></svg><b id="ring-num">0%</b></div>
         <div class="mono muted" style="margin-bottom:10px">{tr.post.onThisPage}</div>
         <div id="toc">{rendered.headings.map((hd) => <a href={`#${hd.id}`} dir={dirOf(post.lang)}>{hd.text}</a>)}</div>
-        <div class="acts" id="post-acts" data-post-id={post.id} data-slug={post.slug}>
-          <button type="button" data-share>{tr.post.share}</button>
-        </div>
+        {post.preview ? <div class="acts"><button type="button" data-share>{tr.post.share}</button></div> : <PostActions client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ like: tr.post.like, save: tr.post.save, share: tr.post.share, copied: tr.post.copied }} {locale} />}
       </aside>
       <article>
         {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
         {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(nameOf(post.lang).native)}</p>}
         <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={rendered.html}></div>
-        <div id="comments" data-post-id={post.id}></div>
+        {!post.preview && <Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} siteKey={process.env.TURNSTILE_SITE_KEY || undefined} />}
       </article>
       <div></div>
     </div>

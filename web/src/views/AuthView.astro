@@ -1,0 +1,75 @@
+---
+import { type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+
+export type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify' | 'confirm-subscription' | 'unsubscribe';
+const { locale, mode } = Astro.props as { locale: Locale; mode: Mode };
+const tr = t(locale);
+const a = tr.auth;
+const siteKey = process.env.TURNSTILE_SITE_KEY || '';
+const here = localePath(locale, '/');
+const titles: Record<Mode, string> = {
+  login: a.loginTitle,
+  register: a.registerTitle,
+  forgot: a.forgotTitle,
+  reset: a.resetTitle,
+  verify: a.verifyTitle,
+  'confirm-subscription': tr.subscribe.confirmTitle,
+  unsubscribe: tr.subscribe.unsubTitle,
+};
+const title = titles[mode];
+const msgs = JSON.stringify({
+  bad: a.badCredentials,
+  unverified: a.unverified,
+  resent: a.resent,
+  generic: a.generic,
+  ok: mode === 'register' ? a.checkInbox : mode === 'forgot' ? a.resetSent : mode === 'reset' ? a.resetDone : '',
+});
+const providers = ['github', 'google'];
+const tokenPages = {
+  verify: { endpoint: '/api/auth/verify', ok: a.verified, fail: a.verifyFail },
+  'confirm-subscription': { endpoint: '/pb/api/subscribers/confirm', ok: tr.subscribe.confirmed, fail: tr.subscribe.confirmFail },
+  unsubscribe: { endpoint: '/pb/api/subscribers/unsubscribe', ok: tr.subscribe.unsubDone, fail: tr.subscribe.unsubFail },
+} as const;
+const tp = mode in tokenPages ? tokenPages[mode as keyof typeof tokenPages] : null;
+---
+<Base title={`${title} — zouerami`} {locale} noindex alternates={{}}>
+  <main id="main" class="pad auth">
+    <div style="padding-block:70px 20px"><span class="mono muted">{a.account}</span><h1 class="h-big" style="margin-top:14px">{title}</h1></div>
+    {tp ? (
+      <div data-token-page data-endpoint={tp.endpoint} data-ok={tp.ok} data-fail={tp.fail}>
+        <p class="auth-result" data-result role="status">{a.verifying}</p>
+        <p style="margin-top:24px"><a class="btn" href={localePath(locale, mode === 'verify' ? '/login' : '/')}>{mode === 'verify' ? a.signIn : tr.nav.home}</a></p>
+      </div>
+    ) : (
+      <>
+      <form class="auth-form" data-endpoint={`/api/auth/${mode}`} data-msgs={msgs} data-on-ok={mode === 'login' ? 'redirect' : undefined} data-home={localePath(locale, '/account')} data-use-token={mode === 'reset' ? '' : undefined} data-reset="" method="post" novalidate={false}>
+        {mode === 'register' && <label><span class="mono muted">{a.name}</span><input name="name" required maxlength="60" autocomplete="nickname" /></label>}
+        {mode !== 'reset' && <label><span class="mono muted">{a.email}</span><input type="email" name="email" required autocomplete="email" dir="ltr" /></label>}
+        {(mode === 'login' || mode === 'register') && <label><span class="mono muted">{a.password}</span><input type="password" name="password" required minlength={mode === 'register' ? 10 : 1} maxlength="128" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} dir="ltr" />{mode === 'register' && <small class="muted">{a.passwordHint}</small>}</label>}
+        {mode === 'reset' && <label><span class="mono muted">{a.newPassword}</span><input type="password" name="password" required minlength="10" maxlength="128" autocomplete="new-password" dir="ltr" /></label>}
+        {siteKey && (mode === 'register' || mode === 'forgot') && <div class="cf-turnstile" data-sitekey={siteKey}></div>}
+        <button class="btn solid" type="submit">{mode === 'login' ? a.signIn : mode === 'register' ? a.signUp : mode === 'reset' ? a.save : a.send}</button>
+        <p class="auth-result" data-msg role="status" aria-live="polite"></p>
+        {mode === 'login' && <button type="button" class="linkbtn" data-resend hidden>{a.resend}</button>}
+        <nav class="auth-links mono">
+          {mode === 'login' && <><a href={localePath(locale, '/register')}>{a.noAccount} {a.signUp}</a><a href={localePath(locale, '/forgot')}>{a.forgot}</a></>}
+          {mode === 'register' && <a href={localePath(locale, '/login')}>{a.haveAccount} {a.signIn}</a>}
+          {(mode === 'forgot' || mode === 'reset') && <a href={localePath(locale, '/login')}>{a.signIn}</a>}
+        </nav>
+      </form>
+      {mode === 'login' && (
+        <div class="oauth">
+          <p class="mono muted">{a.or}</p>
+          {providers.map((p) => <a class="btn" href={`/api/auth/oauth/${p}?next=${encodeURIComponent(localePath(locale, '/account'))}`} data-astro-reload>{a.continueWith} {p === 'github' ? 'GitHub' : 'Google'}</a>)}
+        </div>
+      )}
+      </>
+    )}
+    {siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
+  </main>
+  <script>
+    import { runTokenPage } from '../scripts/auth-forms';
+    document.addEventListener('astro:page-load', runTokenPage);
+  </script>
+</Base>

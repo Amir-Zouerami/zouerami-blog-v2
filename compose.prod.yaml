@@ -1,0 +1,73 @@
+# Production stack for the VPS. Standalone (does not layer on compose.yaml).
+#   cp .env.example .env   # fill in: SITE_URL, AUTH_SECRET, PB_SUPERUSER_*, SMTP_*, S3_*, TURNSTILE_*, OAuth ids
+#   docker compose -f compose.prod.yaml up -d
+name: zouerami
+services:
+  pocketbase:
+    image: ${POCKETBASE_IMAGE:-zouerami-pocketbase:local}
+    build: ./pocketbase
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SITE_URL: ${SITE_URL}
+    volumes:
+      - pb_data:/pb_data
+    ports:
+      - '127.0.0.1:8090:8090' # admin UI via SSH tunnel only
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8090/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    deploy: { resources: { limits: { memory: 512m } } }
+
+  web:
+    image: ${WEB_IMAGE:-zouerami-web:local}
+    build: ./web
+    restart: unless-stopped
+    environment:
+      PB_URL: http://pocketbase:8090
+      PB_PUBLIC_URL: /pb
+      SITE_URL: ${SITE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+    depends_on:
+      pocketbase: { condition: service_healthy }
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    deploy: { resources: { limits: { memory: 768m } } }
+
+  nginx:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-zouerami.dev}
+      CACHE_TTL: ${CACHE_TTL:-60}
+      NGINX_ENVSUBST_FILTER: '^(SERVER_NAME|CACHE_TTL)$$'
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/proxy_web.conf:/etc/nginx/proxy_web.conf:ro
+      - certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on: [web, pocketbase]
+    # re-read certificates after renewal
+    command: ['/bin/sh', '-c', 'while :; do sleep 12h & wait $${!}; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g "daemon off;"']
+
+  certbot:
+    image: certbot/certbot:v4.2.0
+    restart: unless-stopped
+    volumes:
+      - certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: ['/bin/sh', '-c', 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done']
+
+volumes:
+  pb_data:
+  certs:
+  certbot_www:
+  nginx_cache:
