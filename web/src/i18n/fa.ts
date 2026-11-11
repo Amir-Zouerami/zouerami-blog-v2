@@ -50,6 +50,8 @@ export const fa: Dict = {
   },
   pager: { prev: 'قبلی', next: 'بعدی', label: 'صفحه‌ها' },
   blog: {
+    featured: 'منتخب',
+    recent: 'تازه‌ترین‌ها',
     title: 'نوشته‌ها',
     description: 'یادداشت‌هایی درباره وب، طراحی، دواپس و تایپوگرافی فارسی.',
     crumb: 'فهرست / نوشته‌ها',

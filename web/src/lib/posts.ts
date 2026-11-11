@@ -37,6 +37,7 @@ function summarize(
   const tr = trs.find((t) => t.lang === primary) as PostTranslationListItem;
   return {
     slug: post.slug,
+    featured: post.featured,
     date: post.date,
     tags: post.tags,
     langs,

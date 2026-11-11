@@ -1783,9 +1783,18 @@ html.mm-lock:has(.mermaid-block.is-full) { scrollbar-gutter: auto; }
 .post-head h1[lang='fa'] { font-weight: 700; }
 .prose[dir='rtl'] .callout { font-size: 16.5px; line-height: 1.95; }
 .prose[dir='rtl'] .callout-title { font-size: 15px; font-weight: 700; }
-.cards-all .card { grid-column: span 6; }
-.cards-all .card-body h3 { font-size: 24px; }
-@media (max-width: 700px) { .cards-all .card { grid-column: span 12; } }
+.cards-all { gap: 18px; }
+.cards-all .card { grid-column: span 4; gap: 10px; }
+.cards-all .card-img { aspect-ratio: 16 / 10; }
+.cards-all .card-body { padding: 2px 16px 16px; gap: 6px; }
+.cards-all .card-body h3 { font-size: 18px; }
+.cards-all .card-body h3[lang='fa'] { font-size: 17px; }
+.cards-all .card-sum { font-size: 14px; -webkit-line-clamp: 2; line-clamp: 2; }
+@media (max-width: 900px) { .cards-all .card { grid-column: span 6; } }
+@media (max-width: 600px) { .cards-all .card { grid-column: span 12; } }
+.card-s12 { grid-column: span 12 !important; }
+.card-s6 { grid-column: span 6 !important; }
+.card-s12 .card-img { aspect-ratio: 21 / 8; }
 .cards-all + .year, .year + .cards-all { margin-top: 0; }
 ::highlight(quote) { background: color-mix(in srgb, var(--acc) 40%, transparent); color: inherit; }
 .card-meta { display: flex; justify-content: space-between; align-items: center; } .card-langs { display: inline-flex; gap: 6px; }

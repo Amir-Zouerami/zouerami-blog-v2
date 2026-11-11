@@ -71,3 +71,23 @@ test.describe('pagination and Persian post heading', () => {
     await expect(page.locator('.post-head h1')).toHaveCSS('text-align', /right|start/);
   });
 });
+
+test('blog page: featured collage on top, then 3-up recent posts without duplicates', async ({
+  page,
+}) => {
+  await page.goto('/blog');
+  const featured = page.locator('.cards:not(.cards-all) .card');
+  const n = await featured.count();
+  expect(n).toBeGreaterThanOrEqual(3);
+  expect(n).toBeLessThanOrEqual(5);
+  const recent = page.locator('.cards-all .card');
+  const featuredTitles = await featured.locator('h3').allTextContents();
+  const recentTitles = await recent.locator('h3').allTextContents();
+  for (const t of featuredTitles) expect(recentTitles).not.toContain(t);
+  const tops = await recent.evaluateAll((els) =>
+    els.map((e) => Math.round(e.getBoundingClientRect().top)),
+  );
+  expect(tops.filter((t) => t === tops[0]).length).toBe(3);
+  await page.goto('/blog?tag=DevOps');
+  await expect(page.locator('.cards:not(.cards-all)')).toHaveCount(0); // filters show plain results
+});

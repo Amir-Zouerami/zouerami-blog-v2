@@ -48,6 +48,7 @@ export default function PostEdit({ id }: { id: string | null }) {
   const [date, setDate] = useState(fromPocketBase(new Date().toISOString().replace('T', ' ')));
   const [tags, setTags] = useState('');
   const [token, setToken] = useState('');
+  const [featured, setFeatured] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [cover, setCover] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -81,6 +82,7 @@ export default function PostEdit({ id }: { id: string | null }) {
       setDate(fromPocketBase(p.date));
       setTags((p.tags ?? []).join(', '));
       setToken(p.preview_token ?? '');
+      setFeatured(!!p.featured);
       setImages(p.images ?? []);
       setCover(p.cover ?? '');
       setTrs(next);
@@ -182,6 +184,7 @@ export default function PostEdit({ id }: { id: string | null }) {
           date: toPocketBase(date),
           tags: tagList,
           preview_token: token,
+          featured,
         };
         let saved: Rec;
         if (coverFile) {
@@ -420,6 +423,22 @@ export default function PostEdit({ id }: { id: string | null }) {
           hint="Shown on the post and used for ordering. A future date does not delay publishing."
         >
           <DateTimePicker label="Publish date" withTime value={date} onChange={touch(setDate)} />
+        </Field>
+        <Field
+          label="Featured"
+          hint="Featured posts (3–5 work best) form the collage at the top of the blog page."
+        >
+          <label className="row-inline">
+            <input
+              type="checkbox"
+              checked={featured}
+              onChange={(e) => {
+                setFeatured(e.target.checked);
+                setDirty(true);
+              }}
+            />
+            <span>Show in the featured section</span>
+          </label>
         </Field>
         <Field label="Tags (comma separated)">
           <input

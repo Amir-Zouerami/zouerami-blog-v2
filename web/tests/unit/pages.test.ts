@@ -4,6 +4,7 @@ import { UpstreamError } from '../../src/lib/pb';
 import type { PostSummary } from '../../src/lib/schemas';
 
 const p = (o: Partial<PostSummary>): PostSummary => ({
+  featured: false,
   slug: 'a',
   date: '2026-05-01',
   tags: [],
