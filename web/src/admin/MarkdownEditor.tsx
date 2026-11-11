@@ -50,6 +50,7 @@ export default function MarkdownEditor({
   const latest = useRef({ onChange, onUpload, onSave });
   latest.current = { onChange, onUpload, onSave };
   const [html, setHtml] = useState('');
+  const previewRef = useRef<HTMLDivElement>(null);
   const [previewErr, setPreviewErr] = useState(false);
   const [words, setWords] = useState(0);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit'); // narrow screens
@@ -147,6 +148,14 @@ export default function MarkdownEditor({
     // the editor is created once per mount; the parent remounts it (key) when switching language/post
   }, []);
 
+  // the document can change from outside (restoring a backup): push it into the editor; normal typing is a no-op here
+  useEffect(() => {
+    const v = view.current;
+    if (v && v.state.doc.toString() !== value) {
+      v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } });
+    }
+  }, [value]);
+
   useEffect(() => {
     view.current?.dispatch({
       effects: dirComp.current.reconfigure(EditorView.contentAttributes.of({ dir, lang })),
@@ -158,10 +167,16 @@ export default function MarkdownEditor({
     setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
     const ctl = new AbortController();
     const t = setTimeout(() => {
-      previewMarkdown(value, postId, ctl.signal)
+      previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'latin')
         .then((r) => {
           setHtml(r.html);
           setPreviewErr(false);
+          // diagrams render in the browser, exactly as on the public site
+          requestAnimationFrame(() => {
+            const root = previewRef.current;
+            if (root?.querySelector('.mermaid-block:not([data-done])'))
+              void import('../scripts/mermaid').then((m) => m.renderMermaidIn(root));
+          });
         })
         .catch((e) => {
           if ((e as Error).name !== 'AbortError') setPreviewErr(true);
@@ -171,7 +186,7 @@ export default function MarkdownEditor({
       clearTimeout(t);
       ctl.abort();
     };
-  }, [value, postId]);
+  }, [value, postId, lang]);
 
   const wrap = (before: string, after = before, placeholder = '') => {
     const v = view.current;
@@ -408,7 +423,13 @@ export default function MarkdownEditor({
         <div className="adm-pane preview">
           {previewErr && <p className="mono muted">Preview unavailable.</p>}
           {/* HTML comes from our own renderer, which drops raw HTML from the source */}
-          <div className="prose" dir={dir} lang={lang} dangerouslySetInnerHTML={{ __html: html }} />
+          <div
+            className="prose"
+            ref={previewRef}
+            dir={dir}
+            lang={lang}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         </div>
       </div>
     </div>

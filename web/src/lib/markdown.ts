@@ -7,6 +7,7 @@ import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import { faDigits } from '../i18n/format';
 
 export interface Heading {
   id: string;
@@ -19,6 +20,8 @@ export interface Rendered {
 export interface RenderOptions {
   /** Maps the filename in `![](img:<filename>)` to a browser URL. */
   resolveImage: (filename: string) => string;
+  /** Digits used for the `/01` heading numbers; Persian posts get Persian numerals. */
+  numerals?: 'latin' | 'fa';
 }
 
 const text = (node: Element): string =>
@@ -47,6 +50,15 @@ function rehypeTerm() {
       );
       const cls = (code?.properties?.className as string[] | undefined) ?? [];
       const lang = cls.find((c) => c.startsWith('language-'))?.slice(9) ?? 'text';
+      if (lang === 'mermaid') {
+        // Diagrams are rendered in the browser (scripts/mermaid.ts). The source stays as plain text so the page still
+        // reads without JavaScript, and Shiki ignores it (it only touches <pre><code>).
+        const src = code ? text(code) : '';
+        parent.children[index] = h('div', { className: ['mermaid-block'], 'data-mermaid': '' }, [
+          h('pre', { className: ['mermaid-src'] }, [{ type: 'text', value: src }]),
+        ]);
+        return 'skip';
+      }
       parent.children[index] = h('div', { className: ['term'] }, [
         h('div', { className: ['tb'] }, [
           h('span', {}, [{ type: 'text', value: lang }]),
@@ -72,7 +84,12 @@ function rehypeSignal(options: RenderOptions, headings: Heading[]) {
         n += 1;
         headings.push({ id: String(node.properties?.id ?? ''), text: text(node) });
         node.children.unshift(
-          h('span', {}, [{ type: 'text', value: `/${String(n).padStart(2, '0')}` }]),
+          h('span', {}, [
+            {
+              type: 'text',
+              value: `/${options.numerals === 'fa' ? faDigits(String(n).padStart(2, '0')) : String(n).padStart(2, '0')}`,
+            },
+          ]),
         );
       } else if (node.tagName === 'img') {
         const src = String(node.properties?.src ?? '');
@@ -113,7 +130,7 @@ const processor = unified()
   .use(rehypeSlug)
   .use(rehypeTerm)
   .use(rehypeShiki, {
-    themes: { light: 'vitesse-light', dark: 'vitesse-dark' },
+    themes: { light: 'github-light-default', dark: 'github-dark-default' },
     defaultColor: false,
     fallbackLanguage: 'text',
     lazy: true,

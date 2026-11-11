@@ -1,4 +1,34 @@
 import { expect, test } from '@playwright/test';
+import PocketBase from 'pocketbase';
+
+/** An English-only post owned by this run (the seeded ones can be edited by the writer in the admin). */
+const EN_ONLY = `e2e-enonly-${Date.now()}`;
+let su: PocketBase;
+
+test.beforeAll(async () => {
+  su = new PocketBase(process.env.PB_TEST_URL ?? 'http://127.0.0.1:8090');
+  su.autoCancellation(false);
+  await su
+    .collection('_superusers')
+    .authWithPassword(
+      process.env.PB_SUPERUSER_EMAIL ?? '',
+      process.env.PB_SUPERUSER_PASSWORD ?? '',
+    );
+  const p = await su
+    .collection('posts')
+    .create({ slug: EN_ONLY, date: '2026-01-15 00:00:00.000Z', status: 'published', tags: [] });
+  await su.collection('post_translations').create({
+    post: p.id,
+    lang: 'en',
+    title: 'English only fixture',
+    summary: 's',
+    body_md: 'Body',
+  });
+});
+test.afterAll(async () => {
+  for (const p of await su.collection('posts').getFullList({ filter: `slug = "${EN_ONLY}"` }))
+    await su.collection('posts').delete(p.id);
+});
 
 test.describe('blog index', () => {
   test('lists published posts newest first, grouped by year, with EN/FA badges', async ({
@@ -76,7 +106,7 @@ test.describe('post page', () => {
       '/blog/hello-bilingual',
     );
 
-    await page.goto('/blog/english-only');
+    await page.goto(`/blog/${EN_ONLY}`);
     await expect(page.locator('.langseg .off')).toContainText('not written yet');
     await expect(page.locator('.langseg a')).toHaveCount(1);
   });
@@ -99,10 +129,10 @@ test.describe('post page', () => {
     const both = await (await request.get('/blog/hello-bilingual')).text();
     expect(both).toContain('<link rel="alternate" hreflang="en"');
     expect(both).toContain('<link rel="alternate" hreflang="fa"');
-    const one = await (await request.get('/blog/english-only')).text();
+    const one = await (await request.get(`/blog/${EN_ONLY}`)).text();
     expect(one).toContain('<link rel="alternate" hreflang="en"');
     expect(one).not.toContain('<link rel="alternate" hreflang="fa"');
-    expect(one).toMatch(/rel="canonical" href="http:\/\/localhost:8088\/blog\/english-only"/);
+    expect(one).toContain(`rel="canonical" href="http://localhost:8088/blog/${EN_ONLY}"`);
   });
   test('unknown slug is a real 404; malformed slugs too', async ({ request }) => {
     expect((await request.get('/blog/does-not-exist')).status()).toBe(404);
@@ -183,15 +213,15 @@ test.describe('language switching', () => {
   test('the header switch stays on the same page, even where no translation exists', async ({
     page,
   }) => {
-    await page.goto('/blog/english-only');
+    await page.goto(`/blog/${EN_ONLY}`);
     await expect(page.locator('a[data-lang-switch]')).toHaveAttribute(
       'href',
-      '/fa/blog/english-only',
+      `/fa/blog/${EN_ONLY}`,
     );
     await page.locator('a[data-lang-switch]').click();
-    await page.waitForURL('**/fa/blog/english-only');
+    await page.waitForURL(`**/fa/blog/${EN_ONLY}`);
     await expect(page.locator('.notice')).toBeVisible(); // English text inside the Persian chrome, with a notice
-    await expect(page.locator('a[data-lang-switch]')).toHaveAttribute('href', '/blog/english-only');
+    await expect(page.locator('a[data-lang-switch]')).toHaveAttribute('href', `/blog/${EN_ONLY}`);
   });
   test('switching language keeps the page and its query string', async ({ page }) => {
     for (const [from, to] of [

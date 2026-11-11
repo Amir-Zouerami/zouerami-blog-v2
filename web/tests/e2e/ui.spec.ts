@@ -131,13 +131,24 @@ test.describe('wipe transition', () => {
     const ctx = await browser.newContext({ hasTouch: true, isMobile: true });
     const page = await ctx.newPage();
     await page.goto('/');
-    await expect(page.locator('#sig-cursor')).toHaveCount(0);
+    expect(await page.evaluate(() => getComputedStyle(document.body).cursor)).not.toContain('url(');
     await ctx.close();
   });
 
   test('desktop gets the pixel cursor', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('#sig-cursor')).toHaveCount(1);
+    const cursor = () => page.evaluate(() => getComputedStyle(document.body).cursor);
+    expect(await cursor()).toContain('url(');
+    // it must survive client-side navigation (it used to vanish after leaving the home page)
+    for (const link of ['Blog', 'Work', 'About']) {
+      await page.locator('nav.nav a', { hasText: link }).click();
+      await page.waitForURL(`**/${link.toLowerCase()}`);
+      expect(await cursor(), link).toContain('url(');
+    }
+    await page.goto('/fa/about');
+    expect(await cursor()).toContain('url(');
+    await page.goto('/admin');
+    expect(await cursor()).toContain('url(');
   });
 });
 

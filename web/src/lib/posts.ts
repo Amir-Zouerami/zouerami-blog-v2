@@ -25,9 +25,14 @@ export function imageUrl(
   return `${publicUrl}/api/files/posts/${post.id}/${filename}`;
 }
 
-function summarize(post: PostRecord, trs: PostTranslationListItem[]): PostSummary | null {
+/** `prefer`: the reader's language; used for the title/summary when the post exists in it. */
+function summarize(
+  post: PostRecord,
+  trs: PostTranslationListItem[],
+  prefer?: Lang,
+): PostSummary | null {
   const langs = LANG_ORDER.filter((l) => trs.some((t) => t.lang === l));
-  const primary = langs[0];
+  const primary = prefer && langs.includes(prefer) ? prefer : langs[0];
   if (!primary) return null;
   const tr = trs.find((t) => t.lang === primary) as PostTranslationListItem;
   return {
@@ -44,7 +49,7 @@ function summarize(post: PostRecord, trs: PostTranslationListItem[]): PostSummar
 
 /** Published posts, newest first. Posts without any translation are skipped. */
 export async function listPosts(
-  opts: { limit?: number; tag?: string } = {},
+  opts: { limit?: number; tag?: string; lang?: Lang } = {},
   pb: PocketBase = getPb(),
 ): Promise<PostSummary[]> {
   let postRecords: PostRecord[];
@@ -68,6 +73,7 @@ export async function listPosts(
       summarize(
         p,
         trRecords.filter((t) => t.post === p.id),
+        opts.lang,
       ),
     )
     .filter((s): s is PostSummary => s !== null);

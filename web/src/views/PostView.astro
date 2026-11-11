@@ -55,17 +55,10 @@ const jsonLd =
     <header class="post-head pad">
       <div style="margin-bottom:26px">{post.tags.map((tg) => <span class="tagp">{tg}</span>)} </div>
       <h1 dir={dirOf(post.lang)} lang={post.lang}>{post.title}</h1>
-      <div class="meta-grid">
+      <div class="meta-grid meta-3">
         <div><span class="mono muted">{tr.post.published}</span><p>{formatDate(post.date, locale, true)}</p></div>
         <div><span class="mono muted">{tr.post.reading}</span><p>{fmt(data.minutes)} {tr.post.min}</p></div>
         <div><span class="mono muted">{tr.post.views}</span><p id="views">{fmt(post.views)}</p></div>
-        <div><span class="mono muted">{tr.post.language}</span>
-          <div class="langseg" role="group" aria-label={tr.post.language}>
-            {LOCALES.map((l) => post.langs.includes(l)
-              ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}>{nameOf(l).native}</a>
-              : <span class="off" lang={l} title={tr.post.notWritten} aria-disabled="true"><span class="nm">{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
-          </div>
-        </div>
       </div>
     </header>
     <div class="post-cover" aria-hidden="true">{post.cover ? <img src={post.cover} alt="" style="width:100%;height:100%;object-fit:cover" /> : <Fragment set:html={cover(seedOf(post.slug))} />}</div>
@@ -77,6 +70,13 @@ const jsonLd =
         {post.preview ? <div class="acts"><button type="button" data-share>{tr.post.share}</button></div> : <PostActions client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ like: tr.post.like, save: tr.post.save, share: tr.post.share, copied: tr.post.copied }} {locale} />}
       </aside>
       <article>
+        <div class="langbar">
+          <div class="langseg" role="group" aria-label={tr.post.language}>
+            {LOCALES.map((l) => post.langs.includes(l)
+              ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}>{nameOf(l).native}</a>
+              : <span class="off" lang={l} title={tr.post.notWritten} aria-disabled="true"><span class="nm">{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
+          </div>
+        </div>
         {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
         {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(nameOf(post.lang).native)}</p>}
         <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={data.html}></div>

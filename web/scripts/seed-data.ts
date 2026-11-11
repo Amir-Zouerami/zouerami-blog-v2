@@ -82,6 +82,76 @@ const REBUILT_FA = `هر چند سال یک‌بار هوس می‌کنم وبل
 [^1]: «جالب می‌شود» یک حس است، نه یک نیازمندی. مدام دوباره یادش می‌گیرم.
 `;
 
+const FENCE = '```';
+const DEMO_EN = `A demo of everything the writing tools support: heading levels, code and diagrams.
+
+## Diagrams
+
+Hold Ctrl and scroll to zoom, drag to pan, use the buttons for full screen.
+
+${FENCE}mermaid
+flowchart LR
+  A[Write in Markdown] --> B{Looks right?}
+  B -- yes --> C[Publish]
+  B -- no --> A
+  C --> D[Readers]
+${FENCE}
+
+${FENCE}mermaid
+sequenceDiagram
+  participant W as Writer
+  participant S as Site
+  W->>S: Save post
+  S-->>W: Preview
+${FENCE}
+
+## Headings
+
+### Third level
+
+Some text under a level-three heading.
+
+#### Fourth level
+
+Text under level four.
+
+##### Fifth level
+
+###### Sixth level
+
+## Code
+
+${FENCE}ts
+export const greet = (name: string): string => 'Hello, ' + name + '!';
+${FENCE}
+`;
+
+const DEMO_FA = `نمونه‌ای از همه چیزهایی که ابزار نوشتن پشتیبانی می‌کند: سطح‌های تیتر، کد و نمودار.
+
+## نمودارها
+
+با Ctrl و چرخ ماوس بزرگ‌نمایی کنید، با کشیدن جابه‌جا شوید.
+
+${FENCE}mermaid
+flowchart LR
+  A[نوشتن] --> B{خوب شد؟}
+  B -- بله --> C[انتشار]
+  B -- نه --> A
+${FENCE}
+
+## تیترها
+
+### سطح سوم
+
+متنی زیر تیتر سطح سه.
+
+#### سطح چهارم
+
+##### سطح پنجم
+
+###### سطح ششم
+`;
+
 const generic = (
   title: string,
   extra = '',
@@ -251,6 +321,26 @@ export const posts: PostSeed[] = [
         title: 'A tiny state machine for a big form',
         summary: 'Forty fields, six steps, and one 60-line reducer.',
         body_md: generic('A form state machine'),
+      },
+    ],
+  },
+  {
+    slug: 'diagrams-demo',
+    date: '2026-04-01 12:00:00.000Z',
+    status: 'published',
+    tags: ['Notes'],
+    tr: [
+      {
+        lang: 'en',
+        title: 'Diagrams, headings and code',
+        summary: 'A tour of the writing tools.',
+        body_md: DEMO_EN,
+      },
+      {
+        lang: 'fa',
+        title: 'نمودار، تیتر و کد',
+        summary: 'گشتی در ابزارهای نوشتن.',
+        body_md: DEMO_FA,
       },
     ],
   },

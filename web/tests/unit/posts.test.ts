@@ -69,6 +69,20 @@ describe('listPosts', () => {
     const [post] = await listPosts({}, pb);
     expect(post).toMatchObject({ langs: ['en', 'fa'], titleLang: 'en', title: 'En' });
   });
+  it("shows the reader's language when the post exists in it (Persian site → Persian titles)", async () => {
+    const pb = stub(
+      [P({})],
+      [T({ lang: 'fa', title: 'فا', id: 't2' }), T({ lang: 'en', title: 'En' })],
+    );
+    const [fa] = await listPosts({ lang: 'fa' }, pb);
+    expect(fa).toMatchObject({ langs: ['en', 'fa'], titleLang: 'fa', title: 'فا' });
+    const [en] = await listPosts({ lang: 'en' }, pb);
+    expect(en).toMatchObject({ titleLang: 'en', title: 'En' });
+  });
+  it('falls back to the available language when the preferred one does not exist', async () => {
+    const [p] = await listPosts({ lang: 'fa' }, stub([P({})], [T({ lang: 'en', title: 'En' })]));
+    expect(p).toMatchObject({ titleLang: 'en', title: 'En' });
+  });
   it('orders newest first', async () => {
     const pb = stub(
       [

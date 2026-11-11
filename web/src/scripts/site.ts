@@ -1,6 +1,5 @@
 import { api } from '../lib/client-api';
 import { applyTheme } from '../lib/theme';
-import { initCursor } from './cursor';
 import { onPage } from './page-lifecycle';
 import { initSiteMenu } from './site-menu';
 import { initWipe } from './wipe';
@@ -118,7 +117,6 @@ function onClick(e: MouseEvent): void {
 }
 
 export function initSite(): void {
-  initCursor();
   initWipe();
   initSiteMenu();
   setInterval(tick, 1000);
@@ -128,5 +126,11 @@ export function initSite(): void {
     languageHint();
     void showAccount();
     spotlight(signal);
+    if (document.querySelector('.mermaid-block')) {
+      void import('./mermaid').then((m) => {
+        m.watchMermaid();
+        return m.renderMermaidIn(document);
+      });
+    }
   });
 }

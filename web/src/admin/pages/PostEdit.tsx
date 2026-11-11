@@ -6,6 +6,7 @@ import ImageLibrary from '../ImageLibrary';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
 import { Confirm, Field, useToast } from '../ui';
+import { useDraft } from '../useDraft';
 
 interface Tr {
   id?: string;
@@ -14,6 +15,29 @@ interface Tr {
   body_md: string;
 }
 const EMPTY: Tr = { title: '', summary: '', body_md: '' };
+
+interface Form {
+  slug: string;
+  tags: string;
+  date: string;
+  trs: Record<Lang, Tr>;
+}
+/** What gets backed up locally: everything the writer typed (translation ids are server details). */
+const snapshotOf = (f: Form) => ({
+  slug: f.slug,
+  tags: f.tags,
+  date: f.date,
+  trs: {
+    en: { title: f.trs.en.title, summary: f.trs.en.summary, body_md: f.trs.en.body_md },
+    fa: { title: f.trs.fa.title, summary: f.trs.fa.summary, body_md: f.trs.fa.body_md },
+  },
+});
+const blank = (): Form => ({
+  slug: '',
+  tags: '',
+  date: fromPocketBase(new Date().toISOString().replace('T', ' ')),
+  trs: { en: { ...EMPTY }, fa: { ...EMPTY } },
+});
 
 export default function PostEdit({ id }: { id: string | null }) {
   const toast = useToast();
@@ -34,11 +58,14 @@ export default function PostEdit({ id }: { id: string | null }) {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [baseline, setBaseline] = useState<string | null>(null);
   const postId = post?.id ?? id ?? undefined;
 
   const load = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
+    if (!id) {
+      setBaseline(JSON.stringify(snapshotOf(blank())));
+      return;
+    }
     try {
       const p = await pb.collection('posts').getOne(id);
       const list = await pb
@@ -60,6 +87,16 @@ export default function PostEdit({ id }: { id: string | null }) {
       setOrig(structuredClone(next));
       setLang(next.en.title || !next.fa.title ? 'en' : 'fa');
       setDirty(false);
+      setBaseline(
+        JSON.stringify(
+          snapshotOf({
+            slug: p.slug,
+            tags: (p.tags ?? []).join(', '),
+            date: fromPocketBase(p.date),
+            trs: next,
+          }),
+        ),
+      );
     } catch (e) {
       toast(errText(e), 'err');
     } finally {
@@ -101,12 +138,41 @@ export default function PostEdit({ id }: { id: string | null }) {
     .map((t) => t.trim())
     .filter(Boolean);
 
+  const draft = useDraft(`post:${post?.id ?? id ?? 'new'}`, snapshotOf({ slug, tags, date, trs }), {
+    baseline,
+    enabled: dirty,
+  });
+  const restoreDraft = () => {
+    const d = draft.take();
+    if (!d) return;
+    setSlug(d.slug);
+    setTags(d.tags);
+    setDate(d.date);
+    setTrs((s) => ({
+      en: { ...s.en, ...d.trs.en },
+      fa: { ...s.fa, ...d.trs.fa },
+    }));
+    setDirty(true);
+    toast('Unsaved draft restored');
+  };
+
   const save = useCallback(
     async (nextStatus?: 'draft' | 'published') => {
       if (saving) return;
       if (!SLUG.test(slug)) return toast('Slug: lowercase letters, numbers and dashes only', 'err');
       if (!trs.en.title.trim() && !trs.fa.title.trim())
         return toast('Write a title in at least one language', 'err');
+      // never silently drop writing: a language with text but no title cannot be saved
+      for (const l of ['en', 'fa'] as Lang[]) {
+        const t = trs[l];
+        if (!t.title.trim() && (t.summary.trim() || t.body_md.trim())) {
+          setLang(l);
+          return toast(
+            `${l === 'fa' ? 'Persian' : 'English'} needs a title before it can be saved. Nothing was submitted and your text is untouched.`,
+            'err',
+          );
+        }
+      }
       setSaving(true);
       try {
         const st = nextStatus ?? status;
@@ -131,9 +197,10 @@ export default function PostEdit({ id }: { id: string | null }) {
             ? await pb.collection('posts').update(post.id, data)
             : await pb.collection('posts').create(data);
         }
+        const nextTrs = { ...trs };
         for (const l of ['en', 'fa'] as Lang[]) {
           const t = trs[l];
-          if (!t.title.trim()) continue; // a language without a title does not exist
+          if (!t.title.trim()) continue; // a language without a title does not exist (validated above)
           const body = {
             post: saved.id,
             lang: l,
@@ -141,23 +208,32 @@ export default function PostEdit({ id }: { id: string | null }) {
             summary: t.summary,
             body_md: t.body_md,
           };
-          if (t.id) await pb.collection('post_translations').update(t.id, body);
-          else await pb.collection('post_translations').create(body);
+          const rec = t.id
+            ? await pb.collection('post_translations').update(t.id, body)
+            : await pb.collection('post_translations').create(body);
+          nextTrs[l] = { ...t, id: rec.id };
         }
+        // update in place: no reload, so the cursor, scroll position and language tab stay put
+        setPost(saved);
+        setStatus(saved.status);
+        setImages(saved.images ?? images);
+        setCover(saved.cover ?? '');
+        setToken(saved.preview_token ?? '');
+        setTrs(nextTrs);
+        setOrig(structuredClone(nextTrs));
         setCoverFile(null);
+        setDirty(false);
+        draft.clear();
+        setBaseline(JSON.stringify(snapshotOf({ slug, tags, date, trs: nextTrs })));
         toast(st === 'published' ? 'Saved and published' : 'Saved');
-        if (!post) {
-          location.hash = `#/posts/${saved.id}`;
-        } else {
-          await load();
-        }
+        if (!post) history.replaceState(null, '', `#/posts/${saved.id}`);
       } catch (e) {
         toast(errText(e), 'err');
       } finally {
         setSaving(false);
       }
     },
-    [saving, slug, trs, status, date, tagList, token, coverFile, post, toast, load],
+    [saving, slug, trs, status, date, tagList, tags, token, coverFile, post, images, toast, draft],
   );
 
   const saveRef = useRef(save);
@@ -265,6 +341,26 @@ export default function PostEdit({ id }: { id: string | null }) {
           </button>
         )}
       </div>
+
+      {draft.recoverable && (
+        <div className="adm-status draft" role="alert">
+          <strong>Unsaved writing found</strong>
+          <span>
+            A copy from{' '}
+            {new Date(draft.recoverable.at).toLocaleString('en-GB', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}{' '}
+            was kept in this browser.
+          </span>
+          <button type="button" className="adm-btn solid" onClick={restoreDraft}>
+            Restore it
+          </button>
+          <button type="button" className="adm-btn" onClick={draft.discard}>
+            Discard
+          </button>
+        </div>
+      )}
 
       <div className={`adm-status ${post ? post.status : 'draft'}`} role="status">
         {post?.status === 'published' ? (
@@ -409,7 +505,7 @@ export default function PostEdit({ id }: { id: string | null }) {
       </div>
 
       <MarkdownEditor
-        key={`${postId ?? 'new'}-${lang}`}
+        key={lang}
         value={t.body_md}
         onChange={(v) => setTr(lang, { body_md: v })}
         dir={langDir(lang)}

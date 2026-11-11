@@ -3,6 +3,7 @@ import { errText, fileUrl, pb, type Rec, SLUG, slugify } from '../api';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
 import { Confirm, Field, useToast } from '../ui';
+import { useDraft } from '../useDraft';
 
 interface Tr {
   id?: string;
@@ -35,6 +36,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
   const [loading, setLoading] = useState(!!id);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [baseline, setBaseline] = useState<string | null>(id ? null : '');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -67,6 +69,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
       setTouchedSlug(true);
       setTrs(next);
       setDirty(false);
+      setBaseline(JSON.stringify(snap(p, next)));
     } catch (e) {
       toast(errText(e), 'err');
     } finally {
@@ -74,6 +77,39 @@ export default function ProjectEdit({ id }: { id: string | null }) {
     }
   }, [id, toast]);
   useEffect(() => void load(), [load]);
+
+  const strip = (t: Record<Lang, Tr>) => ({
+    en: { blurb: t.en.blurb, metric_label: t.en.metric_label, body_md: t.en.body_md },
+    fa: { blurb: t.fa.blurb, metric_label: t.fa.metric_label, body_md: t.fa.body_md },
+  });
+  const snap = (p: Rec, t: Record<Lang, Tr>) => ({
+    f: {
+      name: p.name,
+      slug: p.slug,
+      year: p.year,
+      category: p.category,
+      stack: (p.stack ?? []).join(', '),
+      link_live: p.link_live ?? '',
+      link_repo: p.link_repo ?? '',
+      metric_value: p.metric_value ?? 0,
+      sort: p.sort ?? 0,
+      status: p.status,
+    },
+    trs: strip(t),
+  });
+  const draft = useDraft(
+    `project:${rec?.id ?? id ?? 'new'}`,
+    { f, trs: strip(trs) },
+    { baseline: baseline ?? null, enabled: dirty },
+  );
+  const restoreDraft = () => {
+    const d = draft.take();
+    if (!d) return;
+    setF(d.f);
+    setTrs((s) => ({ en: { ...s.en, ...d.trs.en }, fa: { ...s.fa, ...d.trs.fa } }));
+    setDirty(true);
+    toast('Unsaved draft restored');
+  };
 
   const set = (patch: Partial<typeof f>) => {
     setF((s) => ({ ...s, ...patch }));
@@ -131,9 +167,13 @@ export default function ProjectEdit({ id }: { id: string | null }) {
         else await pb.collection('project_translations').create(body);
       }
       setCoverFile(null);
+      draft.clear();
       toast('Saved');
-      if (!rec) location.hash = `#/projects/${saved.id}`;
-      else await load();
+      if (!rec) history.replaceState(null, '', `#/projects/${saved.id}`);
+      setRec(saved);
+      setDirty(false);
+      setBaseline(JSON.stringify(snap(saved, trs)));
+      if (id) await load();
     } catch (e) {
       toast(errText(e), 'err');
     } finally {
@@ -253,6 +293,25 @@ export default function ProjectEdit({ id }: { id: string | null }) {
           )}
         </Field>
       </div>
+      {draft.recoverable && (
+        <div className="adm-status draft" role="alert">
+          <strong>Unsaved writing found</strong>
+          <span>
+            A copy from{' '}
+            {new Date(draft.recoverable.at).toLocaleString('en-GB', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}{' '}
+            was kept in this browser.
+          </span>
+          <button type="button" className="adm-btn solid" onClick={restoreDraft}>
+            Restore it
+          </button>
+          <button type="button" className="adm-btn" onClick={draft.discard}>
+            Discard
+          </button>
+        </div>
+      )}
       <LangTabs
         active={lang}
         onChange={setLang}
@@ -277,7 +336,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
         </Field>
       </div>
       <MarkdownEditor
-        key={`${id ?? 'new'}-${lang}`}
+        key={lang}
         value={t.body_md}
         onChange={(v) => setTr({ body_md: v })}
         dir={langDir(lang)}

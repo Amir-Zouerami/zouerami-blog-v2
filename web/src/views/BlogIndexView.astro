@@ -7,7 +7,7 @@ import Unavailable from './Unavailable.astro';
 
 const { locale } = Astro.props as { locale: Locale };
 const tr = t(locale);
-const page = await loadBlogIndex();
+const page = await loadBlogIndex(locale);
 const all = page.kind === 'ok' ? page.data : [];
 const tag = Astro.url.searchParams.get('tag') ?? 'all';
 const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
