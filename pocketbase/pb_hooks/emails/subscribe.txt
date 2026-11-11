@@ -1,0 +1,10 @@
+Words, occasionally.
+
+You asked to get new posts by email. Confirm your address and I will write when there is something worth reading. No spam, ever.
+
+Confirm subscription: {{URL}}
+
+If this was not you, ignore this email and nothing will be sent.
+
+zouerami.dev · Amir Zouerami
+{{SITE}}

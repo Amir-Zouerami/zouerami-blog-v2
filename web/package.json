@@ -9,6 +9,7 @@
     "test": "vitest run tests/unit",
     "test:integration": "bun --env-file=../.env x vitest run tests/integration",
     "test:e2e": "playwright test",
+    "build:emails": "bun scripts/emails/build.ts",
     "make-admin": "bun --env-file=../.env scripts/make-admin.ts",
     "seed": "bun --env-file=../.env scripts/seed.ts"
   },

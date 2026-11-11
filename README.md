@@ -39,3 +39,6 @@ Security model: the web app never holds PocketBase superuser credentials. Admin 
 
 ## Logs and trace ids
 `docker compose -f compose.yaml -f compose.dev.yaml logs -f web` shows coloured pino logs (`LOG_LEVEL`, `LOG_PRETTY` in `.env`). Every API response carries a `traceId` (also the `x-trace-id` header); grep it in the logs to see that request's story. Browser failures print `[api] … trace=<id>` in the console, and server-side failures show `(ref xxxxxxxx)` in the UI.
+
+## Emails
+Verification, password reset and newsletter confirmation use one design ("Signal Dark", English only) defined in `web/scripts/emails/design.ts`. After editing it run `cd web && bun run build:emails` to regenerate `pocketbase/pb_hooks/emails/*` (a unit test fails if they drift). Dev mail lands in Mailpit at <http://127.0.0.1:8025>.
