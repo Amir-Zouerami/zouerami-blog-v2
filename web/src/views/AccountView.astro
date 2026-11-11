@@ -1,0 +1,62 @@
+---
+import { type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+const { locale } = Astro.props as { locale: Locale };
+const a = t(locale).auth;
+const login = localePath(locale, '/login');
+---
+<Base title={`${a.accountTitle} — zouerami`} {locale} noindex alternates={{}}>
+  <main id="main" class="pad auth" data-account data-login={`${login}?next=${encodeURIComponent(localePath(locale, '/account'))}`} data-home={localePath(locale, '/')} data-blog={localePath(locale, '/blog')} data-empty={a.noBookmarks} data-deleted={a.deleted} data-badpw={a.badCredentials} data-generic={a.generic}>
+    <div style="padding-block:70px 20px"><span class="mono muted">{a.account}</span><h1 class="h-big" style="margin-top:14px" data-account-name>{a.accountTitle}</h1><p class="mono muted" data-account-email></p></div>
+    <div class="sec-label"><span class="mono">[01]</span><span class="mono">{a.bookmarks}</span><span></span></div>
+    <div class="rows" data-bookmarks></div>
+    <div class="sec-label" style="margin-top:80px"><span class="mono">[02]</span><span class="mono">{a.danger}</span><span></span></div>
+    <p class="muted" style="max-width:56ch;margin-bottom:20px">{a.deleteHelp}</p>
+    <form class="auth-form" data-delete-form>
+      <label data-pw-row><span class="mono muted">{a.deletePassword}</span><input type="password" name="password" autocomplete="current-password" dir="ltr" /></label>
+      <button class="btn" type="submit">{a.deleteBtn}</button>
+      <p class="auth-result" data-msg role="status"></p>
+    </form>
+    <p style="margin-top:40px;display:flex;gap:20px"><button class="btn" type="button" data-signout data-home={localePath(locale, '/')}>{a.signOut}</button><a class="mono muted" href={localePath(locale, '/privacy')}>{a.privacyLink}</a></p>
+  </main>
+  <script>
+    import '../scripts/auth-forms';
+    function esc(s: string) {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+    }
+    async function init() {
+      const root = document.querySelector<HTMLElement>('[data-account]');
+      if (!root) return;
+      const me = await fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      if (!me?.user) {
+        location.assign(root.dataset.login ?? '/login');
+        return;
+      }
+      root.querySelector('[data-account-name]')!.textContent = me.user.name;
+      root.querySelector('[data-account-email]')!.textContent = me.user.email;
+      const list = root.querySelector<HTMLElement>('[data-bookmarks]')!;
+      const res = await fetch(`/api/bookmarks?lang=${document.documentElement.lang}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      const items = (res?.bookmarks ?? []) as { slug: string; title: string; lang: string; date: string }[];
+      list.innerHTML = items.length
+        ? items.map((b, i) => `<a class="row" href="${document.documentElement.lang === 'fa' ? '/fa' : ''}/blog/${esc(b.slug)}"><span class="no">${String(i + 1).padStart(2, '0')}</span><h3 dir="${b.lang === 'fa' ? 'rtl' : 'ltr'}" lang="${esc(b.lang)}">${esc(b.title)}</h3><span></span><span class="when mono muted">${esc(b.date)}</span><span></span></a>`).join('')
+        : `<p class="mono muted" style="padding:30px 0">${esc(root.dataset.empty ?? '')}</p>`;
+
+      const form = root.querySelector<HTMLFormElement>('[data-delete-form]')!;
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const msg = form.querySelector<HTMLElement>('[data-msg]')!;
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+        const r = await fetch('/api/account', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify(password ? { password } : {}) });
+        if (r.ok) {
+          msg.textContent = root.dataset.deleted ?? '';
+          msg.dataset.kind = 'ok';
+          setTimeout(() => location.assign(root.dataset.home ?? '/'), 1200);
+        } else {
+          msg.textContent = r.status === 403 ? (root.dataset.badpw ?? '') : (root.dataset.generic ?? '');
+          msg.dataset.kind = 'err';
+        }
+      };
+    }
+    document.addEventListener('astro:page-load', () => void init());
+  </script>
+</Base>

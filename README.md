@@ -25,3 +25,9 @@ Pinned versions and why: `docs/versions.md`. PocketBase schema + access rules: `
 
 ## Auth
 Login (`POST /api/auth/login`) verifies the password against PocketBase once, then sets two httpOnly cookies: a 10-minute signed JWT (`session`, checked statelessly in middleware — no DB/Redis) and a `refresh` cookie holding PocketBase's own token. When the JWT expires, middleware calls PocketBase `authRefresh` once; a deleted user or changed password stops refreshing, so revocation takes at most 10 minutes. Needs `AUTH_SECRET` (≥32 chars).
+
+## Accounts, comments, mail (dev)
+Sign-up sends a verification email; in dev all mail lands in Mailpit at <http://127.0.0.1:8025>. Comments from a user's first post are held for moderation (PocketBase admin → `comments` → set `status`). Turnstile is skipped when `TURNSTILE_SECRET` is empty. Privacy page: `/privacy`.
+
+## Production
+See [`docs/deploy.md`](docs/deploy.md) and `compose.prod.yaml` / `nginx/prod.conf`. The VPS has not been touched yet.

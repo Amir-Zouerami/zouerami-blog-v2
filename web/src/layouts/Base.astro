@@ -6,6 +6,8 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import Seo, { type JsonLd } from '../components/Seo.astro';
 import { dirOf, type Locale, switchPath, t } from '../i18n';
+import { loadEnv } from '../lib/env';
+import { personLd, websiteLd } from '../lib/jsonld';
 
 interface Props {
   title: string;
@@ -30,6 +32,9 @@ const here = seo.path ?? Astro.url.pathname;
 const other: Locale = locale === 'en' ? 'fa' : 'en';
 const alternates = seo.alternates ?? { en: switchPath(here, 'en'), fa: switchPath(here, 'fa') };
 const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
+const site = loadEnv().SITE_URL;
+const isHome = here === '/' || here === '/fa';
+const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(site, locale)] : [])];
 ---
 <!doctype html>
 <html lang={locale} dir={dirOf(locale)} data-theme="dark">
@@ -41,7 +46,7 @@ const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate" type="application/rss+xml" title="RSS (English)" href="/rss.xml" />
     <link rel="alternate" type="application/rss+xml" title="RSS (فارسی)" href="/fa/rss.xml" />
-    <Seo {title} {description} {locale} {alternates} path={here} {...seo} />
+    <Seo {title} {description} {locale} {alternates} {...seo} path={here} {jsonLd} />
     <script is:inline>
       (function () {
         function theme() {
@@ -114,8 +119,30 @@ const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
           setTimeout(() => { btn.textContent = old; }, 1200);
         }
       });
+      async function showAccount() {
+        const link = document.querySelector<HTMLAnchorElement>('[data-me]');
+        if (!link) return;
+        if (!document.cookie.split('; ').includes('signed_in=1')) {
+          link.href = link.dataset.loginHref ?? '/login';
+          link.textContent = link.dataset.labelIn ?? '';
+          delete link.dataset.signedIn;
+          return;
+        }
+        try {
+          const r = await fetch('/api/auth/me', { headers: { accept: 'application/json' } });
+          if (!r.ok) return;
+          const { user } = (await r.json()) as { user: { name: string } | null };
+          if (!user) return;
+          link.href = link.dataset.accountHref ?? '/account';
+          link.textContent = user.name.length > 14 ? `${user.name.slice(0, 13)}…` : user.name;
+          link.dataset.signedIn = '';
+        } catch {
+          /* leave the sign-in link */
+        }
+      }
       document.addEventListener('astro:page-load', () => {
         tick();
+        void showAccount();
         // Gentle, dismissible hint for people who chose Persian before: never a redirect.
         const hint = document.getElementById('langhint') as HTMLElement | null;
         if (hint) hint.hidden = !(hint.dataset.locale === 'en' && store.get() === 'fa');

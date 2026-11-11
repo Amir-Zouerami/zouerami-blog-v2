@@ -1,0 +1,14 @@
+---
+import { type Locale, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+const { locale } = Astro.props as { locale: Locale };
+const p = t(locale).privacy;
+---
+<Base title={`${p.title} — zouerami`} description={p.description} {locale}>
+  <main id="main" class="pad">
+    <div style="padding-block:70px 20px"><h1 class="h-big">{p.title}</h1></div>
+    <div class="prose" style="max-width:720px;padding-bottom:60px">
+      {p.body.map(([h, text]) => <><h2>{h}</h2><p>{text}</p></>)}
+    </div>
+  </main>
+</Base>

@@ -21,7 +21,21 @@ function opts(maxAge: number, path: string) {
   };
 }
 
+/** Non-sensitive hint so the page can skip the "who am I" call for anonymous visitors. */
+function setHint(cookies: AstroCookies, on: boolean) {
+  if (on)
+    cookies.set('signed_in', '1', {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: loadEnv().SITE_URL.startsWith('https:'),
+      path: '/',
+      maxAge: REFRESH_TTL_SECONDS,
+    });
+  else cookies.delete('signed_in', { path: '/' });
+}
+
 export async function setAccessCookie(cookies: AstroCookies, user: SessionUser) {
+  setHint(cookies, true);
   cookies.set(
     SESSION_COOKIE,
     await signSession(user, getAuthSecret()),
@@ -30,12 +44,13 @@ export async function setAccessCookie(cookies: AstroCookies, user: SessionUser) 
 }
 
 export function setRefreshCookie(cookies: AstroCookies, pbToken: string) {
-  cookies.set(REFRESH_COOKIE, pbToken, opts(REFRESH_TTL_SECONDS, '/api/auth'));
+  cookies.set(REFRESH_COOKIE, pbToken, opts(REFRESH_TTL_SECONDS, '/api'));
 }
 
 export function clearAuthCookies(cookies: AstroCookies) {
+  setHint(cookies, false);
   cookies.delete(SESSION_COOKIE, { path: '/' });
-  cookies.delete(REFRESH_COOKIE, { path: '/api/auth' });
+  cookies.delete(REFRESH_COOKIE, { path: '/api' });
 }
 
 export const toSessionUser = (r: { id: string; email: string; name?: string }): SessionUser => ({

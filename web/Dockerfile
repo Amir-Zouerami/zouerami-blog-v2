@@ -18,6 +18,7 @@ ENV NODE_ENV=production HOST=0.0.0.0 PORT=4321
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY assets ./assets
 COPY package.json ./
 USER node
 EXPOSE 4321

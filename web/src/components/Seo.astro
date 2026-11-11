@@ -25,7 +25,7 @@ const path = Astro.props.path ?? Astro.url.pathname;
 const canonical = abs(path);
 const other: Locale = locale === 'en' ? 'fa' : 'en';
 const ogLocale = (l: Locale) => (l === 'fa' ? 'fa_IR' : 'en_US');
-const img = image ? abs(image) : abs('/og/default.png');
+const img = image ? abs(image) : abs(`/og/${locale}/default.png`);
 ---
 <link rel="canonical" href={canonical} />
 {alternates.en && <link rel="alternate" hreflang="en" href={abs(alternates.en)} />}
