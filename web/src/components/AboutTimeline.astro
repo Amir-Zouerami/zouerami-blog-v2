@@ -11,12 +11,12 @@ const { items, locale } = Astro.props;
 const g = timelineGeometry(items.length);
 const pct = (v: number, total: number) => `${(v / total) * 100}%`;
 ---
-<section class="tl" style={`--rows:${items.length}`} aria-label="Timeline" data-timeline>
-  <svg class="tl-svg" viewBox={`0 0 1000 ${g.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+<section class="tl" style={`--ratio:1000 / ${g.height}`} aria-label="Timeline" data-timeline>
+  <svg class="tl-svg" viewBox={`0 0 1000 ${g.height}`} aria-hidden="true" focusable="false">
     {g.ghosts.map((d, i) => <path class={`tl-ghost tl-ghost-${i}`} d={d} />)}
     {g.rings.map((r) => <ellipse class="tl-ring" cx={r.x} cy={r.y} rx={r.r} ry={r.r} />)}
     <path class="tl-base" d={g.main} />
-    <path class="tl-main" d={g.main} pathLength="1" data-main />
+    <path class="tl-main" d={g.main} data-main />
   </svg>
   <span class="tl-comet" aria-hidden="true" data-comet></span>
   {items.map((it, i) => {

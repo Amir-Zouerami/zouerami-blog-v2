@@ -816,11 +816,9 @@ html.tx-pending.tx-acc::after {
   max-width: 15ch;
 }
 .post-head h1[dir="rtl"] {
-  font-family: "Vazirmatn Variable", sans-serif;
-  letter-spacing: 0;
-  line-height: 1.25;
-  max-width: 20ch;
-  font-weight: 800;
+  font-size: clamp(30px, 4.6vw, 54px);
+  line-height: 1.4;
+  max-width: 24ch;
 }
 .meta-grid {
   display: grid;
@@ -1648,9 +1646,6 @@ html[lang='fa'] .nav a em { font-size: 12px; margin-inline-end: 8px; }
 html[lang='fa'] .hero h1, html[lang='fa'] .brand { font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; }
 html[lang='fa'] .meta-grid p { font-size: 18px; margin-top: 6px; }
 html[lang='fa'] .row h3, html[lang='fa'] .tile h3 { font-weight: 700; }
-/* TEST: Lalezar for Persian post titles (remove this block to go back to Vazirmatn) */
-html[lang='fa'] .post-head h1[lang='fa'] { font-family: 'Lalezar', 'Vazirmatn Variable', sans-serif; font-weight: 400; line-height: 1.35; }
-
 /* ───────── post bits ───────── */
 .meta-grid.meta-3 { grid-template-columns: repeat(3, 1fr); }
 .langbar { margin: 0 0 32px; }
@@ -1720,9 +1715,9 @@ html[lang='fa'] :is(.it, .year, .p-sec .n) { font-family: "Vazirmatn Variable", 
 html[lang='fa'] .h-big { font-size: clamp(44px, 9vw, 120px); line-height: 1.25; }
 html[lang='fa'] .foot-big { font-size: clamp(44px, 9vw, 120px); line-height: 1.25; }
 html[lang='fa'] .year { font-size: 18px; font-weight: 500; }
-.prose blockquote { font-size: clamp(20px, 2.4vw, 26px); line-height: 1.35; margin-inline: 0; padding: 6px 22px; border-block: 0; border-inline-start: 3px solid var(--acc); color: var(--fg); }
+.prose blockquote { font: 500 clamp(18px, 2vw, 22px) / 1.55 var(--sans); font-style: normal; letter-spacing: 0; margin-inline: 0; padding: 6px 22px; border-block: 0; border-inline-start: 3px solid var(--acc); color: var(--fg); }
 .prose blockquote::before { content: none; }
-.prose[dir='rtl'] blockquote { font-size: clamp(17px, 2vw, 21px); }
+.prose[dir='rtl'] blockquote { font-size: clamp(16px, 1.9vw, 19px); line-height: 1.9; font-weight: 400; }
 .langseg { align-items: center; }
 .langseg a, .langseg span { align-items: center; min-height: 40px; }
 .langseg [hreflang='fa'], .langseg [lang='fa'] { font-family: "Vazirmatn Variable", sans-serif; }
@@ -1748,19 +1743,17 @@ html[lang='fa'] .year { font-size: 18px; font-weight: 500; }
 .quote-btn:hover { background: var(--acc); color: var(--on-acc); }
 
 /* ---- comments: load more ---- */
-.cmt-more { position: relative; display: grid; justify-items: center; padding-top: 18px; margin-top: -6px; }
-.cmt-more::before { content: ''; position: absolute; inset: -46px 0 auto; height: 46px; pointer-events: none; background: linear-gradient(to top, var(--bg), transparent); }
-.cmt-more .btn { box-shadow: 0 10px 28px rgb(0 0 0 / .35); }
+.cmt-more { position: relative; display: grid; justify-items: center; padding-top: 18px; }
 
 /* ---- about timeline ---- */
-.tl { position: relative; margin-block: 40px 90px; height: calc(var(--rows) * 340px + 420px); }
+.tl { position: relative; margin-block: 40px 90px; aspect-ratio: var(--ratio); }
 .tl-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.tl-svg path, .tl-ring { fill: none; vector-effect: non-scaling-stroke; }
-.tl-base { stroke: var(--line2); stroke-width: 2; }
-.tl-main { stroke: var(--acc); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
-.tl-ghost { stroke: var(--line2); stroke-width: 1; opacity: .55; }
+.tl-svg path, .tl-ring { fill: none; }
+.tl-base { stroke: var(--line2); stroke-width: 3; }
+.tl-main { stroke: var(--acc); stroke-width: 4; stroke-linecap: round; }
+.tl-ghost { stroke: var(--line2); stroke-width: 1.5; opacity: .55; }
 .tl-ring { stroke: var(--line2); stroke-width: 1; opacity: .5; }
-.tl-comet { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 18px 6px color-mix(in srgb, var(--acc) 60%, transparent); opacity: 0; pointer-events: none; }
+.tl-comet { position: absolute; left: 0; top: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; will-change: transform; border-radius: 50%; background: var(--acc); box-shadow: 0 0 18px 6px color-mix(in srgb, var(--acc) 60%, transparent); opacity: 0; pointer-events: none; }
 .tl-item { position: absolute; left: var(--x); top: var(--y); width: 0; }
 .tl-node { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line2); background: var(--bg); transition: .4s; }
 .tl-item.on .tl-node { border-color: var(--acc); background: var(--acc); box-shadow: 0 0 0 6px color-mix(in srgb, var(--acc) 25%, transparent); }
@@ -1774,7 +1767,7 @@ html[lang='fa'] .year { font-size: 18px; font-weight: 500; }
 [dir='rtl'] .tl-svg { transform-origin: center; }
 [dir='rtl'] .side-a .tl-card { left: auto; right: 36px; } [dir='rtl'] .side-b .tl-card { right: auto; left: 36px; }
 @media (max-width: 760px) {
-  .tl { height: auto; display: grid; gap: 18px; margin-block: 20px 60px; padding-inline-start: 22px; border-inline-start: 2px solid var(--line2); }
+  .tl { aspect-ratio: auto; display: grid; gap: 18px; margin-block: 20px 60px; padding-inline-start: 22px; border-inline-start: 2px solid var(--line2); }
   .tl-svg, .tl-comet { display: none; }
   .tl-item { position: relative; left: auto; right: auto; top: auto; width: auto; }
   .tl-node { left: -31px; top: 22px; } [dir='rtl'] .tl-node { left: auto; right: -31px; }
@@ -1782,3 +1775,17 @@ html[lang='fa'] .year { font-size: 18px; font-weight: 500; }
 }
 @media (prefers-reduced-motion: reduce) { .tl-card, .tl-node { transition: none; } }
 html.mm-lock:has(.mermaid-block.is-full) { scrollbar-gutter: auto; }
+
+/* Persian text is always Vazirmatn with proper weights, wherever it appears (site language or post language alike) */
+:is(h1, h2, h3, h4, p, q, blockquote, .card-sum)[lang='fa'], .prose[dir='rtl'] :is(.callout, .callout-title, blockquote) { font-family: "Vazirmatn Variable", system-ui, sans-serif; font-style: normal; letter-spacing: 0; text-transform: none; }
+.card-body h3[lang='fa'], .row h3[lang='fa'], .nextprev h3[lang='fa'] { font-weight: 700; line-height: 1.5; font-size: 19px; }
+.card-xl .card-body h3[lang='fa'] { font-size: clamp(22px, 2.4vw, 28px); }
+.post-head h1[lang='fa'] { font-weight: 700; }
+.prose[dir='rtl'] .callout { font-size: 16.5px; line-height: 1.95; }
+.prose[dir='rtl'] .callout-title { font-size: 15px; font-weight: 700; }
+.cards-all .card { grid-column: span 6; }
+.cards-all .card-body h3 { font-size: 24px; }
+@media (max-width: 700px) { .cards-all .card { grid-column: span 12; } }
+.cards-all + .year, .year + .cards-all { margin-top: 0; }
+::highlight(quote) { background: color-mix(in srgb, var(--acc) 40%, transparent); color: inherit; }
+.card-meta { display: flex; justify-content: space-between; align-items: center; } .card-langs { display: inline-flex; gap: 6px; }

@@ -32,3 +32,46 @@ export function quoteLink(pageUrl: string, selection: string): string {
   const base = pageUrl.split('#')[0] ?? pageUrl;
   return frag ? `${base}${frag}` : base;
 }
+
+const WORD = /[\p{L}\p{N}]/u;
+
+/**
+ * The selected text widened to whole words. Browsers only match a text fragment that starts and ends on word
+ * boundaries, so a selection that begins or ends inside a word ("aller promises…") would silently not link anywhere.
+ */
+export function selectionQuote(sel: Selection | null): string {
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return '';
+  const range = sel.getRangeAt(0).cloneRange();
+  const grow = (node: Node, offset: number, dir: -1 | 1): number => {
+    if (node.nodeType !== Node.TEXT_NODE) return offset;
+    const t = node.textContent ?? '';
+    let i = offset;
+    while (dir < 0 ? i > 0 && WORD.test(t[i - 1] ?? '') : i < t.length && WORD.test(t[i] ?? ''))
+      i += dir;
+    return i;
+  };
+  const hadStartInWord = (() => {
+    const t = range.startContainer.textContent ?? '';
+    return (
+      range.startContainer.nodeType === Node.TEXT_NODE && WORD.test(t[range.startOffset - 1] ?? '')
+    );
+  })();
+  if (hadStartInWord)
+    range.setStart(range.startContainer, grow(range.startContainer, range.startOffset, -1));
+  range.setEnd(range.endContainer, grow(range.endContainer, range.endOffset, 1));
+  return cleanQuote(range.toString());
+}
+
+/** Reads the quote out of a `#:~:text=` URL: [start] or [start, end]. */
+export function fragmentParts(url: string): string[] | null {
+  const m = /#(?:[^#]*?):~:text=([^&]+)/.exec(url);
+  if (!m?.[1]) return null;
+  try {
+    return m[1]
+      .split(',')
+      .map((p) => decodeURIComponent(p))
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+}

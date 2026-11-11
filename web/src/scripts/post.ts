@@ -1,4 +1,4 @@
-import { cleanQuote, quoteLink } from '../lib/text-fragment';
+import { fragmentParts, quoteLink, selectionQuote } from '../lib/text-fragment';
 import { onPage } from './page-lifecycle';
 import { showToast } from './toast';
 
@@ -70,7 +70,7 @@ function quoteButton(signal: AbortSignal): void {
     'selectionchange',
     () => {
       const sel = getSelection();
-      const text = cleanQuote(sel?.toString() ?? '');
+      const text = selectionQuote(sel);
       const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
       const inProse =
         range && document.querySelector('.prose')?.contains(range.commonAncestorContainer);
@@ -84,7 +84,7 @@ function quoteButton(signal: AbortSignal): void {
         btn.textContent = fa() ? 'کپی پیوند نقل‌قول' : 'Copy link to quote';
         btn.addEventListener('mousedown', (e) => e.preventDefault());
         btn.addEventListener('click', () => {
-          const t = getSelection()?.toString() ?? '';
+          const t = selectionQuote(getSelection());
           void navigator.clipboard?.writeText(quoteLink(location.href, t)).catch(() => {});
           showToast(fa() ? 'پیوند نقل‌قول کپی شد' : 'Quote link copied');
           hide();
@@ -114,12 +114,59 @@ function keepHash(signal: AbortSignal): void {
   signal.addEventListener('abort', () => clearTimeout(t));
 }
 
+/**
+ * Highlights and scrolls to a shared quote ourselves. Browsers do it natively for a fresh navigation, but not when the
+ * link is opened in a page that is already loaded, and not through the client router.
+ */
+function showQuote(signal: AbortSignal): void {
+  const nav = performance.getEntriesByType('navigation')[0]?.name ?? location.href;
+  const parts = fragmentParts(nav);
+  const prose = document.querySelector('.prose');
+  if (!parts || !prose || !('highlights' in CSS)) return;
+  const walker = document.createTreeWalker(prose, NodeFilter.SHOW_TEXT);
+  const nodes: { node: Text; start: number }[] = [];
+  let text = '';
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    nodes.push({ node: n as Text, start: text.length });
+    text += (n.textContent ?? '').replace(/\s+/g, ' ');
+  }
+  const hay = text.toLowerCase();
+  const first = hay.indexOf((parts[0] ?? '').toLowerCase());
+  if (first < 0) return;
+  const lastPart = (parts[1] ?? parts[0] ?? '').toLowerCase();
+  const last = hay.indexOf(lastPart, first);
+  const end = (last < 0 ? first : last) + lastPart.length;
+  const at = (pos: number) => {
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const it = nodes[i];
+      if (it && pos >= it.start)
+        return { node: it.node, offset: Math.min(pos - it.start, it.node.length) };
+    }
+    return null;
+  };
+  const a = at(first);
+  const b = at(end);
+  if (!a || !b) return;
+  const range = new Range();
+  range.setStart(a.node, a.offset);
+  range.setEnd(b.node, b.offset);
+  (CSS as unknown as { highlights: Map<string, unknown> }).highlights.set(
+    'quote',
+    new (window as unknown as { Highlight: new (r: Range) => unknown }).Highlight(range),
+  );
+  range.startContainer.parentElement?.scrollIntoView({ block: 'center' });
+  signal.addEventListener('abort', () =>
+    (CSS as unknown as { highlights: Map<string, unknown> }).highlights.delete('quote'),
+  );
+}
+
 onPage((signal) => {
   const main = document.querySelector<HTMLElement>('main[data-post-slug]');
   if (!main) return undefined;
   reading(signal);
   quoteButton(signal);
   keepHash(signal);
+  showQuote(signal);
   const stopSpy = tocSpy();
   const slug = main.dataset.postSlug;
   if (main.dataset.track === 'view' && slug && !navigator.webdriver) countView(slug);

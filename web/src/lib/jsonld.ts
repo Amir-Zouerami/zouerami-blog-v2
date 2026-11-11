@@ -7,11 +7,7 @@ export const SITE_NAME = 'zouerami';
 export const PERSON = {
   name: 'Amir Zouerami',
   alternateName: 'امیر زوارمی',
-  sameAs: [
-    'https://github.com/amirzouerami',
-    'https://www.linkedin.com/in/amirzouerami',
-    'https://x.com/amirzouerami',
-  ],
+  sameAs: ['https://github.com/amir-zouerami', 'https://www.linkedin.com/in/amir-zouerami/'],
 };
 
 export function personLd(site: string) {
