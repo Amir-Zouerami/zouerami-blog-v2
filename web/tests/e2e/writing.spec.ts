@@ -111,9 +111,9 @@ test.describe('public reading', () => {
   }) => {
     await page.goto('/fa/blog');
     await expect(
-      page.locator('.row h3', { hasText: 'چرا دوباره وبلاگم را از نو ساختم' }),
+      page.locator('.card h3', { hasText: 'چرا دوباره وبلاگم را از نو ساختم' }),
     ).toBeVisible();
-    await expect(page.locator('.row h3', { hasText: 'Why I rebuilt my blog' })).toHaveCount(0);
+    await expect(page.locator('.card h3', { hasText: 'Why I rebuilt my blog' })).toHaveCount(0);
     await page.goto('/fa');
     await expect(page.locator('.card h3', { hasText: 'چرا دوباره' })).toBeVisible();
     await page.locator('.card', { hasText: 'چرا دوباره' }).click();
