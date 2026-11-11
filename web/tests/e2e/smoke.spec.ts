@@ -45,3 +45,19 @@ test('index answers 503 with a friendly message when PocketBase is down', async 
     });
   }
 });
+
+test('only the public PocketBase endpoints are reachable through nginx (no Turnstile bypass)', async ({
+  request,
+}) => {
+  for (const path of [
+    '/pb/api/collections/users/records',
+    '/pb/api/collections/posts/records',
+    '/pb/api/collections/comments/records',
+    '/pb/api/settings',
+    '/pb/api/admins/auth-with-password',
+  ]) {
+    expect((await request.get(path)).status(), path).toBe(404);
+    expect((await request.post(path, { data: {} })).status(), path).toBe(404);
+  }
+  expect((await request.get('/pb/api/health')).status()).toBe(200);
+});
