@@ -293,6 +293,45 @@ test('newsletter: double opt-in, duplicates look identical, unsubscribe works', 
   });
 });
 
+test('all emails use the Signal Dark design and are English, even for Persian-site subscribers', async ({
+  request,
+}) => {
+  const mail = `design-${stamp}@example.com`;
+  expect(
+    (await request.post('/api/subscribe', { data: { email: mail, locale: 'fa' } })).status(),
+  ).toBe(200);
+  const sub = await mailTo(mail, 'Confirm your subscription');
+  expect(sub).toContain('<html lang="en" dir="ltr"');
+  expect(sub).toContain('Words,');
+  expect(sub).toContain('#d4ff3a');
+  expect(sub).not.toMatch(/[\u0600-\u06FF]/);
+  expect(sub).not.toMatch(/\{\{|\{TOKEN\}/);
+
+  expect(
+    (
+      await request.post('/api/auth/register', {
+        data: { email: mail, password: 'a-long-password-123', name: 'Design' },
+      })
+    ).status(),
+  ).toBe(201);
+  const verify = await mailTo(mail, 'Verify your email');
+  expect(verify).toContain('Confirm your');
+  expect(verify).toContain('http://localhost:8088/verify?token=');
+  expect(verify).not.toMatch(/\{\{|\{TOKEN\}/);
+
+  expect((await request.post('/api/auth/forgot', { data: { email: mail } })).status()).toBe(200);
+  const reset = await mailTo(mail, 'Reset your');
+  expect(reset).toContain('http://localhost:8088/reset?token=');
+  expect(reset).toContain('#d4ff3a');
+
+  for (const u of await admin.collection('users').getFullList({ filter: `email = "${mail}"` }))
+    await admin.collection('users').delete(u.id);
+  for (const r of await admin
+    .collection('subscribers')
+    .getFullList({ filter: `email = "${mail}"` }))
+    await admin.collection('subscribers').delete(r.id);
+});
+
 test('SEO endpoints', async ({ request }) => {
   const sm = await (await request.get('/sitemap.xml')).text();
   expect(sm).toContain('<loc>http://localhost:8088/fa/blog/hello-bilingual</loc>');

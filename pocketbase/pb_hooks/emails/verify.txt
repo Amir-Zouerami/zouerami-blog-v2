@@ -1,0 +1,10 @@
+Confirm your email.
+
+Thanks for signing up. Confirm your address to finish creating your account and join the conversation.
+
+Verify email: {{URL}}
+
+If you did not sign up, you can safely ignore this message.
+
+zouerami.dev · Amir Zouerami
+{{SITE}}

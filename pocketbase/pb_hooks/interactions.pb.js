@@ -35,23 +35,24 @@ onRecordCreateRequest((e) => {
 
 onRecordAfterCreateSuccess((e) => {
   e.next();
+  const mail = require(`${__hooks}/lib/mail.js`);
   const settings = $app.settings();
-  const fa = e.record.get('locale') === 'fa';
-  const base = String(settings.meta.appURL).replace(/\/$/, '');
-  const link = base + (fa ? '/fa' : '') + '/subscribe/confirm?token=' + e.record.get('token');
+  const siteURL = String(settings.meta.appURL).replace(/\/$/, '');
+  // The confirm page is English; the subscriber's site language only affects where they land afterwards.
+  const link = siteURL + '/subscribe/confirm?token=' + e.record.get('token');
   try {
     $app.newMailClient().send(
       new MailerMessage({
         from: { address: settings.meta.senderAddress, name: settings.meta.senderName },
         to: [{ address: e.record.get('email') }],
-        subject: fa ? 'تأیید عضویت در خبرنامه' : 'Confirm your subscription',
-        html: fa
-          ? '<p dir="rtl">برای تأیید عضویت روی پیوند زیر بزنید:</p><p dir="rtl"><a href="' + link + '">' + link + '</a></p>'
-          : '<p>Confirm your subscription to zouerami.dev:</p><p><a href="' + link + '">' + link + '</a></p>',
+        subject: mail.subjectOf('subscribe'),
+        html: mail.html('subscribe', link, siteURL),
+        text: mail.text('subscribe', link, siteURL),
       }),
     );
+    $app.logger().info('subscription confirmation sent', 'subscriberId', e.record.id);
   } catch (err) {
-    $app.logger().error('subscribe mail failed', 'error', String(err));
+    $app.logger().error('subscribe mail failed', 'subscriberId', e.record.id, 'error', String(err));
   }
 }, 'subscribers');
 
