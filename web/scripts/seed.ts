@@ -56,6 +56,25 @@ for (const p of posts) {
   }
 }
 
+// Dev-only back-office account (the seed script is never run in production).
+const devAdmin = 'dev-admin@example.com';
+const existingAdmin = await pb
+  .collection('users')
+  .getFirstListItem(`email = "${devAdmin}"`)
+  .catch(() => null);
+if (!existingAdmin) {
+  await pb.collection('users').create({
+    email: devAdmin,
+    password: 'dev-admin-password-1',
+    passwordConfirm: 'dev-admin-password-1',
+    name: 'Dev Admin',
+    verified: true,
+    role: 'admin',
+  });
+} else if (existingAdmin.role !== 'admin') {
+  await pb.collection('users').update(existingAdmin.id, { role: 'admin', verified: true });
+}
+
 for (const { blurb, metric_label, ...p } of projects) {
   const existing = await pb
     .collection('projects')

@@ -4,6 +4,8 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
+  /** Convenience for the UI only: PocketBase re-checks the real role on every admin request. */
+  role: 'user' | 'admin';
 }
 
 export const SESSION_COOKIE = 'session';
@@ -33,7 +35,7 @@ export async function signSession(
   ttlSeconds = SESSION_TTL_SECONDS,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({ email: user.email, name: user.name })
+  return new SignJWT({ email: user.email, name: user.name, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
     .setIssuedAt(now)
@@ -48,7 +50,12 @@ export async function verifySession(token: string, secret: string): Promise<Sess
     if (!payload.sub || typeof payload.email !== 'string' || typeof payload.name !== 'string') {
       return null;
     }
-    return { id: payload.sub, email: payload.email, name: payload.name };
+    return {
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      role: payload.role === 'admin' ? 'admin' : 'user',
+    };
   } catch {
     return null;
   }

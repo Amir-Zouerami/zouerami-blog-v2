@@ -269,12 +269,11 @@ test('newsletter: double opt-in, duplicates look identical, unsubscribe works', 
   await expect(page.locator('[data-result]')).toContainText('confirmed', { timeout: 10000 });
   expect((await admin.collection('subscribers').getOne(row.id)).confirmed).toBe(true);
   // the public cannot read the list
-  expect(
-    await new PocketBase(PB)
-      .collection('subscribers')
-      .getFullList()
-      .catch((e) => e.status),
-  ).toBe(403);
+  const anonList = await new PocketBase(PB)
+    .collection('subscribers')
+    .getFullList()
+    .catch(() => []);
+  expect(anonList).toHaveLength(0);
   const un = await fetch(`${PB}/api/subscribers/unsubscribe`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

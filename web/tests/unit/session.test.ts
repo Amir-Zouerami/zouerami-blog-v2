@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { signSession, verifySession } from '../../src/lib/session';
 
 const secret = 'x'.repeat(40);
-const user = { id: 'u1', email: 'a@b.co', name: 'Ami' };
+const user = { id: 'u1', email: 'a@b.co', name: 'Ami', role: 'user' as const };
 
 describe('session JWT', () => {
   it('round-trips the user claims without any lookup', async () => {
@@ -42,5 +42,18 @@ describe('access token lifetime', () => {
   it('defaults to a short TTL so revocation is bounded', async () => {
     const { SESSION_TTL_SECONDS } = await import('../../src/lib/session');
     expect(SESSION_TTL_SECONDS).toBeLessThanOrEqual(900);
+  });
+});
+
+describe('role claim', () => {
+  it('round-trips admin and defaults unknown roles to user', async () => {
+    const admin = { ...user, role: 'admin' as const };
+    expect((await verifySession(await signSession(admin, secret), secret))?.role).toBe('admin');
+    const forged = await new SignJWT({ email: 'a@b.co', name: 'x', role: 'root' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject('u1')
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(secret));
+    expect((await verifySession(forged, secret))?.role).toBe('user');
   });
 });
