@@ -356,3 +356,32 @@ test('SEO endpoints', async ({ request }) => {
   const home = await (await request.get('/')).text();
   expect(home).toContain('"alternateName":"امیر زوارمی"');
 });
+
+test('signing in sends no extra "new login" email (PocketBase would report our server, not the visitor)', async ({
+  request,
+}) => {
+  const mail = `nologin-${stamp}@example.com`;
+  const u = await admin
+    .collection('users')
+    .create({ email: mail, password, passwordConfirm: password, name: 'No Alert', verified: true });
+  try {
+    expect(
+      (await request.post('/api/auth/login', { data: { email: mail, password } })).status(),
+    ).toBe(200);
+    // a second sign-in with a different user agent is what normally triggers the alert
+    const other = await request.post('/api/auth/login', {
+      data: { email: mail, password },
+      headers: { 'user-agent': 'Some Other Browser/1.0' },
+    });
+    expect(other.status()).toBe(200);
+    await new Promise((r) => setTimeout(r, 1500));
+    const list = (await (
+      await fetch(`${MAIL}/api/v1/search?query=to:${encodeURIComponent(mail)}`)
+    ).json()) as {
+      messages: { Subject: string }[];
+    };
+    expect(list.messages.map((m) => m.Subject)).toEqual([]);
+  } finally {
+    await admin.collection('users').delete(u.id);
+  }
+});

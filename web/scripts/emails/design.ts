@@ -76,13 +76,13 @@ export function renderEmail(kind: EmailKind): string {
 <meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark">
 <title>${esc(c.subject)}</title>
 <style>
-  body{margin:0;padding:0;background:${C.page}} a{color:${C.acc}}
+  html,body{margin:0;padding:0;background:${C.page};height:100%} a{color:${C.acc}}
   @media (max-width:620px){ .wrap{width:100%!important} .pad{padding-left:24px!important;padding-right:24px!important} .h1{font-size:40px!important;line-height:44px!important} }
 </style>
 </head>
 <body style="margin:0;padding:0;background:${C.page};font-family:${SANS};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page}">${esc(c.preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="background:${C.page}"><tr><td align="center" style="padding:32px 12px">
+<table role="presentation" width="100%" height="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="background:${C.page};height:100%"><tr><td align="center" valign="top" style="padding:32px 12px 48px">
   <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;text-align:left">
     <tr><td class="pad" style="padding:0 40px 28px;border-bottom:1px solid ${C.line};text-align:left">
       <span style="font:800 22px/24px ${SANS};letter-spacing:-1px;color:${C.fg}">zouerami</span><span style="font:11px ${MONO};color:${C.acc};vertical-align:top"> &reg;</span>
