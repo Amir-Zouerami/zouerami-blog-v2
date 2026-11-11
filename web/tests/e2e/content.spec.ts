@@ -95,11 +95,13 @@ test.describe('post page', () => {
     await expect(seg.locator('a[hreflang="fa"]')).toBeVisible();
     await expect(seg.locator('a[hreflang="fa"]')).toHaveAttribute(
       'href',
-      '/fa/blog/hello-bilingual',
+      '/blog/hello-bilingual?lang=fa',
     );
     await expect(seg.locator('a.cur')).toHaveText('English');
     await seg.locator('a[hreflang="fa"]').click();
-    await page.waitForURL('**/fa/blog/hello-bilingual');
+    await page.waitForURL('**/blog/hello-bilingual?lang=fa');
+    await expect(page.locator('.prose')).toHaveAttribute('lang', 'fa');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en'); // content only: the site chrome stays English
     await expect(page.locator('.langseg a.cur')).toHaveText('فارسی');
     await expect(page.locator('.langseg a[hreflang="en"]')).toHaveAttribute(
       'href',
@@ -122,7 +124,7 @@ test.describe('post page', () => {
   }) => {
     await page.goto('/blog/persian-only');
     await expect(page.locator('.prose')).toHaveAttribute('lang', 'fa');
-    await expect(page.locator('.notice')).toContainText('only available in فارسی');
+    await expect(page.locator('.notice')).toContainText('only available in Persian');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
   test('hreflang pairs only for languages that exist; canonical is self', async ({ request }) => {
@@ -196,9 +198,10 @@ test.describe('work and about', () => {
   });
   test('about page has timeline in both languages', async ({ page }) => {
     await page.goto('/about');
-    await expect(page.locator('.tl-row')).toHaveCount(5);
+    await expect(page.locator('.tl-item')).toHaveCount(5);
+    await expect(page.locator('.tl-svg .tl-main')).toHaveCount(1);
     await page.goto('/fa/about');
-    await expect(page.locator('.tl-row').first()).toContainText('بازسازی');
+    await expect(page.locator('.tl-item').first()).toContainText('بازسازی');
   });
 });
 

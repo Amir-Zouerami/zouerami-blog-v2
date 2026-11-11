@@ -1,3 +1,4 @@
+import { redo, undo } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { Compartment, EditorSelection } from '@codemirror/state';
@@ -55,6 +56,8 @@ export default function MarkdownEditor({
   const [words, setWords] = useState(0);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit'); // narrow screens
   const dirComp = useRef(new Compartment());
+  /** The last document the editor itself reported, so the sync effect can tell an outside change from our own typing. */
+  const emitted = useRef(value);
   /** Rebuilt every render so the menu always sees the current handlers; read by the CodeMirror event handlers. */
   const menuItems = useRef<() => MenuEntry[]>(() => []);
 
@@ -88,7 +91,11 @@ export default function MarkdownEditor({
         EditorView.lineWrapping,
         dirComp.current.of(EditorView.contentAttributes.of({ dir, lang })),
         EditorView.updateListener.of((u) => {
-          if (u.docChanged) latest.current.onChange(u.state.doc.toString());
+          if (u.docChanged) {
+            const text = u.state.doc.toString();
+            emitted.current = text;
+            latest.current.onChange(text);
+          }
         }),
         keymap.of([
           {
@@ -115,9 +122,17 @@ export default function MarkdownEditor({
             return true;
           },
           keydown(e) {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+            if (!(e.metaKey || e.ctrlKey) || e.altKey) return false;
+            // by physical key (e.code) so shortcuts work on any keyboard layout, e.g. Persian
+            if (e.code === 'KeyS') {
               e.preventDefault();
               latest.current.onSave?.();
+              return true;
+            }
+            if (e.code === 'KeyZ' || e.code === 'KeyY') {
+              e.preventDefault();
+              const v = view.current;
+              if (v) (e.code === 'KeyY' || e.shiftKey ? redo : undo)(v);
               return true;
             }
             return false;
@@ -151,7 +166,8 @@ export default function MarkdownEditor({
   // the document can change from outside (restoring a backup): push it into the editor; normal typing is a no-op here
   useEffect(() => {
     const v = view.current;
-    if (v && v.state.doc.toString() !== value) {
+    if (v && value !== emitted.current && v.state.doc.toString() !== value) {
+      emitted.current = value;
       v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value } });
     }
   }, [value]);
@@ -167,7 +183,7 @@ export default function MarkdownEditor({
     setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
     const ctl = new AbortController();
     const t = setTimeout(() => {
-      previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'latin')
+      previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'en')
         .then((r) => {
           setHtml(r.html);
           setPreviewErr(false);
@@ -268,6 +284,16 @@ export default function MarkdownEditor({
       },
       { type: 'separator' },
       {
+        id: 'callout',
+        label: 'Callout',
+        icon: icons.quote,
+        children: ['info', 'note', 'tip', 'success', 'warning', 'danger'].map((k) => ({
+          id: `callout-${k}`,
+          label: k,
+          onSelect: () => wrap(`:::${k}\n`, '\n:::\n', 'text'),
+        })),
+      },
+      {
         id: 'format',
         label: 'Format',
         icon: icons.bold,
@@ -358,6 +384,29 @@ export default function MarkdownEditor({
   return (
     <div className="adm-editor">
       <div className="adm-toolbar" role="toolbar" aria-label="Formatting">
+        <button
+          type="button"
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo"
+          onClick={() => view.current && (undo(view.current), view.current.focus())}
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
+          onClick={() => view.current && (redo(view.current), view.current.focus())}
+        >
+          ↷
+        </button>
+        <button
+          type="button"
+          title="Callout"
+          onClick={() => wrap(':::info[Title]\n', '\n:::\n', 'text')}
+        >
+          ▣
+        </button>
         <button type="button" title="Heading (## )" onClick={() => linePrefix('## ')}>
           H2
         </button>

@@ -1,0 +1,36 @@
+---
+import type { TimelineItem } from '../data/about';
+import { type Locale, faDigits } from '../i18n';
+import { timelineGeometry } from '../lib/timeline-path';
+
+interface Props {
+  items: TimelineItem[];
+  locale: Locale;
+}
+const { items, locale } = Astro.props;
+const g = timelineGeometry(items.length);
+const pct = (v: number, total: number) => `${(v / total) * 100}%`;
+---
+<section class="tl" style={`--rows:${items.length}`} aria-label="Timeline" data-timeline>
+  <svg class="tl-svg" viewBox={`0 0 1000 ${g.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    {g.ghosts.map((d, i) => <path class={`tl-ghost tl-ghost-${i}`} d={d} />)}
+    {g.rings.map((r) => <ellipse class="tl-ring" cx={r.x} cy={r.y} rx={r.r} ry={r.r} />)}
+    <path class="tl-base" d={g.main} />
+    <path class="tl-main" d={g.main} pathLength="1" data-main />
+  </svg>
+  <span class="tl-comet" aria-hidden="true" data-comet></span>
+  {items.map((it, i) => {
+    const p = g.points[i];
+    const left = (p?.x ?? 0) < 500;
+    return (
+      <article class={`tl-item ${left ? 'side-a' : 'side-b'}${it.open ? ' now' : ''}`} data-item style={`--x:${pct(p?.x ?? 0, 1000)};--y:${pct(p?.y ?? 0, g.height)}`}>
+        <span class="tl-node" aria-hidden="true"></span>
+        <div class="tl-card">
+          <span class="tl-year" dir="ltr">{locale === 'fa' ? faDigits(it.when) : it.when}{it.open ? ' →' : ''}</span>
+          <h3>{it.title}</h3>
+          <p class="muted">{it.text}</p>
+        </div>
+      </article>
+    );
+  })}
+</section>

@@ -1,7 +1,10 @@
 import rehypeShiki from '@shikijs/rehype';
 import type { Element, Root } from 'hast';
+import { toString as mdText } from 'mdast-util-to-string';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
+import remarkDirective from 'remark-directive';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
@@ -17,7 +20,32 @@ export interface Rendered {
   html: string;
   headings: Heading[];
 }
+/** Callout boxes: `:::tip` … `:::` (optional custom title: `:::warning[Careful]`). */
+export const CALLOUTS = ['info', 'note', 'tip', 'success', 'warning', 'danger'] as const;
+type Callout = (typeof CALLOUTS)[number];
+const CALLOUT_TITLES: Record<'en' | 'fa', Record<Callout, string>> = {
+  en: {
+    info: 'Info',
+    note: 'Note',
+    tip: 'Tip',
+    success: 'Success',
+    warning: 'Warning',
+    danger: 'Danger',
+  },
+  fa: {
+    info: 'اطلاعات',
+    note: 'یادداشت',
+    tip: 'نکته',
+    success: 'موفقیت',
+    warning: 'هشدار',
+    danger: 'خطر',
+  },
+};
+const ANCHOR_LABEL = { en: 'Link to this section', fa: 'پیوند به این بخش' } as const;
+
 export interface RenderOptions {
+  /** Language of the post: default callout titles and link labels. */
+  lang?: 'en' | 'fa';
   /** Maps the filename in `![](img:<filename>)` to a browser URL. */
   resolveImage: (filename: string) => string;
   /** Digits used for the `/01` heading numbers; Persian posts get Persian numerals. */
@@ -71,6 +99,74 @@ function rehypeTerm() {
   };
 }
 
+type MdNode = {
+  type: string;
+  name?: string;
+  children?: MdNode[];
+  value?: string;
+  data?: Record<string, unknown>;
+  attributes?: Record<string, string | null | undefined> | null;
+};
+
+const directiveSource = (n: MdNode, marker: string): string => {
+  const label = n.children?.length ? `[${mdText(n.children as never)}]` : '';
+  const attrs = Object.entries(n.attributes ?? {})
+    .map(([k, v]) => (v == null || v === '' ? k : `${k}="${v}"`))
+    .join(' ');
+  return `${marker}${n.name ?? ''}${label}${attrs ? `{${attrs}}` : ''}`;
+};
+
+/**
+ * Turns `:::kind` containers into callout boxes. Everything else remark-directive recognises (inline `a:b`,
+ * `::x`, unknown `:::x`) is turned back into the plain text the author typed, so ordinary prose is never eaten.
+ */
+function remarkCallouts(lang: 'en' | 'fa') {
+  return (tree: MdNode) => {
+    visit(tree as never, (raw: unknown, index: number | undefined, rawParent: unknown) => {
+      const node = raw as MdNode;
+      const parent = rawParent as MdNode | undefined;
+      if (!parent?.children || index === undefined) return undefined;
+      if (node.type === 'textDirective') {
+        parent.children[index] = { type: 'text', value: directiveSource(node, ':') };
+        return undefined;
+      }
+      if (node.type === 'leafDirective') {
+        parent.children[index] = {
+          type: 'paragraph',
+          children: [{ type: 'text', value: directiveSource(node, '::') }],
+        };
+        return undefined;
+      }
+      if (node.type !== 'containerDirective') return undefined;
+      const kind = node.name as Callout;
+      if (!CALLOUTS.includes(kind)) {
+        parent.children.splice(
+          index,
+          1,
+          { type: 'paragraph', children: [{ type: 'text', value: directiveSource(node, ':::') }] },
+          ...(node.children ?? []),
+        );
+        return index;
+      }
+      const kids = node.children ?? [];
+      const first = kids[0];
+      const label = first?.data?.directiveLabel ? kids.shift() : undefined;
+      const title = label ? mdText(label as never) : CALLOUT_TITLES[lang][kind];
+      node.data = {
+        hName: 'aside',
+        hProperties: { className: ['callout', `callout-${kind}`], role: 'note' },
+      };
+      kids.unshift({
+        type: 'paragraph',
+        data: { hName: 'div', hProperties: { className: ['callout-title'] } },
+        children: [{ type: 'text', value: title }],
+      });
+      node.children = kids;
+      return undefined;
+    });
+  };
+}
+
 const SAFE_HREF = /^(https?:|mailto:|tel:|\/|#|\.{1,2}\/|[^:]*$)/i;
 
 /** Signal-specific structure: numbered h2, figures, safe links, terminal-style code blocks. */
@@ -87,7 +183,7 @@ function rehypeSignal(options: RenderOptions, headings: Heading[]) {
           h('span', {}, [
             {
               type: 'text',
-              value: `/${options.numerals === 'fa' ? faDigits(String(n).padStart(2, '0')) : String(n).padStart(2, '0')}`,
+              value: `/${(options.numerals ?? (options.lang === 'fa' ? 'fa' : 'latin')) === 'fa' ? faDigits(String(n).padStart(2, '0')) : String(n).padStart(2, '0')}`,
             },
           ]),
         );
@@ -126,6 +222,10 @@ type Data = { options: RenderOptions; headings: Heading[] };
 const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
+  .use(remarkDirective)
+  .use(function callouts() {
+    return (tree, file) => remarkCallouts((file.data as Data).options.lang ?? 'en')(tree as never);
+  })
   .use(remarkRehype) // raw HTML in the source is dropped, never passed through
   .use(rehypeSlug)
   .use(rehypeTerm)
@@ -139,6 +239,19 @@ const processor = unified()
     return (tree: Root, file) => {
       const d = file.data as Data;
       return rehypeSignal(d.options, d.headings)(tree);
+    };
+  })
+  // a "#" link on every heading so a section can be shared (added after the TOC text was collected)
+  .use(function anchors() {
+    return (tree: Root, file) => {
+      const lang = (file.data as Data).options.lang ?? 'en';
+      const run = rehypeAutolinkHeadings({
+        behavior: 'append',
+        test: (node) => node.properties?.id !== 'footnote-label',
+        properties: { className: ['anchor'], ariaLabel: ANCHOR_LABEL[lang] },
+        content: { type: 'text', value: '#' },
+      });
+      return run(tree);
     };
   })
   .use(rehypeStringify)
