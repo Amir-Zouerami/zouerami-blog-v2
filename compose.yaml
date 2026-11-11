@@ -37,6 +37,7 @@ services:
       PB_URL: ${PB_URL}
       PB_PUBLIC_URL: ${PB_PUBLIC_URL}
       SITE_URL: ${SITE_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
     depends_on:
       pocketbase:
         condition: service_healthy
