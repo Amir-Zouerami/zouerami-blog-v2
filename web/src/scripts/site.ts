@@ -2,6 +2,7 @@ import { api } from '../lib/client-api';
 import { applyTheme } from '../lib/theme';
 import { initCursor } from './cursor';
 import { onPage } from './page-lifecycle';
+import { initSiteMenu } from './site-menu';
 import { initWipe } from './wipe';
 
 const LANG_KEY = 'sig-lang';
@@ -119,6 +120,7 @@ function onClick(e: MouseEvent): void {
 export function initSite(): void {
   initCursor();
   initWipe();
+  initSiteMenu();
   setInterval(tick, 1000);
   document.addEventListener('click', onClick);
   onPage((signal) => {

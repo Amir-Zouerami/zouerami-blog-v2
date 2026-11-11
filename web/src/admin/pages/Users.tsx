@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { MenuEntry } from '../../lib/context-menu';
 import { errText, pb, type Rec } from '../api';
+import { contextMenuProps, copyText, icons, mailTo } from '../contextMenu';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 export default function Users() {
@@ -12,6 +14,42 @@ export default function Users() {
       .catch((e) => toast(errText(e), 'err'));
   }, [toast]);
   useEffect(load, [load]);
+  const rowMenu = (r: Rec): MenuEntry[] => [
+    {
+      id: 'copy',
+      label: 'Copy email',
+      icon: icons.copy,
+      onSelect: () => copyText(r.email, toast, 'Email copied'),
+    },
+    {
+      id: 'copy-id',
+      label: 'Copy user id',
+      icon: icons.copy,
+      onSelect: () => copyText(r.id, toast, 'Id copied'),
+    },
+    {
+      id: 'mail',
+      label: 'Write an email',
+      icon: icons.mail,
+      onSelect: () => mailTo(r.email),
+    },
+    { type: 'separator' },
+    {
+      id: 'delete',
+      label: 'Delete user…',
+      icon: icons.trash,
+      danger: true,
+      disabled: r.role === 'admin',
+      onSelect: async () => {
+        if (!confirm(`Delete ${r.email} and all their comments, likes and bookmarks?`)) return;
+        await pb
+          .collection('users')
+          .delete(r.id)
+          .then(load)
+          .catch((e) => toast(errText(e), 'err'));
+      },
+    },
+  ];
   return (
     <>
       <div className="adm-bar">
@@ -37,7 +75,7 @@ export default function Users() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} {...contextMenuProps(() => rowMenu(r), 'User actions')}>
                 <td>{r.name}</td>
                 <td>{r.email}</td>
                 <td>{r.verified ? '✓' : '—'}</td>

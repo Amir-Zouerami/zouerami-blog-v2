@@ -1610,3 +1610,23 @@ html[dir='rtl'] .hero h1 { text-align: right; }
 .langseg .off { color: var(--muted); cursor: not-allowed; }
 .langseg .off .nm { text-decoration: line-through; }
 .langseg .off small { font: 500 10px var(--mono); text-transform: uppercase; opacity: .85; }
+
+/* context menu (lib/context-menu) */
+.ctx { position: fixed; z-index: 600; min-width: 220px; max-width: 340px; max-height: calc(100vh - 16px); overflow: auto; padding: 6px; background: var(--bg2); color: var(--fg); border: 1px solid var(--line2); border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, .5); font: 500 14px/1.3 var(--sans); outline: none; transform-origin: var(--ox, left) var(--oy, top); animation: ctx-in .12s ease-out; user-select: none; -webkit-user-select: none; }
+@keyframes ctx-in { from { opacity: 0; transform: scale(.96); } }
+.ctx-item { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; text-align: start; cursor: pointer; }
+.ctx-item:focus { outline: none; }
+.ctx-item[data-active], .ctx-item:focus-visible { background: var(--acc); color: var(--on-acc); }
+.ctx-item[data-disabled] { opacity: .4; cursor: not-allowed; }
+.ctx-item[data-disabled][data-active] { background: none; color: inherit; }
+.ctx-item[data-danger] { color: #ff6b6b; }
+.ctx-item[data-danger][data-active], .ctx-item[data-danger]:focus-visible { background: #ff6b6b; color: #190000; }
+.ctx-icon { display: grid; place-items: center; width: 20px; color: inherit; }
+.ctx-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-shortcut { font: 500 11px var(--mono); opacity: .6; }
+.ctx-arrow { font-size: 12px; opacity: .7; }
+html[dir='rtl'] .ctx-arrow { display: inline-block; scale: -1 1; }
+.ctx-sep { height: 1px; margin: 6px 4px; background: var(--line2); }
+.ctx-label { padding: 8px 10px 4px; font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .ctx { animation: none; } }
+@media (forced-colors: active) { .ctx { border-color: CanvasText; } .ctx-item[data-active] { outline: 2px solid Highlight; } }

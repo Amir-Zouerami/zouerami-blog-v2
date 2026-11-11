@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { MenuEntry } from '../../lib/context-menu';
 import { errText, pb, type Rec } from '../api';
+import { contextMenuProps, copyText, icons, openTab } from '../contextMenu';
 import DateRange from '../DateRange';
 import { inRange } from '../date';
 import { Confirm, fmtDate, useToast } from '../ui';
 
+const authorEmail = (c: Rec): string => String((c.expand?.user as Rec | undefined)?.email ?? '');
 const postSlug = (c: Rec): string =>
   ((c.expand?.post as Rec | undefined)?.slug as string | undefined) ?? '';
 
@@ -55,6 +58,53 @@ export default function Comments() {
       .catch((e) => toast(errText(e), 'err'));
     void load();
   };
+  const rowMenu = (c: Rec): MenuEntry[] => [
+    {
+      id: 'approve',
+      label: 'Approve',
+      icon: icons.check,
+      hidden: c.status === 'approved',
+      onSelect: () => set(c.id, 'approved'),
+    },
+    {
+      id: 'reject',
+      label: 'Reject',
+      icon: icons.x,
+      hidden: c.status === 'rejected',
+      onSelect: () => set(c.id, 'rejected'),
+    },
+    {
+      id: 'post',
+      label: 'View post on site',
+      icon: icons.external,
+      hidden: !postSlug(c),
+      onSelect: () => openTab(`/blog/${postSlug(c)}`),
+    },
+    {
+      id: 'copy',
+      label: 'Copy comment text',
+      icon: icons.copy,
+      onSelect: () => copyText(c.body, toast, 'Comment copied'),
+    },
+    {
+      id: 'email',
+      label: 'Copy author email',
+      icon: icons.mail,
+      hidden: !authorEmail(c),
+      onSelect: () => copyText(authorEmail(c), toast, 'Email copied'),
+    },
+    { type: 'separator' },
+    {
+      id: 'delete',
+      label: 'Delete…',
+      icon: icons.trash,
+      danger: true,
+      onSelect: () => {
+        if (confirm('Delete this comment permanently?')) void del(c.id);
+      },
+    },
+  ];
+
   const approveAll = async () => {
     for (const r of visible)
       await pb
@@ -92,7 +142,11 @@ export default function Comments() {
       ) : (
         <div className="adm-cmts">
           {visible.map((c) => (
-            <article key={c.id} className="adm-cmt">
+            <article
+              key={c.id}
+              className="adm-cmt"
+              {...contextMenuProps(() => rowMenu(c), 'Comment actions')}
+            >
               <header className="mono muted">
                 {c.author_name} · {(c.expand?.user as Rec | undefined)?.email} ·{' '}
                 {fmtDate(c.created)} ·{' '}

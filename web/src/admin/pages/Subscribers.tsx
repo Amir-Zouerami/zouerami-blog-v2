@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { MenuEntry } from '../../lib/context-menu';
 import { errText, pb, type Rec } from '../api';
+import { contextMenuProps, copyText, icons, mailTo } from '../contextMenu';
 import DateRange from '../DateRange';
 import { inRange } from '../date';
 import { Confirm, fmtDate, useToast } from '../ui';
@@ -26,6 +28,35 @@ export default function Subscribers() {
     a.download = 'subscribers.csv';
     a.click();
   };
+  const rowMenu = (r: Rec): MenuEntry[] => [
+    {
+      id: 'copy',
+      label: 'Copy email',
+      icon: icons.copy,
+      onSelect: () => copyText(r.email, toast, 'Email copied'),
+    },
+    {
+      id: 'mail',
+      label: 'Write an email',
+      icon: icons.mail,
+      onSelect: () => mailTo(r.email),
+    },
+    { type: 'separator' },
+    {
+      id: 'delete',
+      label: 'Remove…',
+      icon: icons.trash,
+      danger: true,
+      onSelect: async () => {
+        if (!confirm(`Remove ${r.email}?`)) return;
+        await pb
+          .collection('subscribers')
+          .delete(r.id)
+          .then(load)
+          .catch((e) => toast(errText(e), 'err'));
+      },
+    },
+  ];
   const confirmed = visible.filter((r) => r.confirmed).length;
   return (
     <>
@@ -55,7 +86,7 @@ export default function Subscribers() {
           </thead>
           <tbody>
             {visible.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} {...contextMenuProps(() => rowMenu(r), 'Subscriber actions')}>
                 <td>{r.email}</td>
                 <td>{r.confirmed ? '✓' : '—'}</td>
                 <td className="mono">{r.locale}</td>

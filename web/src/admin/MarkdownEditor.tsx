@@ -1,8 +1,10 @@
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { Compartment, EditorSelection } from '@codemirror/state';
+import { keymap } from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
 import { useEffect, useRef, useState } from 'react';
+import { icons, type MenuEntry, showMenu } from '../lib/context-menu';
 import { previewMarkdown } from './api';
 
 interface Props {
@@ -52,6 +54,8 @@ export default function MarkdownEditor({
   const [words, setWords] = useState(0);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit'); // narrow screens
   const dirComp = useRef(new Compartment());
+  /** Rebuilt every render so the menu always sees the current handlers; read by the CodeMirror event handlers. */
+  const menuItems = useRef<() => MenuEntry[]>(() => []);
 
   const insertAtCursor = (text: string) => {
     const v = view.current;
@@ -85,7 +89,30 @@ export default function MarkdownEditor({
         EditorView.updateListener.of((u) => {
           if (u.docChanged) latest.current.onChange(u.state.doc.toString());
         }),
+        keymap.of([
+          {
+            key: 'Shift-F10',
+            run: (v) => {
+              const at = v.coordsAtPos(v.state.selection.main.head);
+              showMenu({
+                x: at?.left ?? 0,
+                y: at?.bottom ?? 0,
+                items: menuItems.current(),
+                label: 'Editor',
+                keyboard: true,
+                restoreFocus: v.contentDOM,
+              });
+              return true;
+            },
+          },
+        ]),
         EditorView.domEventHandlers({
+          contextmenu(e) {
+            if (e.shiftKey) return false; // Shift+right-click: the browser's own menu (spell-check etc.)
+            e.preventDefault();
+            showMenu({ x: e.clientX, y: e.clientY, items: menuItems.current(), label: 'Editor' });
+            return true;
+          },
           keydown(e) {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
               e.preventDefault();
@@ -166,6 +193,142 @@ export default function MarkdownEditor({
     const line = v.state.doc.lineAt(v.state.selection.main.from);
     v.dispatch({ changes: { from: line.from, insert: prefix } });
     v.focus();
+  };
+
+  const selectionText = () => {
+    const v = view.current;
+    const r = v?.state.selection.main;
+    return v && r ? v.state.sliceDoc(r.from, r.to) : '';
+  };
+  menuItems.current = () => {
+    const v = view.current;
+    const hasSel = selectionText().length > 0;
+    const notReady = !v;
+    return [
+      {
+        id: 'cut',
+        label: 'Cut',
+        icon: icons.cut,
+        shortcut: 'Ctrl+X',
+        disabled: notReady || !hasSel,
+        onSelect: async () => {
+          const text = selectionText();
+          await navigator.clipboard.writeText(text);
+          const r = v?.state.selection.main;
+          if (v && r) v.dispatch({ changes: { from: r.from, to: r.to, insert: '' } });
+          v?.focus();
+        },
+      },
+      {
+        id: 'copy',
+        label: 'Copy',
+        icon: icons.copy,
+        shortcut: 'Ctrl+C',
+        disabled: notReady || !hasSel,
+        onSelect: async () => {
+          await navigator.clipboard.writeText(selectionText());
+          v?.focus();
+        },
+      },
+      {
+        id: 'paste',
+        label: 'Paste',
+        icon: icons.paste,
+        shortcut: 'Ctrl+V',
+        disabled: notReady,
+        onSelect: async () => {
+          insertAtCursor(await navigator.clipboard.readText());
+        },
+      },
+      {
+        id: 'select-all',
+        label: 'Select all',
+        icon: icons.select,
+        shortcut: 'Ctrl+A',
+        disabled: notReady,
+        onSelect: () => {
+          v?.dispatch({ selection: { anchor: 0, head: v.state.doc.length } });
+          v?.focus();
+        },
+      },
+      { type: 'separator' },
+      {
+        id: 'format',
+        label: 'Format',
+        icon: icons.bold,
+        children: [
+          {
+            id: 'bold',
+            label: 'Bold',
+            icon: icons.bold,
+            shortcut: '**',
+            onSelect: () => wrap('**', '**', 'bold'),
+          },
+          {
+            id: 'italic',
+            label: 'Italic',
+            icon: icons.italic,
+            shortcut: '*',
+            onSelect: () => wrap('*', '*', 'italic'),
+          },
+          {
+            id: 'code',
+            label: 'Inline code',
+            icon: icons.code,
+            shortcut: '`',
+            onSelect: () => wrap('`', '`', 'code'),
+          },
+          {
+            id: 'link',
+            label: 'Link',
+            icon: icons.link,
+            onSelect: () => wrap('[', '](https://)', 'text'),
+          },
+        ],
+      },
+      {
+        id: 'block',
+        label: 'Block',
+        icon: icons.heading,
+        children: [
+          {
+            id: 'h2',
+            label: 'Heading',
+            icon: icons.heading,
+            shortcut: '##',
+            onSelect: () => linePrefix('## '),
+          },
+          {
+            id: 'quote',
+            label: 'Quote',
+            icon: icons.quote,
+            shortcut: '>',
+            onSelect: () => linePrefix('> '),
+          },
+          {
+            id: 'list',
+            label: 'List item',
+            icon: icons.list,
+            shortcut: '-',
+            onSelect: () => linePrefix('- '),
+          },
+          {
+            id: 'codeblock',
+            label: 'Code block',
+            icon: icons.code,
+            onSelect: () => wrap('\n```ts\n', '\n```\n', 'code'),
+          },
+          { id: 'footnote', label: 'Footnote', onSelect: () => wrap('[^1]', '', '') },
+        ],
+      },
+      {
+        id: 'image',
+        label: 'Insert image…',
+        icon: icons.image,
+        disabled: !onUpload,
+        onSelect: () => pickFiles(),
+      },
+    ];
   };
 
   const pickFiles = () => {
