@@ -10,7 +10,7 @@ export const prerender = false;
 /** Posts that exist in this language, newest first, with titles in this language. */
 export const GET: APIRoute = async () => {
   try {
-    const posts = (await listPosts()).filter((p) => p.langs.includes('fa'));
+    const posts = (await listPosts({ lang: 'fa' })).filter((p) => p.langs.includes('fa'));
     // list titles are in each post's primary language; fetch the right one only when it differs
     const { getPost } = await import('../../lib/posts');
     const items = await Promise.all(

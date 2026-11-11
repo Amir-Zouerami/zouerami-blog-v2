@@ -52,16 +52,10 @@ function px(map: string[], hx: number, hy: number, k = 2): string {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${hx * k} ${hy * k}`;
 }
 
-/** XP-style pixel cursors. Plain CSS cursors: no element follows the pointer, no hover growth. */
+/**
+ * XP-style pixel cursors as plain CSS, inlined in every page's <head> (Astro's client router keeps head styles that
+ * both pages share, so the cursor survives navigation). Fine pointers only: touch devices keep their own.
+ */
 export function cursorCss(): string {
-  return `html,body{cursor:${px(ARROW, 0, 0)},default}a,button,summary,.row,.tile,.dd-btn,.ftab,label[for]{cursor:${px(HAND, 6, 0)},pointer}input,textarea{cursor:text}`;
-}
-
-export function initCursor(): void {
-  if (document.getElementById('sig-cursor')) return;
-  if (matchMedia('(pointer: coarse)').matches) return;
-  const st = document.createElement('style');
-  st.id = 'sig-cursor';
-  st.textContent = cursorCss();
-  document.head.appendChild(st);
+  return `@media (pointer:fine){html,body{cursor:${px(ARROW, 0, 0)},default}a,button,summary,[role=button],[role=menuitem],.row,.tile,.dd-btn,.ftab,label[for],select{cursor:${px(HAND, 6, 0)},pointer}input,textarea,.cm-content{cursor:text}}`;
 }

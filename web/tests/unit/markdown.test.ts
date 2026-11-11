@@ -74,6 +74,43 @@ describe('renderMarkdown', { timeout: 30000 }, () => {
   });
 });
 
+describe('diagrams, heading levels and themes', () => {
+  it('turns mermaid fences into a diagram block (source kept as text, not highlighted)', async () => {
+    const { html } = await renderMarkdown('```mermaid\nflowchart LR\n  A --> B\n```', opts);
+    expect(html).toContain('class="mermaid-block"');
+    expect(html).toContain('<pre class="mermaid-src">flowchart LR');
+    expect(html).toContain('A --');
+    expect(html).not.toContain('class="term"');
+    expect(html).not.toContain('shiki');
+  });
+  it('keeps ordinary fences as code blocks next to a diagram', async () => {
+    const { html } = await renderMarkdown(
+      '```mermaid\nA-->B\n```\n\n```ts\nconst a = 1\n```',
+      opts,
+    );
+    expect(html.match(/mermaid-block/g)).toHaveLength(1);
+    expect(html).toContain('class="term"');
+  });
+  it('gives h3–h6 ids but numbers and lists only h2 in the TOC', async () => {
+    const { html, headings } = await renderMarkdown(
+      '## A\n\n### B\n\n#### C\n\n##### D\n\n###### E',
+      opts,
+    );
+    for (const t of ['h3', 'h4', 'h5', 'h6']) expect(html).toMatch(new RegExp(`<${t} id="[a-z]"`));
+    expect(headings).toEqual([{ id: 'a', text: 'A' }]);
+    expect(html).not.toContain('<h3 id="b"><span>');
+  });
+  it('uses Persian numerals for Persian posts', async () => {
+    const fa = await renderMarkdown('## الف\n\n## ب', { ...opts, numerals: 'fa' });
+    expect(fa.html).toContain('<span>/۰۱</span>');
+    expect(fa.html).toContain('<span>/۰۲</span>');
+  });
+  it('highlights code with the GitHub Dark palette', async () => {
+    const { html } = await renderMarkdown('```ts\nconst a = 1\n```', opts);
+    expect(html).toContain('--shiki-dark-bg:#0d1117');
+  });
+});
+
 describe('readingMinutes', () => {
   it('is at least 1 and scales with length', () => {
     expect(readingMinutes('')).toBe(1);

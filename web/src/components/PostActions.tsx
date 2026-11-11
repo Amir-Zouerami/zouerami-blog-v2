@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/client-api';
+import { burstPlan } from '../lib/confetti';
 
 interface State {
   likes: number;
@@ -104,11 +105,10 @@ export default function PostActions({
 async function burst() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const { default: confetti } = await import('canvas-confetti');
-  void confetti({
-    particleCount: 70,
-    spread: 70,
-    origin: { y: 0.7 },
-    colors: ['#d4ff3a', '#ecece6', '#2a3bff'],
-    disableForReducedMotion: true,
-  });
+  const r = document.querySelector('[data-like]')?.getBoundingClientRect();
+  // burst out of the like button itself
+  const origin = r
+    ? { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }
+    : { y: 0.7 };
+  for (const { delay, ...wave } of burstPlan(origin)) setTimeout(() => void confetti(wave), delay);
 }

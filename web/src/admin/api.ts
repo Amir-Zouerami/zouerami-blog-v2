@@ -59,11 +59,12 @@ export async function previewMarkdown(
   markdown: string,
   postId: string | undefined,
   signal: AbortSignal,
+  numerals?: 'latin' | 'fa',
 ) {
   const r = await api<{ html: string; headings: { id: string; text: string }[] }>(
     '/api/admin/preview',
     {
-      json: { markdown, postId },
+      json: { markdown, postId, numerals },
       signal,
     },
   );

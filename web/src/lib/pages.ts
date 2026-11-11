@@ -32,11 +32,12 @@ export async function load<T>(scope: string, fn: () => Promise<T | null>): Promi
 const postBodies = new Lru<{ html: string; headings: { id: string; text: string }[] }>(100);
 
 async function renderPostBody(post: Post) {
-  const key = createHash('sha1').update(`${post.id}\0${post.bodyMd}`).digest('hex');
+  const key = createHash('sha1').update(`${post.id}\0${post.lang}\0${post.bodyMd}`).digest('hex');
   const hit = postBodies.get(key);
   if (hit) return hit;
   const fresh = await renderMarkdown(post.bodyMd, {
     resolveImage: (name) => imageUrl({ id: post.id }, name),
+    numerals: post.lang === 'fa' ? 'fa' : 'latin',
   });
   postBodies.set(key, fresh);
   return fresh;
@@ -51,7 +52,7 @@ export interface HomePage {
 export const loadHome = (locale: Locale) =>
   load<HomePage>('home', async () => {
     const [posts, projects] = await Promise.all([
-      listPosts({ limit: 5 }),
+      listPosts({ limit: 5, lang: locale }),
       listProjects({ limit: 6, lang: locale }),
     ]);
     return { posts, projects };
@@ -78,7 +79,8 @@ export const yearsOf = (posts: PostSummary[]): string[] => [
   ...new Set(posts.map((p) => p.date.slice(0, 4))),
 ];
 
-export const loadBlogIndex = () => load<PostSummary[]>('blog-index', async () => listPosts());
+export const loadBlogIndex = (locale: Locale) =>
+  load<PostSummary[]>('blog-index', async () => listPosts({ lang: locale }));
 export const loadWorkIndex = (locale: Locale) =>
   load<ProjectSummary[]>('work-index', async () => listProjects({ lang: locale }));
 
@@ -97,7 +99,7 @@ export const loadPostPage = (slug: string, locale: Locale, token?: string) =>
   load<PostPage>('post', async () => {
     const post = await getPost(slug, locale, undefined, { fallback: true, token });
     if (!post) return null;
-    const [all, body] = await Promise.all([listPosts(), renderPostBody(post)]);
+    const [all, body] = await Promise.all([listPosts({ lang: locale }), renderPostBody(post)]);
     return {
       post,
       html: body.html,

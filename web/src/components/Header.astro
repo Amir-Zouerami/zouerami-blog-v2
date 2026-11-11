@@ -1,5 +1,5 @@
 ---
-import { localePath, type Locale, LANG_NAMES, t } from '../i18n';
+import { faDigits, localePath, type Locale, LANG_NAMES, t } from '../i18n';
 import { MOON, SUN } from './Icons';
 interface Props { nav?: string; locale: Locale; switchHref: string }
 const { nav = '', locale, switchHref } = Astro.props;
@@ -8,10 +8,10 @@ const other: Locale = locale === 'en' ? 'fa' : 'en';
 const NAV = [['home', '/', '01', tr.nav.home], ['blog', '/blog', '02', tr.nav.blog], ['work', '/work', '03', tr.nav.work], ['about', '/about', '04', tr.nav.about]] as const;
 ---
 <header class="head pad">
-  <a class="brand" href={localePath(locale, '/')}>zouerami<sup>®</sup></a>
+  <a class="brand" href={localePath(locale, '/')} dir="ltr" lang="en">zouerami<sup>®</sup></a>
   <nav class="nav" aria-label="Primary">
     {NAV.map(([k, href, n, label]) => (
-      <a href={localePath(locale, href)} class={k === nav ? 'on' : ''} aria-current={k === nav ? 'page' : undefined}><em>{n}</em>{label}</a>
+      <a href={localePath(locale, href)} class={k === nav ? 'on' : ''} aria-current={k === nav ? 'page' : undefined}><em>{locale === 'fa' ? faDigits(n) : n}</em>{label}</a>
     ))}
   </nav>
   <div class="tools">

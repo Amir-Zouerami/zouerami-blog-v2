@@ -1630,3 +1630,70 @@ html[dir='rtl'] .ctx-arrow { display: inline-block; scale: -1 1; }
 .ctx-label { padding: 8px 10px 4px; font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .ctx { animation: none; } }
 @media (forced-colors: active) { .ctx { border-color: CanvasText; } .ctx-item[data-active] { outline: 2px solid Highlight; } }
+
+/* ───────── Persian typography ─────────
+   Vazirmatn everywhere in Persian pages, no letter-spacing / uppercasing (they break Arabic-script joining and
+   turned the mono labels and nav into broken-looking text). Latin islands (dir="ltr": brand, hero name) keep their look. */
+html[lang='fa'] {
+  --sans: 'Vazirmatn Variable', 'Bricolage Grotesque Variable', system-ui, sans-serif;
+  --head: var(--sans);
+  --mono: 'Vazirmatn Variable', 'JetBrains Mono Variable', ui-monospace, monospace;
+  --hls: 0em;
+  --hw: 800;
+}
+html[lang='fa'] body { line-height: 1.85; }
+html[lang='fa'] *:not([dir='ltr']):not([dir='ltr'] *) { letter-spacing: 0 !important; text-transform: none !important; }
+html[lang='fa'] .mono, html[lang='fa'] .nav a, html[lang='fa'] .kbd, html[lang='fa'] .tagp, html[lang='fa'] .ftab, html[lang='fa'] .btn { font-size: 13.5px; font-weight: 500; }
+html[lang='fa'] .nav a em { font-size: 12px; margin-inline-end: 8px; }
+html[lang='fa'] .hero h1, html[lang='fa'] .brand { font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; }
+html[lang='fa'] .meta-grid p { font-size: 18px; margin-top: 6px; }
+html[lang='fa'] .row h3, html[lang='fa'] .tile h3 { font-weight: 700; }
+/* TEST: Lalezar for Persian post titles (remove this block to go back to Vazirmatn) */
+html[lang='fa'] .post-head h1[lang='fa'] { font-family: 'Lalezar', 'Vazirmatn Variable', sans-serif; font-weight: 400; line-height: 1.35; }
+
+/* ───────── post bits ───────── */
+.meta-grid.meta-3 { grid-template-columns: repeat(3, 1fr); }
+.langbar { margin: 0 0 32px; }
+.langbar .langseg { margin-top: 0; }
+
+/* heading levels 3–6 (only h2 had styles before, the rest rendered like body text) */
+.prose h3 { font: var(--hw) clamp(23px, 2.7vw, 31px) / 1.2 var(--head); letter-spacing: -0.03em; margin-top: 2em; scroll-margin-top: 90px; }
+.prose h3::before { content: ''; display: inline-block; width: 0.42em; height: 0.42em; margin-inline-end: 0.5em; border-radius: 50%; background: var(--acc); vertical-align: 0.08em; }
+.prose h4 { font: 600 clamp(19px, 2.1vw, 24px) / 1.25 var(--head); letter-spacing: -0.02em; margin-top: 1.7em; scroll-margin-top: 90px; }
+.prose h5 { font: 600 15px / 1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--acc); margin-top: 1.6em; scroll-margin-top: 90px; }
+.prose h6 { font: 600 14px / 1.3 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-top: 1.5em; scroll-margin-top: 90px; }
+.prose[dir='rtl'] h3, .prose[dir='rtl'] h4, .prose[dir='rtl'] h5, .prose[dir='rtl'] h6 { font-family: 'Vazirmatn Variable', sans-serif; letter-spacing: 0; text-transform: none; }
+.prose[dir='rtl'] h3 { font-weight: 800; }
+.prose[dir='rtl'] h2 span { text-align: right; } /* "/۰۱" sits on the same side as the (right-aligned) heading */
+
+/* code blocks: GitHub Dark */
+.term, [data-theme='light'] .term { background: #0d1117; border-color: #30363d; }
+.term .tb { border-bottom-color: #30363d; color: #8b949e; }
+
+/* ───────── mermaid diagrams ───────── */
+.mermaid-block { position: relative; margin-inline: -4%; border: 1px solid var(--line2); border-radius: var(--r); background: var(--bg2); overflow: hidden; }
+.mermaid-src { margin: 0; padding: 18px 20px; font: 400 14px/1.7 var(--code); white-space: pre-wrap; color: var(--muted); direction: ltr; text-align: left; }
+.mm-view { height: clamp(280px, 52vh, 560px); direction: ltr; cursor: grab; touch-action: none; }
+.mm-view:active { cursor: grabbing; }
+.mm-view svg { display: block; width: 100%; height: 100%; }
+.mm-bar { position: absolute; z-index: 3; top: 10px; inset-inline-end: 10px; display: flex; gap: 4px; padding: 4px; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(8px); border: 1px solid var(--line2); border-radius: 10px; opacity: .55; transition: opacity .2s; }
+.mermaid-block:hover .mm-bar, .mermaid-block:focus-within .mm-bar { opacity: 1; }
+.mm-btn { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; color: var(--fg); cursor: pointer; }
+.mm-btn:hover { background: var(--acc); color: var(--on-acc); }
+.mm-tip { position: absolute; bottom: 12px; inset-inline-start: 50%; translate: -50% 6px; padding: 6px 12px; border-radius: 8px; background: var(--fg); color: var(--bg); font: 500 12px var(--mono); opacity: 0; transition: .25s; pointer-events: none; z-index: 4; }
+.mm-tip.on { opacity: 1; translate: -50% 0; }
+.mermaid-block.is-full { position: fixed; inset: 0; z-index: 450; margin: 0; border-radius: 0; border: 0; background: var(--bg); display: flex; flex-direction: column; }
+.mermaid-block.is-full .mm-view { height: 100%; flex: 1; }
+html.mm-lock { overflow: hidden; }
+.mm-error { border-color: #ff6b6b; }
+.mm-errmsg { padding: 14px 20px 0; color: #ff6b6b; font: 500 13px var(--mono); }
+.adm-pane.preview .mermaid-block { margin-inline: 0; }
+
+/* replying to a comment: the answered comment lights up and the composer hangs off it on an accent line */
+.cmt.replying { background: color-mix(in srgb, var(--acc) 8%, transparent); border-inline-start: 3px solid var(--acc); padding-inline-start: 14px; margin-inline-start: -17px; }
+.reply-composer { position: relative; margin-inline-start: 28px; padding: 18px 0 0 22px; padding-inline: 22px 0; border-inline-start: 3px solid var(--acc); }
+.reply-composer::before { content: ''; position: absolute; inset-inline-start: -3px; top: 0; width: 24px; height: 28px; border-inline-start: 3px solid var(--acc); border-bottom: 3px solid var(--acc); border-end-start-radius: 14px; translate: 0 -100%; display: none; }
+.reply-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 4px; }
+.reply-head .mono { color: var(--acc); font-size: 12px; }
+.reply-quote { flex-basis: 100%; color: var(--muted); font-size: 15px; line-height: 1.5; quotes: '“' '”'; display: block; overflow-wrap: anywhere; }
+.reply-head .linkbtn { margin-inline-start: auto; }

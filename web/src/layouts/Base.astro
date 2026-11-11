@@ -8,6 +8,7 @@ import Seo from '../components/Seo.astro';
 import { dirOf, type Locale, switchPath, t } from '../i18n';
 import { getConfig } from '../lib/config';
 import { type JsonLd, personLd, websiteLd } from '../lib/jsonld';
+import { cursorCss } from '../scripts/cursor';
 
 interface Props {
   title: string;
@@ -60,6 +61,7 @@ const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(s
         });
       })();
     </script>
+    <style is:inline set:html={cursorCss()} data-sig-cursor></style>
     <ClientRouter />
   </head>
   <body id="top" data-nav={nav} data-locale={locale}>
@@ -69,6 +71,7 @@ const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(s
     <slot />
     <Footer {locale} />
     <div id="wipe" transition:persist hidden aria-hidden="true"><div></div></div>
+    <script type="application/json" id="diagram-labels" set:html={JSON.stringify(tr.diagram)} />
     <script type="application/json" id="menu-labels" set:html={JSON.stringify(tr.menu)} />
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <div class="langhint" id="langhint" hidden data-locale={locale}>

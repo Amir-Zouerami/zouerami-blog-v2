@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api, describe } from '../lib/client-api';
 
 interface Comment {
@@ -15,6 +15,7 @@ interface Labels {
   placeholder: string;
   post: string;
   reply: string;
+  replyingTo: string;
   cancel: string;
   delete: string;
   pending: string;
@@ -61,6 +62,7 @@ export default function Comments({
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const composerRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
     const [list, me] = await Promise.all([
@@ -79,6 +81,13 @@ export default function Comments({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // opening a reply: bring the composer (which sits under the comment being answered) into view and focus it
+  useEffect(() => {
+    if (!replyTo) return;
+    composerRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    composerRef.current?.querySelector('textarea')?.focus({ preventScroll: true });
+  }, [replyTo]);
 
   useEffect(() => {
     if (!siteKey || document.getElementById('cf-turnstile-script')) return;
@@ -118,7 +127,11 @@ export default function Comments({
   const roots = (items ?? []).filter((c) => !c.parent);
   const replies = (id: string) => (items ?? []).filter((c) => c.parent === id);
   const row = (c: Comment, re = false) => (
-    <div className={`cmt ${re ? 're' : ''}`} key={c.id} id={`c-${c.id}`}>
+    <div
+      className={`cmt ${re ? 're' : ''}${replyTo === c.id ? ' replying' : ''}`}
+      key={c.id}
+      id={`c-${c.id}`}
+    >
       <span className="mono muted">
         {c.author} · {ago(c.created, locale)}
       </span>
@@ -130,9 +143,10 @@ export default function Comments({
             <button
               type="button"
               className="linkbtn"
-              onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}
+              onClick={() => setReplyTo(c.id)}
+              aria-pressed={replyTo === c.id}
             >
-              {replyTo === c.id ? labels.cancel : labels.reply}
+              {labels.reply}
             </button>
           )}
           {c.mine && (
@@ -143,6 +157,48 @@ export default function Comments({
         </p>
       </div>
     </div>
+  );
+
+  /** The comment box. While replying it sits directly under the comment being answered, joined to it by an accent line. */
+  const composer = (target?: Comment) => (
+    <form
+      ref={target ? composerRef : undefined}
+      onSubmit={submit}
+      className={`auth-form${target ? ' reply-composer' : ''}`}
+      style={{ marginTop: target ? 0 : 20 }}
+      data-astro-reload
+    >
+      {target && (
+        <div className="reply-head">
+          <span className="mono">
+            {labels.replyingTo} <strong>{target.author}</strong>
+          </span>
+          <q className="reply-quote">
+            {target.body.length > 140 ? `${target.body.slice(0, 140)}…` : target.body}
+          </q>
+          <button type="button" className="linkbtn" onClick={() => setReplyTo(null)}>
+            {labels.cancel}
+          </button>
+        </div>
+      )}
+      <textarea
+        className="area"
+        rows={target ? 4 : 3}
+        maxLength={2000}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={target ? `${labels.replyingTo} ${target.author}…` : labels.placeholder}
+        aria-label={target ? `${labels.replyingTo} ${target.author}` : labels.placeholder}
+        required
+      />
+      {siteKey && <div className="cf-turnstile" data-sitekey={siteKey} />}
+      <button className="btn" type="submit" disabled={busy}>
+        {target ? labels.reply : labels.post}
+      </button>
+      <p className="auth-result" role="alert" data-kind="err">
+        {error}
+      </p>
+    </form>
   );
 
   return (
@@ -156,6 +212,7 @@ export default function Comments({
         <div key={c.id}>
           {row(c)}
           {replies(c.id).map((r) => row(r, true))}
+          {signedIn && replyTo === c.id && composer(c)}
         </div>
       ))}
       {note && (
@@ -170,27 +227,7 @@ export default function Comments({
           </a>
         </p>
       )}
-      {signedIn && (
-        <form onSubmit={submit} style={{ marginTop: 20 }} className="auth-form" data-astro-reload>
-          <textarea
-            className="area"
-            rows={3}
-            maxLength={2000}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={replyTo ? `${labels.reply}…` : labels.placeholder}
-            aria-label={labels.placeholder}
-            required
-          />
-          {siteKey && <div className="cf-turnstile" data-sitekey={siteKey} />}
-          <button className="btn" type="submit" disabled={busy}>
-            {labels.post}
-          </button>
-          <p className="auth-result" role="alert" data-kind="err">
-            {error}
-          </p>
-        </form>
-      )}
+      {signedIn && !replyTo && composer()}
     </section>
   );
 }
