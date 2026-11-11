@@ -4,6 +4,7 @@ import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, goto, icons, openTab } from '../contextMenu';
 import DateRange from '../DateRange';
 import { inRange } from '../date';
+import { Pager, usePaged } from '../Pager';
 import { fmtDate, useToast } from '../ui';
 
 export default function PostsList() {
@@ -133,6 +134,7 @@ export default function PostsList() {
       `${p.slug} ${titles[p.id]?.en ?? ''} ${titles[p.id]?.fa ?? ''} ${(p.tags ?? []).join(' ')}`.toLowerCase();
     return !q || hay.includes(q.toLowerCase());
   });
+  const pg = usePaged(list, 25, `${filter}|${q}|${range.from}|${range.to}`);
 
   return (
     <>
@@ -175,7 +177,7 @@ export default function PostsList() {
             </tr>
           </thead>
           <tbody>
-            {list.map((p) => (
+            {pg.items.map((p) => (
               <tr key={p.id} {...contextMenuProps(() => rowMenu(p), 'Post actions')}>
                 <td>
                   <a href={`#/posts/${p.id}`}>{titles[p.id]?.en || titles[p.id]?.fa || p.slug}</a>
@@ -215,6 +217,7 @@ export default function PostsList() {
           </tbody>
         </table>
       )}
+      <Pager {...pg} />
     </>
   );
 }

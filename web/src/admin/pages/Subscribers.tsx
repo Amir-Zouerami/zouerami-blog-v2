@@ -4,6 +4,7 @@ import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, icons, mailTo } from '../contextMenu';
 import DateRange from '../DateRange';
 import { inRange } from '../date';
+import { Pager, usePaged } from '../Pager';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 export default function Subscribers() {
@@ -11,6 +12,7 @@ export default function Subscribers() {
   const [rows, setRows] = useState<Rec[] | null>(null);
   const [range, setRange] = useState({ from: '', to: '' });
   const visible = (rows ?? []).filter((r) => inRange(r.created, range.from, range.to));
+  const pg = usePaged(visible, 25, `${range.from}|${range.to}`);
   const load = useCallback(() => {
     pb.collection('subscribers')
       .getFullList({ sort: '-created' })
@@ -85,7 +87,7 @@ export default function Subscribers() {
             </tr>
           </thead>
           <tbody>
-            {visible.map((r) => (
+            {pg.items.map((r) => (
               <tr key={r.id} {...contextMenuProps(() => rowMenu(r), 'Subscriber actions')}>
                 <td>{r.email}</td>
                 <td>{r.confirmed ? '✓' : '—'}</td>
@@ -109,6 +111,7 @@ export default function Subscribers() {
           </tbody>
         </table>
       )}
+      <Pager {...pg} />
     </>
   );
 }

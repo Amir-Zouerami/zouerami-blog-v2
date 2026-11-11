@@ -4,6 +4,7 @@ import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, icons, openTab } from '../contextMenu';
 import DateRange from '../DateRange';
 import { inRange } from '../date';
+import { Pager, usePaged } from '../Pager';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 const authorEmail = (c: Rec): string => String((c.expand?.user as Rec | undefined)?.email ?? '');
@@ -17,6 +18,7 @@ export default function Comments() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [range, setRange] = useState({ from: '', to: '' });
   const visible = (rows ?? []).filter((r) => inRange(r.created, range.from, range.to));
+  const pg = usePaged(visible, 20, `${status}|${range.from}|${range.to}`);
 
   const load = useCallback(async () => {
     try {
@@ -141,7 +143,7 @@ export default function Comments() {
         <p className="mono muted">Loading…</p>
       ) : (
         <div className="adm-cmts">
-          {visible.map((c) => (
+          {pg.items.map((c) => (
             <article
               key={c.id}
               className="adm-cmt"
@@ -183,6 +185,7 @@ export default function Comments() {
           {!visible.length && <p className="muted">No {status} comments.</p>}
         </div>
       )}
+      <Pager {...pg} />
     </>
   );
 }

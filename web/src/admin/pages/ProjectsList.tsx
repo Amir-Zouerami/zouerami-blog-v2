@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, goto, icons, openTab } from '../contextMenu';
+import { Pager, usePaged } from '../Pager';
 import { useToast } from '../ui';
 
 export default function ProjectsList() {
   const toast = useToast();
   const [rows, setRows] = useState<Rec[] | null>(null);
+  const pg = usePaged(rows ?? [], 25);
   useEffect(() => {
     pb.collection('projects')
       .getFullList({ sort: 'sort,-year' })
@@ -96,7 +98,7 @@ export default function ProjectsList() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((p) => (
+            {pg.items.map((p) => (
               <tr key={p.id} {...contextMenuProps(() => rowMenu(p), 'Project actions')}>
                 <td>
                   <a href={`#/projects/${p.id}`}>{p.name}</a>
@@ -114,6 +116,7 @@ export default function ProjectsList() {
           </tbody>
         </table>
       )}
+      <Pager {...pg} />
     </>
   );
 }

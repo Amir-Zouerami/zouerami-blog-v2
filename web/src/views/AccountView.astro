@@ -21,6 +21,7 @@ const login = localePath(locale, '/login');
   </main>
   <script>
     import { api } from '../lib/client-api';
+    import { pageWindow, paginate } from '../lib/paginate';
     import '../scripts/auth-forms';
     function esc(s: string) {
       return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
@@ -38,9 +39,31 @@ const login = localePath(locale, '/login');
       const list = root.querySelector<HTMLElement>('[data-bookmarks]')!;
       const res = await api<{ bookmarks: { slug: string; title: string; lang: string; date: string }[] }>(`/api/bookmarks?lang=${document.documentElement.lang}`);
       const items = (res.data?.bookmarks ?? []) as { slug: string; title: string; lang: string; date: string }[];
-      list.innerHTML = items.length
-        ? items.map((b, i) => `<a class="row" href="${document.documentElement.lang === 'fa' ? '/fa' : ''}/blog/${esc(b.slug)}"><span class="no">${String(i + 1).padStart(2, '0')}</span><h3 dir="${b.lang === 'fa' ? 'rtl' : 'ltr'}" lang="${esc(b.lang)}">${esc(b.title)}</h3><span></span><span class="when mono muted">${esc(b.date)}</span><span></span></a>`).join('')
-        : `<p class="mono muted" style="padding:30px 0">${esc(root.dataset.empty ?? '')}</p>`;
+      const fa = document.documentElement.lang === 'fa';
+      const digits = (n: number) => (fa ? n.toLocaleString('fa-IR', { useGrouping: false }) : String(n));
+      const PER = 10;
+      let page = 1;
+      const draw = () => {
+        const pg = paginate(items, page, PER);
+        page = pg.page;
+        list.innerHTML = items.length
+          ? pg.items.map((b, i) => `<a class="row" href="${fa ? '/fa' : ''}/blog/${esc(b.slug)}"><span class="no">${digits((page - 1) * PER + i + 1).padStart(2, fa ? '' : '0')}</span><h3 dir="${b.lang === 'fa' ? 'rtl' : 'ltr'}" lang="${esc(b.lang)}">${esc(b.title)}</h3><span></span><span class="when mono muted">${esc(b.date)}</span><span></span></a>`).join('')
+          : `<p class="mono muted" style="padding:30px 0">${esc(root.dataset.empty ?? '')}</p>`;
+        pager.innerHTML = pg.pages > 1
+          ? `<button type="button" class="pg" data-p="${page - 1}" ${page <= 1 ? 'disabled' : ''}>← ${fa ? 'قبلی' : 'Previous'}</button><span class="pg-nums">${pageWindow(page, pg.pages).map((n) => (n === '…' ? '<span class="pg gap">…</span>' : `<button type="button" class="pg ${n === page ? 'cur' : ''}" data-p="${n}" ${n === page ? 'aria-current="page"' : ''}>${digits(n)}</button>`)).join('')}</span><button type="button" class="pg" data-p="${page + 1}" ${page >= pg.pages ? 'disabled' : ''}>${fa ? 'بعدی' : 'Next'} →</button>`
+          : '';
+      };
+      const pager = document.createElement('nav');
+      pager.className = 'pager';
+      pager.setAttribute('aria-label', fa ? 'صفحه‌ها' : 'Pages');
+      list.after(pager);
+      pager.onclick = (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-p]');
+        if (!b || b.disabled) return;
+        page = Number(b.dataset.p);
+        draw();
+      };
+      draw();
 
       const form = root.querySelector<HTMLFormElement>('[data-delete-form]')!;
       form.onsubmit = async (e) => {

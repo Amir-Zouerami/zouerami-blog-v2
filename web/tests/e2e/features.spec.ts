@@ -51,3 +51,23 @@ test.describe('writing features', () => {
     await expect(page.locator('.year').first()).toHaveText(/^[۰-۹]{4}$/);
   });
 });
+
+test.describe('pagination and Persian post heading', () => {
+  test('blog index pages with ?page= and clamps bad values', async ({ page }) => {
+    await page.goto('/blog');
+    const first = await page.locator('.card').count();
+    expect(first).toBeLessThanOrEqual(12);
+    await page.goto('/blog?page=999');
+    expect(await page.locator('.card').count()).toBeGreaterThan(0);
+    await page.goto('/blog?page=abc');
+    expect(await page.locator('.card').count()).toBe(first);
+  });
+
+  test('a Persian post on the English site puts its heading on the right', async ({ page }) => {
+    await page.goto('/blog/hello-bilingual?lang=fa');
+    const h = await page.locator('.post-head h1').boundingBox();
+    const w = page.viewportSize()?.width ?? 0;
+    expect(h && h.x + h.width).toBeGreaterThan(w - 140); // spans to the right edge, text starts there
+    await expect(page.locator('.post-head h1')).toHaveCSS('text-align', /right|start/);
+  });
+});
