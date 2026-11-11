@@ -5,6 +5,7 @@ import {
   setAccessCookie,
   setRefreshCookie,
 } from './lib/auth-cookies';
+import { loadEnv } from './lib/env';
 import { getAuthSecret, REFRESH_COOKIE, SESSION_COOKIE, verifySession } from './lib/session';
 
 /**
@@ -25,7 +26,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
       } catch {
         /* malformed origin is rejected below */
       }
-      if (host !== context.url.host) {
+      // nginx forwards Host without the port, so also accept the configured public site host
+      if (host !== context.url.host && host !== new URL(loadEnv().SITE_URL).host) {
         return new Response(JSON.stringify({ error: 'Cross-site request blocked' }), {
           status: 403,
           headers: { 'content-type': 'application/json' },
