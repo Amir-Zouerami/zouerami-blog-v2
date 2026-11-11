@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  errText,
-  fileUrl,
-  fromLocalInput,
-  pb,
-  type Rec,
-  randomToken,
-  SLUG,
-  slugify,
-  toLocalInput,
-} from '../api';
+import { errText, fileUrl, pb, type Rec, randomToken, SLUG, slugify } from '../api';
+import DateTimePicker from '../DateTimePicker';
+import { fromPocketBase, toPocketBase } from '../date';
 import ImageLibrary from '../ImageLibrary';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
@@ -29,7 +21,7 @@ export default function PostEdit({ id }: { id: string | null }) {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
-  const [date, setDate] = useState(toLocalInput(new Date().toISOString().replace('T', ' ')));
+  const [date, setDate] = useState(fromPocketBase(new Date().toISOString().replace('T', ' ')));
   const [tags, setTags] = useState('');
   const [token, setToken] = useState('');
   const [images, setImages] = useState<string[]>([]);
@@ -59,7 +51,7 @@ export default function PostEdit({ id }: { id: string | null }) {
       setSlug(p.slug);
       setSlugTouched(true);
       setStatus(p.status);
-      setDate(toLocalInput(p.date));
+      setDate(fromPocketBase(p.date));
       setTags((p.tags ?? []).join(', '));
       setToken(p.preview_token ?? '');
       setImages(p.images ?? []);
@@ -121,7 +113,7 @@ export default function PostEdit({ id }: { id: string | null }) {
         const data: Record<string, unknown> = {
           slug,
           status: st,
-          date: fromLocalInput(date),
+          date: toPocketBase(date),
           tags: tagList,
           preview_token: token,
         };
@@ -187,6 +179,19 @@ export default function PostEdit({ id }: { id: string | null }) {
         }
       }
     : undefined;
+
+  /** The preview link only works once the token is stored, so save it right away for an existing post. */
+  const generateToken = async () => {
+    const next = randomToken();
+    setToken(next);
+    if (!post) return setDirty(true);
+    try {
+      await pb.collection('posts').update(post.id, { preview_token: next });
+      toast('Preview link saved');
+    } catch (e) {
+      toast(errText(e), 'err');
+    }
+  };
 
   const removeImage = async (name: string) => {
     if (!post) return;
@@ -261,6 +266,31 @@ export default function PostEdit({ id }: { id: string | null }) {
         )}
       </div>
 
+      <div className={`adm-status ${post ? post.status : 'draft'}`} role="status">
+        {post?.status === 'published' ? (
+          <>
+            <strong>● Published</strong>
+            <span>
+              Live to everyone at{' '}
+              <a href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                /blog/{post.slug}
+              </a>
+            </span>
+          </>
+        ) : (
+          <>
+            <strong>○ Draft</strong>
+            <span>
+              Hidden from the public
+              {token
+                ? '; only the preview link below works.'
+                : '. Generate a preview link to share it.'}
+            </span>
+          </>
+        )}
+        {dirty && <span className="mono">Unsaved changes: press Save to apply them.</span>}
+      </div>
+
       <div className="adm-grid">
         <Field label="Slug (URL)" hint="Latin letters, numbers, dashes. Same for every language.">
           <input
@@ -272,21 +302,12 @@ export default function PostEdit({ id }: { id: string | null }) {
             dir="ltr"
           />
         </Field>
-        <Field label="Publish date">
-          <input
-            type="datetime-local"
-            value={date}
-            onChange={(e) => touch(setDate)(e.target.value)}
-          />
-        </Field>
-        <Field label="Status">
-          <select
-            value={status}
-            onChange={(e) => touch(setStatus)(e.target.value as 'draft' | 'published')}
-          >
-            <option value="draft">Draft (hidden)</option>
-            <option value="published">Published</option>
-          </select>
+        <Field
+          group
+          label="Publish date"
+          hint="Shown on the post and used for ordering. A future date does not delay publishing."
+        >
+          <DateTimePicker label="Publish date" withTime value={date} onChange={touch(setDate)} />
         </Field>
         <Field label="Tags (comma separated)">
           <input
@@ -324,11 +345,7 @@ export default function PostEdit({ id }: { id: string | null }) {
           }
         >
           <div className="row-inline">
-            <button
-              type="button"
-              className="adm-btn"
-              onClick={() => touch(setToken)(randomToken())}
-            >
+            <button type="button" className="adm-btn" onClick={() => void generateToken()}>
               {token ? 'Regenerate' : 'Generate'}
             </button>
             {token && (

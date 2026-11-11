@@ -59,14 +59,11 @@ const jsonLd =
         <div><span class="mono muted">{tr.post.published}</span><p>{formatDate(post.date, locale, true)}</p></div>
         <div><span class="mono muted">{tr.post.reading}</span><p>{fmt(data.minutes)} {tr.post.min}</p></div>
         <div><span class="mono muted">{tr.post.views}</span><p id="views">{fmt(post.views)}</p></div>
-        <div><span class="mono muted">{tr.post.language}</span><br />
-          <div class="dd" id="dd">
-            <button class="dd-btn" type="button" aria-haspopup="true" aria-expanded="false" data-dd-toggle><span>{nameOf(post.lang).short} · {nameOf(post.lang).native}</span><i>▾</i></button>
-            <div class="dd-menu">
-              {LOCALES.map((l) => post.langs.includes(l)
-                ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}><span class="nm" lang={l}>{nameOf(l).native}</span></a>
-                : <span class="off" title={tr.post.notWritten}><span class="nm" lang={l}>{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
-            </div>
+        <div><span class="mono muted">{tr.post.language}</span>
+          <div class="langseg" role="group" aria-label={tr.post.language}>
+            {LOCALES.map((l) => post.langs.includes(l)
+              ? <a class={l === post.lang ? 'cur' : ''} href={localePath(l, `/blog/${post.slug}`)} hreflang={l} lang={l} aria-current={l === post.lang ? 'true' : undefined}>{nameOf(l).native}</a>
+              : <span class="off" lang={l} title={tr.post.notWritten} aria-disabled="true"><span class="nm">{nameOf(l).native}</span><small>{tr.post.notWritten}</small></span>)}
           </div>
         </div>
       </div>

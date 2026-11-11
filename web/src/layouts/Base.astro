@@ -31,7 +31,8 @@ const tr = t(locale);
 const here = seo.path ?? Astro.url.pathname;
 const other: Locale = locale === 'en' ? 'fa' : 'en';
 const alternates = seo.alternates ?? { en: switchPath(here, 'en'), fa: switchPath(here, 'fa') };
-const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
+// The language switch always stays on the same page (and query). `alternates` only drives hreflang for search engines.
+const switchHref = switchPath(here, other) + Astro.url.search;
 const site = getConfig().siteUrl;
 const isHome = here === '/' || here === '/fa';
 const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(site, locale)] : [])];

@@ -1599,3 +1599,14 @@ html[dir='rtl'] .hero h1 { text-align: right; }
    Blur lives on a pseudo-element instead, so the nav is positioned against the viewport. */
 .head { background: none; backdrop-filter: none; }
 .head::before { content: ''; position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px); }
+
+/* Language switch on a post: a visible two-way control instead of a hidden dropdown. */
+.langseg { display: inline-flex; margin-top: 6px; border: 1px solid var(--line2); border-radius: calc(var(--r) / 2); overflow: hidden; flex-wrap: wrap; }
+.langseg a, .langseg span { display: inline-flex; align-items: baseline; gap: 8px; padding: 8px 16px; font: 500 14px var(--sans); }
+.langseg a + a, .langseg a + span, .langseg span + a, .langseg span + span { border-inline-start: 1px solid var(--line2); }
+.langseg a:hover { background: var(--acc); color: var(--on-acc); }
+.langseg a.cur { background: var(--fg); color: var(--bg); }
+.langseg a.cur:hover { background: var(--acc); color: var(--on-acc); }
+.langseg .off { color: var(--muted); cursor: not-allowed; }
+.langseg .off .nm { text-decoration: line-through; }
+.langseg .off small { font: 500 10px var(--mono); text-transform: uppercase; opacity: .85; }

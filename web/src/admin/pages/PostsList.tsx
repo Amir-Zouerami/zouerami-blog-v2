@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errText, pb, type Rec } from '../api';
+import DateRange from '../DateRange';
+import { inRange } from '../date';
 import { fmtDate, useToast } from '../ui';
 
 export default function PostsList() {
@@ -8,6 +10,7 @@ export default function PostsList() {
   const [titles, setTitles] = useState<Record<string, { en?: string; fa?: string }>>({});
   const [filter, setFilter] = useState<'all' | 'draft' | 'published'>('all');
   const [q, setQ] = useState('');
+  const [range, setRange] = useState({ from: '', to: '' });
 
   const load = useCallback(async () => {
     try {
@@ -31,6 +34,7 @@ export default function PostsList() {
 
   const list = (rows ?? []).filter((p) => {
     if (filter !== 'all' && p.status !== filter) return false;
+    if ((range.from || range.to) && !inRange(p.date, range.from, range.to)) return false;
     const hay =
       `${p.slug} ${titles[p.id]?.en ?? ''} ${titles[p.id]?.fa ?? ''} ${(p.tags ?? []).join(' ')}`.toLowerCase();
     return !q || hay.includes(q.toLowerCase());
@@ -48,6 +52,7 @@ export default function PostsList() {
           onChange={(e) => setQ(e.target.value)}
           aria-label="Search posts"
         />
+        <DateRange label="Published" from={range.from} to={range.to} onChange={setRange} />
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as typeof filter)}
