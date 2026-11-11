@@ -1,13 +1,8 @@
 import type { APIRoute } from 'astro';
 import PocketBase from 'pocketbase';
 import { z } from 'zod';
+import { setAccessCookie, setRefreshCookie, toSessionUser } from '../../../lib/auth-cookies';
 import { loadEnv } from '../../../lib/env';
-import {
-  getAuthSecret,
-  SESSION_COOKIE,
-  SESSION_TTL_SECONDS,
-  signSession,
-} from '../../../lib/session';
 
 export const prerender = false;
 
@@ -36,16 +31,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json(503, { error: 'Sign-in is temporarily unavailable' });
   }
 
-  const token = await signSession(
-    { id: record.id, email: record.email, name: record.name || record.email },
-    getAuthSecret(),
-  );
-  cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: new URL(request.url).protocol === 'https:' || loadEnv().SITE_URL.startsWith('https:'),
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS,
-  });
-  return json(200, { id: record.id, email: record.email, name: record.name || record.email });
+  const user = toSessionUser(record);
+  await setAccessCookie(cookies, user);
+  setRefreshCookie(cookies, pb.authStore.token);
+  return json(200, user);
 };

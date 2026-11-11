@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
-import { SESSION_COOKIE } from '../../../lib/session';
+import { clearAuthCookies } from '../../../lib/auth-cookies';
 
 export const prerender = false;
 
 export const POST: APIRoute = ({ cookies }) => {
-  cookies.delete(SESSION_COOKIE, { path: '/' });
+  clearAuthCookies(cookies);
   return new Response(null, { status: 204 });
 };

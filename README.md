@@ -22,3 +22,6 @@ Behind a host-side proxy (build containers without direct internet)? Set `BUILD_
 | End-to-end smoke (needs the full stack on :8088) | `bun run test:e2e` |
 
 Pinned versions and why: `docs/versions.md`. PocketBase schema + access rules: `pocketbase/pb_migrations/`.
+
+## Auth
+Login (`POST /api/auth/login`) verifies the password against PocketBase once, then sets two httpOnly cookies: a 10-minute signed JWT (`session`, checked statelessly in middleware — no DB/Redis) and a `refresh` cookie holding PocketBase's own token. When the JWT expires, middleware calls PocketBase `authRefresh` once; a deleted user or changed password stops refreshing, so revocation takes at most 10 minutes. Needs `AUTH_SECRET` (≥32 chars).

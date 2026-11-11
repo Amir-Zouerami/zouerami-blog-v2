@@ -7,7 +7,11 @@ export interface SessionUser {
 }
 
 export const SESSION_COOKIE = 'session';
-export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+/** Access token: short, stateless. Revocation latency is bounded by this. */
+export const SESSION_TTL_SECONDS = 60 * 10;
+/** Refresh cookie holds PocketBase's own auth token; refreshing re-checks the user in the DB. */
+export const REFRESH_COOKIE = 'refresh';
+export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function key(secret: string): Uint8Array {
   if (secret.length < 32) throw new Error('AUTH_SECRET must be at least 32 characters');

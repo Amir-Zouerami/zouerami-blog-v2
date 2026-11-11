@@ -37,3 +37,10 @@ describe('session JWT', () => {
     await expect(signSession(user, 'short')).rejects.toThrow(/AUTH_SECRET/);
   });
 });
+
+describe('access token lifetime', () => {
+  it('defaults to a short TTL so revocation is bounded', async () => {
+    const { SESSION_TTL_SECONDS } = await import('../../src/lib/session');
+    expect(SESSION_TTL_SECONDS).toBeLessThanOrEqual(900);
+  });
+});

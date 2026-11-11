@@ -10,14 +10,26 @@ const compose = (cmd: string) =>
 
 const PB = process.env.PB_TEST_URL ?? 'http://127.0.0.1:8090';
 
+// The PocketBase entrypoint re-saves the superuser on every boot, which invalidates old admin tokens.
+async function adminLogin() {
+  await admin
+    .collection('_superusers')
+    .authWithPassword(
+      process.env.PB_SUPERUSER_EMAIL ?? '',
+      process.env.PB_SUPERUSER_PASSWORD ?? '',
+    );
+}
+
 async function waitForPb() {
   for (let i = 0; i < 60; i++) {
     if (
       await fetch(`${PB}/api/health`)
         .then((r) => r.ok)
         .catch(() => false)
-    )
+    ) {
+      await adminLogin();
       return;
+    }
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error('PocketBase did not come back');
@@ -32,6 +44,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async () => {
   admin = new PocketBase(PB);
+  admin.autoCancellation(false);
   await admin
     .collection('_superusers')
     .authWithPassword(
@@ -88,6 +101,60 @@ test('login sets an httpOnly JWT cookie; /me then works with PocketBase STOPPED'
   expect((await me.json()).user).toMatchObject({ id: userId, email, name: 'E2E User' });
   compose('start pocketbase');
   await waitForPb();
+});
+
+const cookieValue = (res: { headersArray(): { name: string; value: string }[] }, name: string) =>
+  res
+    .headersArray()
+    .filter((h) => h.name.toLowerCase() === 'set-cookie')
+    .map((h) => h.value)
+    .find((v) => v.startsWith(`${name}=`))
+    ?.split(';')[0]
+    ?.slice(name.length + 1);
+
+test('with only the refresh cookie, /me re-issues a short-lived access cookie via PocketBase', async ({
+  playwright,
+  baseURL,
+}) => {
+  const login = await (await playwright.request.newContext({ baseURL })).post('/api/auth/login', {
+    data: { email, password },
+  });
+  const refresh = cookieValue(login, 'refresh');
+  expect(refresh).toBeTruthy();
+  expect(login.headers()['set-cookie']).toMatch(/Max-Age=600\b/);
+
+  const ctx = await playwright.request.newContext({
+    baseURL,
+    extraHTTPHeaders: { cookie: `refresh=${refresh}` },
+  });
+  const me = await ctx.get('/api/auth/me');
+  expect(me.status()).toBe(200);
+  expect(cookieValue(me, 'session')).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+});
+
+test('refresh fails once the user is deleted (revocation within one access-token lifetime)', async ({
+  playwright,
+  baseURL,
+}) => {
+  const tmpEmail = `e2e-rev-${Date.now()}@example.com`;
+  const tmp = await admin
+    .collection('users')
+    .create({ email: tmpEmail, password, passwordConfirm: password, name: 'Temp' });
+  const login = await (await playwright.request.newContext({ baseURL })).post('/api/auth/login', {
+    data: { email: tmpEmail, password },
+  });
+  const refresh = cookieValue(login, 'refresh');
+  await admin.collection('users').delete(tmp.id);
+
+  const ctx = await playwright.request.newContext({
+    baseURL,
+    extraHTTPHeaders: { cookie: `refresh=${refresh}` },
+  });
+  const me = await ctx.get('/api/auth/me');
+  expect(me.status()).toBe(401);
+  expect(me.headers()['set-cookie']).toMatch(
+    /refresh=deleted; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/,
+  );
 });
 
 test('a forged cookie is rejected', async ({ playwright, baseURL }) => {
