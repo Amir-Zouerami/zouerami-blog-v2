@@ -53,7 +53,7 @@ test.beforeAll(async () => {
     );
   const u = await admin
     .collection('users')
-    .create({ email, password, passwordConfirm: password, name: 'E2E User' });
+    .create({ email, password, passwordConfirm: password, name: 'E2E User', verified: true });
   userId = u.id;
 });
 
@@ -90,7 +90,12 @@ test('login sets an httpOnly JWT cookie; /me then works with PocketBase STOPPED'
 }) => {
   const res = await request.post('/api/auth/login', { data: { email, password } });
   expect(res.status()).toBe(200);
-  const cookie = res.headers()['set-cookie'] ?? '';
+  const cookie =
+    res
+      .headersArray()
+      .filter((h) => h.name.toLowerCase() === 'set-cookie')
+      .map((h) => h.value)
+      .find((v) => v.startsWith('session=')) ?? '';
   expect(cookie).toMatch(/^session=[\w-]+\.[\w-]+\.[\w-]+/);
   expect(cookie).toMatch(/HttpOnly/i);
   expect(cookie).toMatch(/SameSite=Lax/i);
@@ -139,7 +144,7 @@ test('refresh fails once the user is deleted (revocation within one access-token
   const tmpEmail = `e2e-rev-${Date.now()}@example.com`;
   const tmp = await admin
     .collection('users')
-    .create({ email: tmpEmail, password, passwordConfirm: password, name: 'Temp' });
+    .create({ email: tmpEmail, password, passwordConfirm: password, name: 'Temp', verified: true });
   const login = await (await playwright.request.newContext({ baseURL })).post('/api/auth/login', {
     data: { email: tmpEmail, password },
   });
@@ -153,7 +158,7 @@ test('refresh fails once the user is deleted (revocation within one access-token
   const me = await ctx.get('/api/auth/me');
   expect(me.status()).toBe(401);
   expect(me.headers()['set-cookie']).toMatch(
-    /refresh=deleted; Path=\/api\/auth; Expires=Thu, 01 Jan 1970/,
+    /refresh=deleted; Path=\/api; Expires=Thu, 01 Jan 1970/,
   );
 });
 

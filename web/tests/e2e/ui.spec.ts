@@ -45,6 +45,7 @@ test.describe('layout and theme', () => {
     });
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.waitForLoadState('networkidle');
     await page.locator('[data-theme-toggle]').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.reload();
