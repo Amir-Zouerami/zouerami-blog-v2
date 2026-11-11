@@ -1,0 +1,24 @@
+---
+import { formatNumber, type Locale, t } from '../i18n';
+import { pageWindow } from '../lib/paginate';
+
+interface Props {
+  page: number;
+  pages: number;
+  locale: Locale;
+  /** Builds the URL of page `n` (keeps the current filters). */
+  href: (n: number) => string;
+}
+const { page, pages, locale, href } = Astro.props;
+const tr = t(locale).pager;
+const num = (n: number) => formatNumber(n, locale);
+---
+{pages > 1 && (
+  <nav class="pager" aria-label={tr.label}>
+    {page > 1 ? <a class="pg" rel="prev" href={href(page - 1)}>← {tr.prev}</a> : <span class="pg off" aria-hidden="true">← {tr.prev}</span>}
+    <span class="pg-nums">
+      {pageWindow(page, pages).map((n) => n === '…' ? <span class="pg gap">…</span> : <a class={`pg ${n === page ? 'cur' : ''}`} href={href(n)} aria-current={n === page ? 'page' : undefined}>{num(n)}</a>)}
+    </span>
+    {page < pages ? <a class="pg" rel="next" href={href(page + 1)}>{tr.next} →</a> : <span class="pg off" aria-hidden="true">{tr.next} →</span>}
+  </nav>
+)}

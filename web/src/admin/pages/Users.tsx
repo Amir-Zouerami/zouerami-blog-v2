@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, icons, mailTo } from '../contextMenu';
+import { Pager, usePaged } from '../Pager';
 import { Confirm, fmtDate, useToast } from '../ui';
 
 export default function Users() {
   const toast = useToast();
   const [rows, setRows] = useState<Rec[] | null>(null);
+  const pg = usePaged(rows ?? [], 25);
   const load = useCallback(() => {
     pb.collection('users')
       .getFullList({ sort: '-created' })
@@ -74,7 +76,7 @@ export default function Users() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {pg.items.map((r) => (
               <tr key={r.id} {...contextMenuProps(() => rowMenu(r), 'User actions')}>
                 <td>{r.name}</td>
                 <td>{r.email}</td>
@@ -94,6 +96,7 @@ export default function Users() {
           </tbody>
         </table>
       )}
+      <Pager {...pg} />
     </>
   );
 }

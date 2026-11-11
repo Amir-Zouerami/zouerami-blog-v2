@@ -1789,3 +1789,19 @@ html.mm-lock:has(.mermaid-block.is-full) { scrollbar-gutter: auto; }
 .cards-all + .year, .year + .cards-all { margin-top: 0; }
 ::highlight(quote) { background: color-mix(in srgb, var(--acc) 40%, transparent); color: inherit; }
 .card-meta { display: flex; justify-content: space-between; align-items: center; } .card-langs { display: inline-flex; gap: 6px; }
+
+/* ---- pagination ---- */
+.pager { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-block: 50px 20px; font: 500 14px var(--mono); }
+.pg-nums { display: inline-flex; gap: 6px; }
+.pg { display: inline-grid; place-items: center; min-width: 40px; height: 40px; padding-inline: 12px; border: 1px solid var(--line2); border-radius: calc(var(--r) / 2); color: var(--fg); transition: .15s; }
+a.pg:hover { background: var(--acc); color: var(--on-acc); border-color: var(--acc); }
+.pg.cur { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.pg.off { opacity: .35; }
+.pg.gap { border: 0; min-width: 20px; padding: 0; }
+html[lang='fa'] .pg { font-family: "Vazirmatn Variable", sans-serif; }
+[dir='rtl'] .pg[rel='prev'], [dir='rtl'] .pg[rel='next'] { direction: rtl; }
+/* Persian content under an English page: heading and its block sit on the right */
+.post-head:has(h1[dir='rtl']) { direction: rtl; }
+.post-head h1[dir='rtl'] { max-width: none; }
+.post-head:has(h1[dir='rtl']) .meta-grid { direction: ltr; }
+button.pg { background: none; font: inherit; cursor: pointer; } button.pg:disabled { opacity: .35; cursor: not-allowed; }

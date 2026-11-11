@@ -426,3 +426,4 @@ fieldset.adm-field { border: 0; padding: 0; margin: 0; min-width: 0; } fieldset.
 .adm-status.draft { border-inline-start-color: #ffb86b; }
 .adm-status .mono { font-size: 12px; }
 fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
+.adm-pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 18px; }

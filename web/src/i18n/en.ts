@@ -46,6 +46,7 @@ export const en = {
     ],
     unavailable: 'The blog is temporarily unavailable. Please try again in a minute.',
   },
+  pager: { prev: 'Previous', next: 'Next', label: 'Pages' },
   blog: {
     title: 'Writing',
     description: 'Notes on the web, design, DevOps and Persian typography.',

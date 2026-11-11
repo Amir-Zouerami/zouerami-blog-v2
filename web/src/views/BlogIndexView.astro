@@ -3,6 +3,8 @@ import PostCard from '../components/PostCard.astro';
 import { faDigits, formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { allTags, filterPosts, groupByYear, loadBlogIndex } from '../lib/pages';
+import { pageParam, paginate } from '../lib/paginate';
+import Pagination from '../components/Pagination.astro';
 import Unavailable from './Unavailable.astro';
 
 const { locale } = Astro.props as { locale: Locale };
@@ -12,12 +14,22 @@ const all = page.kind === 'ok' ? page.data : [];
 const tag = Astro.url.searchParams.get('tag') ?? 'all';
 const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
 const list = filterPosts(all, { tag, q });
-const groups = groupByYear(list, locale);
+const PER_PAGE = 12;
+const paged = paginate(list, pageParam(Astro.url.searchParams.get('page')), PER_PAGE);
+const groups = groupByYear(paged.items, locale);
 const tags = allTags(all);
 const href = (t: string) => {
   const u = new URLSearchParams();
   if (t !== 'all') u.set('tag', t);
   if (q) u.set('q', q);
+  const s = u.toString();
+  return localePath(locale, '/blog') + (s ? `?${s}` : '');
+};
+const pageHref = (n: number) => {
+  const u = new URLSearchParams();
+  if (tag !== 'all') u.set('tag', tag);
+  if (q) u.set('q', q);
+  if (n > 1) u.set('page', String(n));
   const s = u.toString();
   return localePath(locale, '/blog') + (s ? `?${s}` : '');
 };
@@ -48,6 +60,7 @@ const num = (n: number) => formatNumber(n, locale);
         </div>
       </>
     ))}
+    <Pagination page={paged.page} pages={paged.pages} {locale} href={pageHref} />
   </main>
 </Base>
 )}

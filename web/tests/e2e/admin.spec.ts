@@ -359,6 +359,12 @@ test.describe('back office UI', () => {
     await page.goto('/admin#/subscribers');
     await expect(page.getByRole('heading', { name: 'Subscribers' })).toBeVisible();
     await page.goto('/admin#/users');
+    // the user list is paged: the oldest account may be on a later page
+    for (let i = 0; i < 20 && !(await page.getByText('dev-admin@example.com').count()); i++) {
+      const next = page.getByRole('button', { name: 'Next →' });
+      if (!(await next.isEnabled().catch(() => false))) break;
+      await next.click();
+    }
     await expect(page.getByText('dev-admin@example.com')).toBeVisible();
     await page.goto('/admin#/projects/new');
     await page.getByLabel('Name').fill(`E2E Proj ${stamp}`);
