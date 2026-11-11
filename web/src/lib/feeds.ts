@@ -92,6 +92,7 @@ export function robotsTxt(site: string): string {
   return `User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /admin
 Disallow: /account
 Disallow: /fa/account
 Disallow: /login

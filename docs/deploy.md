@@ -47,7 +47,9 @@ docker compose -f compose.prod.yaml up -d
 Certificates renew automatically (the `certbot` container checks twice a day; nginx reloads every 12 h).
 
 ## 5. First content
-Admin UI is **not public**. Tunnel to it: `ssh -L 8090:127.0.0.1:8090 deploy@<ip>` then open <http://127.0.0.1:8090/_/>.
+Write in the back office at `https://zouerami.dev/admin`: first sign up on the site, verify your email, then `docker compose -f compose.prod.yaml exec web bun run make-admin …` is not available in the runtime image, so promote yourself from the PocketBase dashboard instead (users → your row → role = admin) via the tunnel below.
+
+PocketBase's own admin UI is **not public**. Tunnel to it: `ssh -L 8090:127.0.0.1:8090 deploy@<ip>` then open <http://127.0.0.1:8090/_/>.
 - Create posts (`posts`), then one `post_translations` row per language (`en` / `fa`). Status `draft` is invisible; set `preview_token` to preview a draft at `/blog/<slug>?token=<token>`.
 - Moderate comments in `comments` (change `status` from `pending` to `approved`/`rejected`). A user's first comment is held; later ones publish automatically.
 - OAuth: Collections → users → Options → OAuth2 → enable GitHub/Google; redirect URL `https://zouerami.dev/api/auth/oauth/callback`.

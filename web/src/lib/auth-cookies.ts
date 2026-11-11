@@ -53,10 +53,16 @@ export function clearAuthCookies(cookies: AstroCookies) {
   cookies.delete(REFRESH_COOKIE, { path: '/api' });
 }
 
-export const toSessionUser = (r: { id: string; email: string; name?: string }): SessionUser => ({
+export const toSessionUser = (r: {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+}): SessionUser => ({
   id: r.id,
   email: r.email,
   name: r.name || r.email,
+  role: r.role === 'admin' ? 'admin' : 'user',
 });
 
 /**

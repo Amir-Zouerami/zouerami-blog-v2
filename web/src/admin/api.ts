@@ -1,0 +1,67 @@
+import PocketBase, { type RecordModel } from 'pocketbase';
+
+/** PocketBase SDK pointed at the authenticated admin proxy: the browser never holds a PocketBase token. */
+export const pb = new PocketBase('/api/admin/pb');
+pb.autoCancellation(false);
+pb.authStore.clear();
+
+export type Rec = RecordModel;
+
+export const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+/** PocketBase stores UTC as "YYYY-MM-DD HH:mm:ss.SSSZ". These convert to/from <input type=datetime-local>. */
+export function toLocalInput(pbDate: string): string {
+  if (!pbDate) return '';
+  const d = new Date(pbDate.replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+export function fromLocalInput(v: string): string {
+  const d = v ? new Date(v) : new Date();
+  return d.toISOString().replace('T', ' ');
+}
+
+export function randomToken(n = 24): string {
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return [...a].map((b) => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+}
+
+export const fileUrl = (collection: string, id: string, name: string, thumb?: string) =>
+  `/pb/api/files/${collection}/${id}/${name}${thumb ? `?thumb=${thumb}` : ''}`;
+
+export function errText(e: unknown): string {
+  const r = e as {
+    response?: { message?: string; data?: Record<string, { message?: string }> };
+    message?: string;
+  };
+  const fields = r.response?.data
+    ? Object.entries(r.response.data).map(([k, v]) => `${k}: ${v?.message}`)
+    : [];
+  return [r.response?.message ?? r.message ?? 'Request failed', ...fields].join(' — ');
+}
+
+export async function previewMarkdown(
+  markdown: string,
+  postId: string | undefined,
+  signal: AbortSignal,
+) {
+  const r = await fetch('/api/admin/preview', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ markdown, postId }),
+    signal,
+  });
+  if (!r.ok) throw new Error(`preview ${r.status}`);
+  return (await r.json()) as { html: string; headings: { id: string; text: string }[] };
+}

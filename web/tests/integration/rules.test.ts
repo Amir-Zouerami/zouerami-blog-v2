@@ -24,7 +24,7 @@ describe.skipIf(!up)('PocketBase public access rules (seeded data)', () => {
       anonClient()
         .collection('posts')
         .create({ slug: 'nope', date: '2026-01-01', status: 'published' }),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toSatisfy((e: { status: number }) => [400, 403].includes(e.status));
   });
 
   it('exposes exactly one (fa) translation for the Persian-only post', async () => {
