@@ -2,32 +2,18 @@
 import PostRow from '../components/PostRow.astro';
 import { faDigits, formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
-import { UpstreamError } from '../lib/pb';
-import { listPosts } from '../lib/posts';
-import type { PostSummary } from '../lib/schemas';
+import { allTags, filterPosts, loadBlogIndex, yearsOf } from '../lib/pages';
 import Unavailable from './Unavailable.astro';
 
 const { locale } = Astro.props as { locale: Locale };
 const tr = t(locale);
-let all: PostSummary[] = [];
-let unavailable = false;
-try {
-  all = await listPosts();
-} catch (error) {
-  if (!(error instanceof UpstreamError)) throw error;
-  console.error(error.message);
-  unavailable = true;
-}
+const page = await loadBlogIndex();
+const all = page.kind === 'ok' ? page.data : [];
 const tag = Astro.url.searchParams.get('tag') ?? 'all';
 const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
-const tags = [...new Set(all.flatMap((p) => p.tags))].sort();
-const needle = q.toLowerCase();
-const list = all.filter(
-  (p) =>
-    (tag === 'all' || p.tags.includes(tag)) &&
-    (!needle || `${p.title} ${p.summary} ${p.tags.join(' ')}`.toLowerCase().includes(needle)),
-);
-const years = [...new Set(list.map((p) => p.date.slice(0, 4)))];
+const list = filterPosts(all, { tag, q });
+const years = yearsOf(list);
+const tags = allTags(all);
 const href = (t: string) => {
   const u = new URLSearchParams();
   if (t !== 'all') u.set('tag', t);
@@ -39,7 +25,7 @@ const count = (t: string) => (t === 'all' ? all.length : all.filter((p) => p.tag
 const num = (n: number) => formatNumber(n, locale);
 let n = 0;
 ---
-{unavailable ? <Unavailable {locale} /> : (
+{page.kind === 'unavailable' ? <Unavailable {locale} /> : (
 <Base title={`${tr.blog.title} — zouerami`} description={tr.blog.description} {locale} nav="blog">
   <main id="main" class="pad">
     <div style="padding-block:70px 20px"><span class="mono muted">{tr.blog.crumb}</span><h1 class="h-big" style="margin-top:14px">{tr.blog.title}<sup class="mono" style="color:var(--acc);font-size:16px;vertical-align:top">{num(list.length)}</sup></h1></div>

@@ -1,4 +1,5 @@
 import { jwtVerify, SignJWT } from 'jose';
+import { PB_TOKEN_COOKIE } from '../pb';
 
 export interface SessionUser {
   id: string;
@@ -12,20 +13,12 @@ export const SESSION_COOKIE = 'session';
 /** Access token: short, stateless. Revocation latency is bounded by this. */
 export const SESSION_TTL_SECONDS = 60 * 10;
 /** Refresh cookie holds PocketBase's own auth token; refreshing re-checks the user in the DB. */
-export const REFRESH_COOKIE = 'refresh';
+export const REFRESH_COOKIE = PB_TOKEN_COOKIE;
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function key(secret: string): Uint8Array {
   if (secret.length < 32) throw new Error('AUTH_SECRET must be at least 32 characters');
   return new TextEncoder().encode(secret);
-}
-
-export function getAuthSecret(source: Record<string, string | undefined> = process.env): string {
-  const secret = source.AUTH_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error('Missing or too short environment variable: AUTH_SECRET (min 32 chars)');
-  }
-  return secret;
 }
 
 /** Stateless session token: verified by signature + expiry only, no DB/Redis lookup. */

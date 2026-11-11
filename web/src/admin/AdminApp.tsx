@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import {
-  CommentsAdmin,
-  Dashboard,
-  PostsList,
-  ProjectsList,
-  SubscribersAdmin,
-  UsersAdmin,
-} from './Lists';
-import PostEdit from './PostEdit';
-import ProjectEdit from './ProjectEdit';
+import Comments from './pages/Comments';
+import Dashboard from './pages/Dashboard';
+import PostEdit from './pages/PostEdit';
+import PostsList from './pages/PostsList';
+import ProjectEdit from './pages/ProjectEdit';
+import ProjectsList from './pages/ProjectsList';
+import Subscribers from './pages/Subscribers';
+import Users from './pages/Users';
 import { ToastProvider } from './ui';
 
 function useHash() {
@@ -73,13 +71,13 @@ export default function AdminApp() {
       view = id ? <ProjectEdit key={id} id={id === 'new' ? null : id} /> : <ProjectsList />;
       break;
     case 'comments':
-      view = <CommentsAdmin />;
+      view = <Comments />;
       break;
     case 'subscribers':
-      view = <SubscribersAdmin />;
+      view = <Subscribers />;
       break;
     case 'users':
-      view = <UsersAdmin />;
+      view = <Users />;
       break;
     default:
       view = <Dashboard />;

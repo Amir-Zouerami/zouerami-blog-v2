@@ -138,7 +138,7 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
     comments: { id: string; body: string; pending: boolean; mine: boolean }[];
   };
   expect(mine.comments.find((c) => c.mine)?.pending).toBe(true);
-  expect(mine.comments.find((c) => c.mine)?.body).not.toContain('<b>'); // markup stripped
+  expect(mine.comments.find((c) => c.mine)?.body).toBe('First! <b>bold</b>'); // stored verbatim; escaped when rendered
   const mineId = mine.comments.find((c) => c.mine)?.id;
   const publicView = (await (
     await page.request.get(`/api/comments?post=${post.id}`, { headers: { cookie: '' } })
@@ -194,9 +194,14 @@ test('comments UI: posting from the page works and cross-site writes are blocked
   await page.goto('/blog/english-only');
   await page.locator('.nextprev').scrollIntoViewIfNeeded(); // the comments island hydrates when visible
   const box = page.locator('textarea.area');
-  await box.fill(`From the UI ${stamp}`);
+  await box.fill(`From the UI ${stamp} <img src=x onerror="window.__pwned=1"> 3 < 4`);
   await page.getByRole('button', { name: 'Post comment' }).click();
   await expect(page.getByText(`From the UI ${stamp}`)).toBeVisible();
+  await expect(page.getByText('3 < 4', { exact: false })).toBeVisible(); // angle brackets survive as text
+  expect(await page.locator('.cmt img').count()).toBe(0); // and are never parsed as markup
+  expect(
+    await page.evaluate(() => (window as never as { __pwned?: number }).__pwned),
+  ).toBeUndefined();
   await expect(page.locator('.sq.me-link')).toContainText('Acct Tester');
 
   const cross = await request.post('/api/comments', {
@@ -236,6 +241,8 @@ test('delete account removes it, its comments and bookmarks; password required',
   expect(
     (await request.delete('/api/account', { data: { password: 'wrong-password-123' } })).status(),
   ).toBe(403);
+  // a password account cannot be deleted without confirming the password
+  expect((await request.delete('/api/account', { data: {} })).status()).toBe(403);
   const u = await admin.collection('users').getFirstListItem(`email = "${email}"`);
   expect(
     (await request.delete('/api/account', { data: { password: 'brand-new-password-3' } })).status(),

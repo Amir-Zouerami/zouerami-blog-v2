@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { anonPb, cleanText, json, pbStatus, readBody } from '../../../lib/http';
+import { cleanText, json, readBody } from '../../../lib/http';
+import { anonPb, pbStatus } from '../../../lib/pb';
 import { verifyTurnstile } from '../../../lib/turnstile';
 
 export const prerender = false;

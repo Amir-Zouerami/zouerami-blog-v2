@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -101,8 +100,4 @@ export function renderOg(input: OgInput): Uint8Array {
     fitTo: { mode: 'width', value: 1200 },
   });
   return resvg.render().asPng();
-}
-
-export function readFontBytes(): number {
-  return FONT_FILES.reduce((n, f) => n + readFileSync(f).length, 0);
 }

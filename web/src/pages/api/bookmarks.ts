@@ -1,16 +1,20 @@
-import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { json, userPb } from '../../lib/http';
+import { authed } from '../../lib/auth/guards';
+import { json, logError } from '../../lib/http';
 
 export const prerender = false;
-const Lang = z.enum(['en', 'fa']);
+const Lang = z.enum(['en', 'fa']).catch('en');
+
+interface PostRef {
+  id: string;
+  slug: string;
+  date: string;
+  status: string;
+}
 
 /** The signed-in user's saved posts, titled in the requested language when it exists. */
-export const GET: APIRoute = async ({ url, cookies, locals }) => {
-  if (!locals.user) return json(401, { error: 'Sign in first' });
-  const lang = Lang.catch('en').parse(url.searchParams.get('lang'));
-  const pb = userPb(cookies);
-  if (!pb) return json(401, { error: 'Sign in again' });
+export const GET = authed(async ({ url }, { pb }) => {
+  const lang = Lang.parse(url.searchParams.get('lang'));
   try {
     const rows = await pb.collection('bookmarks').getFullList({
       sort: '-created',
@@ -18,27 +22,18 @@ export const GET: APIRoute = async ({ url, cookies, locals }) => {
       fields: 'id,expand.post.id,expand.post.slug,expand.post.date,expand.post.status',
     });
     const posts = rows
-      .map(
-        (r) =>
-          (
-            r.expand as
-              | { post?: { id: string; slug: string; date: string; status: string } }
-              | undefined
-          )?.post,
-      )
-      .filter(
-        (p): p is { id: string; slug: string; date: string; status: string } =>
-          !!p && p.status === 'published',
-      );
+      .map((r) => (r.expand as { post?: PostRef } | undefined)?.post)
+      .filter((p): p is PostRef => !!p && p.status === 'published');
     if (!posts.length) return json(200, { bookmarks: [] });
+
     const filter = posts.map((_, i) => `post = {:p${i}}`).join(' || ');
     const params = Object.fromEntries(posts.map((p, i) => [`p${i}`, p.id]));
-    const trs = await pb
+    const translations = await pb
       .collection('post_translations')
       .getFullList({ filter: pb.filter(filter, params), fields: 'post,lang,title' });
     return json(200, {
       bookmarks: posts.map((p) => {
-        const mine = trs.filter((t) => t.post === p.id);
+        const mine = translations.filter((t) => t.post === p.id);
         const tr = mine.find((t) => t.lang === lang) ?? mine[0];
         return {
           slug: p.slug,
@@ -48,7 +43,8 @@ export const GET: APIRoute = async ({ url, cookies, locals }) => {
         };
       }),
     });
-  } catch {
+  } catch (err) {
+    logError('bookmarks', err);
     return json(503, { error: 'Unavailable' });
   }
-};
+});

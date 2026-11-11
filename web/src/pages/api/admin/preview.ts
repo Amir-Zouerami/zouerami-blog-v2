@@ -1,5 +1,5 @@
-import type { APIRoute } from 'astro';
 import { z } from 'zod';
+import { adminOnly } from '../../../lib/auth/guards';
 import { json, readBody } from '../../../lib/http';
 import { renderMarkdown } from '../../../lib/markdown';
 import { imageUrl } from '../../../lib/posts';
@@ -14,13 +14,11 @@ const Body = z.object({
 });
 
 /** Renders markdown with the exact pipeline the public site uses (admin-only). */
-export const POST: APIRoute = async ({ request, locals }) => {
-  if (!locals.user) return json(401, { error: 'Sign in' });
-  if (locals.user.role !== 'admin') return json(403, { error: 'Admins only' });
+export const POST = adminOnly(async ({ request }) => {
   const body = await readBody(request, Body);
   if (!body) return json(400, { error: 'Invalid request' });
   const { html, headings } = await renderMarkdown(body.markdown, {
     resolveImage: (name) => (body.postId ? imageUrl({ id: body.postId }, name) : name),
   });
   return json(200, { html, headings });
-};
+});

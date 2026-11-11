@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { errText, fileUrl, pb, type Rec, SLUG, slugify } from './api';
-import MarkdownEditor from './MarkdownEditor';
-import { Confirm, Field, useToast } from './ui';
+import { errText, fileUrl, pb, type Rec, SLUG, slugify } from '../api';
+import LangTabs, { type Lang, langDir } from '../LangTabs';
+import MarkdownEditor from '../MarkdownEditor';
+import { Confirm, Field, useToast } from '../ui';
 
-type Lang = 'en' | 'fa';
 interface Tr {
   id?: string;
   blurb: string;
@@ -253,34 +253,25 @@ export default function ProjectEdit({ id }: { id: string | null }) {
           )}
         </Field>
       </div>
-      <div className="adm-langtabs" role="tablist">
-        {(['en', 'fa'] as Lang[]).map((l) => (
-          <button
-            key={l}
-            type="button"
-            role="tab"
-            aria-selected={lang === l}
-            className={lang === l ? 'on' : ''}
-            onClick={() => setLang(l)}
-          >
-            {l === 'en' ? 'English' : 'فارسی'} {trs[l].blurb || trs[l].body_md ? '●' : '○'}
-          </button>
-        ))}
-      </div>
+      <LangTabs
+        active={lang}
+        onChange={setLang}
+        state={(l) => ({ filled: !!(trs[l].blurb || trs[l].body_md) })}
+      />
       <div className="adm-grid two">
         <Field label="Blurb (one or two sentences)">
           <textarea
             rows={2}
             maxLength={1000}
             value={t.blurb}
-            dir={lang === 'fa' ? 'rtl' : 'ltr'}
+            dir={langDir(lang)}
             onChange={(e) => setTr({ blurb: e.target.value })}
           />
         </Field>
         <Field label="Headline number label (e.g. “GitHub stars”)">
           <input
             value={t.metric_label}
-            dir={lang === 'fa' ? 'rtl' : 'ltr'}
+            dir={langDir(lang)}
             onChange={(e) => setTr({ metric_label: e.target.value })}
           />
         </Field>
@@ -289,7 +280,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
         key={`${id ?? 'new'}-${lang}`}
         value={t.body_md}
         onChange={(v) => setTr({ body_md: v })}
-        dir={lang === 'fa' ? 'rtl' : 'ltr'}
+        dir={langDir(lang)}
         lang={lang}
         onSave={() => void save()}
       />

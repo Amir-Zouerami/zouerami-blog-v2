@@ -1,41 +1,30 @@
 import type { APIRoute } from 'astro';
-import PocketBase from 'pocketbase';
 import { z } from 'zod';
-import { setAccessCookie, setRefreshCookie, toSessionUser } from '../../../lib/auth-cookies';
-import { loadEnv } from '../../../lib/env';
+import { startSession } from '../../../lib/auth/cookies';
+import { toSessionUser } from '../../../lib/auth/user';
+import { json, logError, readBody } from '../../../lib/http';
+import { anonPb, isRejected, pbStatus } from '../../../lib/pb';
 
 export const prerender = false;
 
 const Body = z.object({ email: z.email(), password: z.string().min(1) });
 
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-
-/** The only auth call that touches PocketBase: verify the password once, then issue our own JWT. */
+/** The only auth call that checks a password: PocketBase verifies it once, then we issue our own JWT. */
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const parsed = Body.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return json(400, { error: 'Invalid request' });
+  const body = await readBody(request, Body);
+  if (!body) return json(400, { error: 'Invalid request' });
 
-  const pb = new PocketBase(loadEnv().PB_URL);
-  pb.autoCancellation(false);
-  let record: { id: string; email: string; name?: string; verified?: boolean; role?: string };
+  const pb = anonPb();
   try {
-    ({ record } = await pb
-      .collection('users')
-      .authWithPassword(parsed.data.email, parsed.data.password));
+    const { record } = await pb.collection('users').authWithPassword(body.email, body.password);
+    if (!record.verified)
+      return json(403, { error: 'Please verify your email first', code: 'unverified' });
+    const user = toSessionUser(record);
+    await startSession(cookies, user, pb.authStore.token);
+    return json(200, user);
   } catch (err) {
-    const status = (err as { status?: number }).status;
-    if (status === 400 || status === 401 || status === 403 || status === 404) {
-      return json(401, { error: 'Invalid email or password' });
-    }
+    if (isRejected(pbStatus(err))) return json(401, { error: 'Invalid email or password' });
+    logError('login', err);
     return json(503, { error: 'Sign-in is temporarily unavailable' });
   }
-
-  if (!record.verified) {
-    return json(403, { error: 'Please verify your email first', code: 'unverified' });
-  }
-  const user = toSessionUser(record);
-  await setAccessCookie(cookies, user);
-  setRefreshCookie(cookies, pb.authStore.token);
-  return json(200, user);
 };

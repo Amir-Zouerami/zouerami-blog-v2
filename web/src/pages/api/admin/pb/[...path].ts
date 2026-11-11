@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { loadEnv } from '../../../../lib/env';
-import { json } from '../../../../lib/http';
-import { REFRESH_COOKIE } from '../../../../lib/session';
+import { adminOnly } from '../../../../lib/auth/guards';
+import { getConfig } from '../../../../lib/config';
+import { json, logError } from '../../../../lib/http';
 
 export const prerender = false;
 
@@ -12,26 +12,22 @@ const ALLOWED =
 /**
  * Thin authenticated proxy so the admin UI can use the PocketBase SDK from the browser without ever holding
  * the PocketBase token (it lives in an httpOnly cookie). PocketBase rules (`role = "admin"`) are the real gate;
- * the role check here is a fast first filter.
+ * the guard's role check is a fast first filter.
  */
-const handle: APIRoute = async ({ request, params, locals, cookies, url }) => {
-  if (!locals.user) return json(401, { error: 'Sign in' });
-  if (locals.user.role !== 'admin') return json(403, { error: 'Admins only' });
+const proxy: APIRoute = adminOnly(async ({ request, params, url }, { token }) => {
   const path = params.path ?? '';
   if (!ALLOWED.test(path)) return json(404, { error: 'Not found' });
-  const token = cookies.get(REFRESH_COOKIE)?.value;
-  if (!token) return json(401, { error: 'Sign in again' });
 
   const headers: Record<string, string> = { authorization: token };
-  const ct = request.headers.get('content-type');
-  if (ct) headers['content-type'] = ct;
+  const contentType = request.headers.get('content-type');
+  if (contentType) headers['content-type'] = contentType;
   const hasBody = !['GET', 'HEAD'].includes(request.method);
   try {
-    const res = await fetch(`${loadEnv().PB_URL}/${path}${url.search}`, {
+    const res = await fetch(`${getConfig().pbUrl}/${path}${url.search}`, {
       method: request.method,
       headers,
       body: hasBody ? await request.arrayBuffer() : undefined,
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(30_000),
     });
     return new Response(res.status === 204 ? null : res.body, {
       status: res.status,
@@ -40,12 +36,13 @@ const handle: APIRoute = async ({ request, params, locals, cookies, url }) => {
         'cache-control': 'no-store',
       },
     });
-  } catch {
+  } catch (err) {
+    logError('admin-proxy', err);
     return json(503, { error: 'PocketBase unavailable' });
   }
-};
+});
 
-export const GET = handle;
-export const POST = handle;
-export const PATCH = handle;
-export const DELETE = handle;
+export const GET = proxy;
+export const POST = proxy;
+export const PATCH = proxy;
+export const DELETE = proxy;

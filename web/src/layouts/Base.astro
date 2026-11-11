@@ -4,10 +4,10 @@ import '../styles/global.css';
 import CommandPalette from '../components/CommandPalette';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
-import Seo, { type JsonLd } from '../components/Seo.astro';
+import Seo from '../components/Seo.astro';
 import { dirOf, type Locale, switchPath, t } from '../i18n';
-import { loadEnv } from '../lib/env';
-import { personLd, websiteLd } from '../lib/jsonld';
+import { getConfig } from '../lib/config';
+import { type JsonLd, personLd, websiteLd } from '../lib/jsonld';
 
 interface Props {
   title: string;
@@ -32,7 +32,7 @@ const here = seo.path ?? Astro.url.pathname;
 const other: Locale = locale === 'en' ? 'fa' : 'en';
 const alternates = seo.alternates ?? { en: switchPath(here, 'en'), fa: switchPath(here, 'fa') };
 const switchHref = alternates[other] ?? (other === 'fa' ? '/fa' : '/');
-const site = loadEnv().SITE_URL;
+const site = getConfig().siteUrl;
 const isHome = here === '/' || here === '/fa';
 const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(site, locale)] : [])];
 ---
@@ -76,83 +76,8 @@ const jsonLd = [...(seo.jsonLd ?? []), ...(isHome ? [personLd(site), websiteLd(s
     </div>
     <CommandPalette client:idle locale={locale} labels={tr.palette} />
     <script>
-      import { initCursor } from '../scripts/cursor';
-      import { initWipe } from '../scripts/wipe';
-      import { applyTheme } from '../lib/theme';
-      initCursor();
-      initWipe();
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const LANG_KEY = 'sig-lang';
-      const store = {
-        get: () => { try { return localStorage.getItem(LANG_KEY); } catch { return null; } },
-        set: (v: string) => { try { localStorage.setItem(LANG_KEY, v); } catch { /* ignore */ } },
-      };
-      function tick() {
-        const d = new Date();
-        document.querySelectorAll('[data-clock]').forEach((e) => {
-          const label = (e as HTMLElement).dataset.label ?? 'Local';
-          e.textContent = `${label} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-        });
-      }
-      setInterval(tick, 1000);
-      // delegated: works regardless of when the router swaps the DOM
-      document.addEventListener('click', (e) => {
-        const t = e.target as Element;
-        if (t.closest('[data-theme-toggle]')) {
-          applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-        } else if (t.closest('[data-palette-open]')) {
-          window.dispatchEvent(new Event('palette:open'));
-        } else if (t.closest('[data-lang-switch]')) {
-          // remember the choice; navigation itself is a normal link: no auto-redirect anywhere
-          store.set((t.closest('[data-lang-switch]') as HTMLElement).dataset.langSwitch ?? 'en');
-        } else if (t.closest('[data-lang-go]')) {
-          store.set('fa');
-        } else if (t.closest('[data-lang-dismiss]')) {
-          store.set('en');
-          (document.getElementById('langhint') as HTMLElement).hidden = true;
-        } else if (t.closest('.copy')) {
-          const btn = t.closest('.copy') as HTMLElement;
-          const pre = btn.closest('.term')?.querySelector('pre');
-          void navigator.clipboard?.writeText(pre?.textContent ?? '').catch(() => {});
-          const old = btn.textContent;
-          btn.textContent = '✓';
-          setTimeout(() => { btn.textContent = old; }, 1200);
-        }
-      });
-      async function showAccount() {
-        const link = document.querySelector<HTMLAnchorElement>('[data-me]');
-        if (!link) return;
-        if (!document.cookie.split('; ').includes('signed_in=1')) {
-          link.href = link.dataset.loginHref ?? '/login';
-          link.textContent = link.dataset.labelIn ?? '';
-          delete link.dataset.signedIn;
-          return;
-        }
-        try {
-          const r = await fetch('/api/auth/me', { headers: { accept: 'application/json' } });
-          if (!r.ok) return;
-          const { user } = (await r.json()) as { user: { name: string } | null };
-          if (!user) return;
-          link.href = link.dataset.accountHref ?? '/account';
-          link.textContent = user.name.length > 14 ? `${user.name.slice(0, 13)}…` : user.name;
-          link.dataset.signedIn = '';
-        } catch {
-          /* leave the sign-in link */
-        }
-      }
-      document.addEventListener('astro:page-load', () => {
-        tick();
-        void showAccount();
-        // Gentle, dismissible hint for people who chose Persian before: never a redirect.
-        const hint = document.getElementById('langhint') as HTMLElement | null;
-        if (hint) hint.hidden = !(hint.dataset.locale === 'en' && store.get() === 'fa');
-        const spot = document.getElementById('spot');
-        if (spot && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          let mx = innerWidth / 2, my = innerHeight / 3, x = mx, y = my;
-          addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; spot.classList.add('on'); });
-          (function l() { if (!spot.isConnected) return; x += (mx - x) * 0.14; y += (my - y) * 0.14; spot.style.transform = `translate(${x}px,${y}px)`; requestAnimationFrame(l); })();
-        }
-      });
+      import { initSite } from '../scripts/site';
+      initSite();
     </script>
   </body>
 </html>

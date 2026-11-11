@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { SignJWT } from 'jose';
-import { loadEnv } from '../../../../lib/env';
-import { anonPb, safeNext } from '../../../../lib/http';
-import { getAuthSecret } from '../../../../lib/session';
+import { getConfig } from '../../../../lib/config';
+import { safeNext } from '../../../../lib/http';
+import { anonPb } from '../../../../lib/pb';
 
 export const prerender = false;
 
@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
     const methods = await anonPb().collection('users').listAuthMethods();
     const provider = methods.oauth2.providers.find((p) => p.name === name);
     if (!provider) return redirect(`/login?error=oauth&next=${encodeURIComponent(next)}`);
-    const redirectUrl = `${loadEnv().SITE_URL.replace(/\/$/, '')}/api/auth/oauth/callback`;
+    const redirectUrl = `${getConfig().siteUrl}/api/auth/oauth/callback`;
     const flow = await new SignJWT({
       p: provider.name,
       s: provider.state,
@@ -23,11 +23,11 @@ export const GET: APIRoute = async ({ params, url, cookies, redirect }) => {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('10m')
-      .sign(new TextEncoder().encode(getAuthSecret()));
+      .sign(new TextEncoder().encode(getConfig().authSecret));
     cookies.set('oauth_flow', flow, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: loadEnv().SITE_URL.startsWith('https:'),
+      secure: getConfig().secureCookies,
       path: '/api/auth/oauth',
       maxAge: 600,
     });

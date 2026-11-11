@@ -1,8 +1,4 @@
-import type { AstroCookies } from 'astro';
-import PocketBase from 'pocketbase';
 import type { ZodType } from 'zod';
-import { loadEnv } from './env';
-import { REFRESH_COOKIE } from './session';
 
 export const json = (status: number, body?: unknown, headers: Record<string, string> = {}) =>
   new Response(body === undefined ? null : JSON.stringify(body), {
@@ -37,20 +33,7 @@ export function safeNext(next: string | null | undefined, fallback = '/'): strin
   return next;
 }
 
-/** A PocketBase client acting as the signed-in user (their PocketBase token), or null. */
-export function userPb(cookies: AstroCookies): PocketBase | null {
-  const token = cookies.get(REFRESH_COOKIE)?.value;
-  if (!token) return null;
-  const pb = new PocketBase(loadEnv().PB_URL);
-  pb.autoCancellation(false);
-  pb.authStore.save(token, null);
-  return pb;
+/** Logs an unexpected server-side failure with context; never throws. */
+export function logError(scope: string, err: unknown): void {
+  console.error(`[${scope}]`, err instanceof Error ? `${err.name}: ${err.message}` : err);
 }
-
-export const anonPb = (): PocketBase => {
-  const pb = new PocketBase(loadEnv().PB_URL);
-  pb.autoCancellation(false);
-  return pb;
-};
-
-export const pbStatus = (err: unknown): number => (err as { status?: number }).status ?? 0;

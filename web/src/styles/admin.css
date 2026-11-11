@@ -395,3 +395,4 @@ a.adm-card:hover {
     color: var(--on-acc);
   }
 }
+fieldset.adm-field { border: 0; padding: 0; margin: 0; min-width: 0; } fieldset.adm-field legend { padding: 0; margin-bottom: 6px; }

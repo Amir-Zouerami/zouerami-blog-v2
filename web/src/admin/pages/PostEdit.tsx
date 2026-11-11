@@ -9,11 +9,12 @@ import {
   SLUG,
   slugify,
   toLocalInput,
-} from './api';
-import MarkdownEditor from './MarkdownEditor';
-import { Confirm, Field, useToast } from './ui';
+} from '../api';
+import ImageLibrary from '../ImageLibrary';
+import LangTabs, { type Lang, langDir } from '../LangTabs';
+import MarkdownEditor from '../MarkdownEditor';
+import { Confirm, Field, useToast } from '../ui';
 
-type Lang = 'en' | 'fa';
 interface Tr {
   id?: string;
   title: string;
@@ -314,6 +315,7 @@ export default function PostEdit({ id }: { id: string | null }) {
           )}
         </Field>
         <Field
+          group
           label="Draft preview link"
           hint={
             status === 'published'
@@ -350,28 +352,18 @@ export default function PostEdit({ id }: { id: string | null }) {
         </Field>
       </div>
 
-      <div className="adm-langtabs" role="tablist">
-        {(['en', 'fa'] as Lang[]).map((l) => (
-          <button
-            key={l}
-            type="button"
-            role="tab"
-            aria-selected={lang === l}
-            className={lang === l ? 'on' : ''}
-            onClick={() => setLang(l)}
-          >
-            {l === 'en' ? 'English' : 'فارسی'} {trs[l].title ? '●' : '○'}
-            {changed(l) ? ' *' : ''}
-          </button>
-        ))}
-        <span className="grow" />
+      <LangTabs
+        active={lang}
+        onChange={setLang}
+        state={(l) => ({ filled: !!trs[l].title, changed: changed(l) })}
+      >
         {(trs[lang].id || trs[lang].title) && (
           <Confirm
             message={`Remove the ${lang.toUpperCase()} translation?`}
             onYes={() => void removeTranslation(lang)}
           />
         )}
-      </div>
+      </LangTabs>
 
       <div className="adm-grid two">
         <Field label={`Title (${lang.toUpperCase()})`}>
@@ -379,7 +371,7 @@ export default function PostEdit({ id }: { id: string | null }) {
             className="adm-title"
             value={t.title}
             onChange={(e) => setTr(lang, { title: e.target.value })}
-            dir={lang === 'fa' ? 'rtl' : 'ltr'}
+            dir={langDir(lang)}
             lang={lang}
             placeholder={lang === 'fa' ? 'عنوان' : 'Title'}
           />
@@ -393,7 +385,7 @@ export default function PostEdit({ id }: { id: string | null }) {
             maxLength={1000}
             value={t.summary}
             onChange={(e) => setTr(lang, { summary: e.target.value })}
-            dir={lang === 'fa' ? 'rtl' : 'ltr'}
+            dir={langDir(lang)}
             lang={lang}
           />
         </Field>
@@ -403,7 +395,7 @@ export default function PostEdit({ id }: { id: string | null }) {
         key={`${postId ?? 'new'}-${lang}`}
         value={t.body_md}
         onChange={(v) => setTr(lang, { body_md: v })}
-        dir={lang === 'fa' ? 'rtl' : 'ltr'}
+        dir={langDir(lang)}
         lang={lang}
         postId={postId}
         onUpload={upload}
@@ -411,50 +403,11 @@ export default function PostEdit({ id }: { id: string | null }) {
         onSave={() => void saveRef.current()}
       />
 
-      <section className="adm-images">
-        <h3 className="mono muted">Images {post ? `(${images.length})` : ''}</h3>
-        {!post && (
-          <p className="muted">
-            Save the post once to enable image uploads. You can also paste or drop images straight
-            into the editor.
-          </p>
-        )}
-        <div className="adm-imgs">
-          {post &&
-            images.map((n) => (
-              <figure key={n}>
-                <img
-                  src={fileUrl('posts', post.id, n, n.endsWith('.svg') ? undefined : '480x0')}
-                  alt=""
-                  loading="lazy"
-                />
-                <figcaption className="mono">{n}</figcaption>
-                <div className="row-inline">
-                  <button
-                    type="button"
-                    className="adm-btn"
-                    onClick={() => {
-                      void navigator.clipboard.writeText(`![](img:${n})`);
-                      toast('Markdown copied');
-                    }}
-                  >
-                    Copy markdown
-                  </button>
-                  <button
-                    type="button"
-                    className="adm-btn danger"
-                    onClick={() => {
-                      if (confirm('Remove this image? Posts that use it will show a broken image.'))
-                        void removeImage(n);
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </figure>
-            ))}
-        </div>
-      </section>
+      <ImageLibrary
+        postId={post?.id ?? null}
+        images={images}
+        onRemove={(n) => void removeImage(n)}
+      />
 
       {post && (
         <section className="adm-danger">

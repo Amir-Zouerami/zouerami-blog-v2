@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { loadEnv } from '../lib/env';
+import { getConfig } from '../lib/config';
 import { rssXml } from '../lib/feeds';
 import { UpstreamError } from '../lib/pb';
 import { listPosts } from '../lib/posts';
@@ -19,7 +19,7 @@ export const GET: APIRoute = async () => {
         return full ? { ...p, title: full.title, summary: full.summary } : p;
       }),
     );
-    return new Response(rssXml(loadEnv().SITE_URL, 'en', items.slice(0, 30)), {
+    return new Response(rssXml(getConfig().siteUrl, 'en', items.slice(0, 30)), {
       headers: {
         'content-type': 'application/rss+xml; charset=utf-8',
         'cache-control': 'public, max-age=600',

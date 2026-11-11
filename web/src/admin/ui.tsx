@@ -25,22 +25,37 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Labelled form row. `group` is for rows holding several controls (buttons, links), where a wrapping <label> would give them the wrong accessible name. */
 export function Field({
   label,
   children,
   hint,
+  group = false,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
+  group?: boolean;
 }) {
-  return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: the control is passed as children
-    <label className="adm-field">
+  const inner = (
+    <>
       <span className="mono muted">{label}</span>
       {children}
       {hint && <small className="muted">{hint}</small>}
-    </label>
+    </>
+  );
+  if (group) {
+    return (
+      <fieldset className="adm-field">
+        <legend className="mono muted">{label}</legend>
+        {children}
+        {hint && <small className="muted">{hint}</small>}
+      </fieldset>
+    );
+  }
+  return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the control is passed as children
+    <label className="adm-field">{inner}</label>
   );
 }
 
@@ -56,15 +71,6 @@ export function Confirm({ message, onYes }: { message: string; onYes: () => void
       Delete
     </button>
   );
-}
-
-export function useAsync<T>() {
-  const [state, set] = useState<{ loading: boolean; error: string; data: T | null }>({
-    loading: true,
-    error: '',
-    data: null,
-  });
-  return [state, set] as const;
 }
 
 export const fmtDate = (s: string) =>

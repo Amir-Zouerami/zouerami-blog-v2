@@ -1,6 +1,6 @@
 import { SignJWT } from 'jose';
 import { describe, expect, it } from 'vitest';
-import { signSession, verifySession } from '../../src/lib/session';
+import { signSession, verifySession } from '../../src/lib/auth/session';
 
 const secret = 'x'.repeat(40);
 const user = { id: 'u1', email: 'a@b.co', name: 'Ami', role: 'user' as const };
@@ -40,7 +40,7 @@ describe('session JWT', () => {
 
 describe('access token lifetime', () => {
   it('defaults to a short TTL so revocation is bounded', async () => {
-    const { SESSION_TTL_SECONDS } = await import('../../src/lib/session');
+    const { SESSION_TTL_SECONDS } = await import('../../src/lib/auth/session');
     expect(SESSION_TTL_SECONDS).toBeLessThanOrEqual(900);
   });
 });

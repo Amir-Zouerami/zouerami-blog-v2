@@ -118,7 +118,6 @@ export default function MarkdownEditor({
     view.current = v;
     return () => v.destroy();
     // the editor is created once per mount; the parent remounts it (key) when switching language/post
-    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   }, []);
 
   useEffect(() => {
