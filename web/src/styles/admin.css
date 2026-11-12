@@ -64,42 +64,7 @@ body.adm-body::before {
 .grow {
   flex: 1;
 }
-.adm-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--line2);
-  border-radius: 8px;
-  font: 500 13px var(--sans);
-  cursor: pointer;
-  background: none;
-  color: var(--fg);
-}
-.adm-btn:hover:not(:disabled) {
-  border-color: var(--acc);
-  color: var(--acc);
-}
-.adm-btn.solid {
-  background: var(--acc);
-  color: var(--on-acc);
-  border-color: var(--acc);
-}
-.adm-btn.solid:hover:not(:disabled) {
-  color: var(--on-acc);
-  filter: brightness(1.08);
-}
-.adm-btn.danger:hover {
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-}
-.adm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 .adm input,
-.adm select,
 .adm textarea {
   background: var(--bg2);
   border: 1px solid var(--line2);
@@ -110,7 +75,6 @@ body.adm-body::before {
   width: 100%;
 }
 .adm input:focus,
-.adm select:focus,
 .adm textarea:focus {
   outline: 2px solid var(--acc);
   outline-offset: -1px;
@@ -118,9 +82,7 @@ body.adm-body::before {
 .adm-search {
   width: 220px;
 }
-.adm-bar select {
-  width: auto;
-}
+.adm-field .ui-select { display: block; }
 .adm-field {
   display: grid;
   gap: 6px;
@@ -415,7 +377,7 @@ fieldset.adm-field { border: 0; padding: 0; margin: 0; min-width: 0; } fieldset.
 .dtp-day.today { outline: 1px solid var(--line2); }
 .dtp-day.sel { background: var(--acc); color: var(--on-acc); opacity: 1; }
 .dtp-time { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.dtp-time select { width: auto; }
+.dtp-time .ui-select { width: auto; }
 .dtp-foot { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .dtp-foot button { padding: 6px 12px; border-radius: 8px; font: 500 12px var(--mono); cursor: pointer; }
 .dtp-foot button:hover { background: var(--bg); color: var(--acc); }

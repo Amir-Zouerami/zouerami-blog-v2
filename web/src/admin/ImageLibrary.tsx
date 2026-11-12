@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import { fileUrl } from './api';
 import { useToast } from './ui';
 
@@ -31,26 +32,23 @@ export default function ImageLibrary({ postId, images, onRemove }: Props) {
               />
               <figcaption className="mono">{name}</figcaption>
               <div className="row-inline">
-                <button
-                  type="button"
-                  className="adm-btn"
+                <Button
                   onClick={() => {
                     void navigator.clipboard.writeText(`![](img:${name})`);
                     toast('Markdown copied');
                   }}
                 >
                   Copy markdown
-                </button>
-                <button
-                  type="button"
-                  className="adm-btn danger"
+                </Button>
+                <Button
+                  variant="danger"
                   onClick={() => {
                     if (confirm('Remove this image? Posts that use it will show a broken image.'))
                       onRemove(name);
                   }}
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             </figure>
           ))}

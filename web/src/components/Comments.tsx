@@ -1,5 +1,6 @@
 import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api, describe } from '../lib/client-api';
+import { Button } from '../ui/Button';
 
 interface Comment {
   id: string;
@@ -143,19 +144,14 @@ export default function Comments({
         <p className="mono muted" style={{ marginTop: 6, display: 'flex', gap: 14 }}>
           {c.pending && <span style={{ color: 'var(--acc)' }}>{labels.pending}</span>}
           {signedIn && !re && !c.pending && (
-            <button
-              type="button"
-              className="linkbtn"
-              onClick={() => setReplyTo(c.id)}
-              aria-pressed={replyTo === c.id}
-            >
+            <Button variant="link" onClick={() => setReplyTo(c.id)} aria-pressed={replyTo === c.id}>
               {labels.reply}
-            </button>
+            </Button>
           )}
           {c.mine && (
-            <button type="button" className="linkbtn" onClick={() => remove(c.id)}>
+            <Button variant="link" onClick={() => remove(c.id)}>
               {labels.delete}
-            </button>
+            </Button>
           )}
         </p>
       </div>
@@ -179,9 +175,9 @@ export default function Comments({
           <q className="reply-quote">
             {target.body.length > 140 ? `${target.body.slice(0, 140)}…` : target.body}
           </q>
-          <button type="button" className="linkbtn" onClick={() => setReplyTo(null)}>
+          <Button variant="link" onClick={() => setReplyTo(null)}>
             {labels.cancel}
-          </button>
+          </Button>
         </div>
       )}
       <textarea
@@ -195,9 +191,9 @@ export default function Comments({
         required
       />
       {siteKey && <div className="cf-turnstile" data-sitekey={siteKey} />}
-      <button className="btn" type="submit" disabled={busy}>
+      <Button size="lg" type="submit" disabled={busy}>
         {target ? labels.reply : labels.post}
-      </button>
+      </Button>
       <p className="auth-result" role="alert" data-kind="err">
         {error}
       </p>
@@ -220,14 +216,9 @@ export default function Comments({
       ))}
       {roots.length > shown && (
         <div className="cmt-more">
-          <button
-            type="button"
-            className="btn"
-            data-load-more
-            onClick={() => setShown((n) => n + 10)}
-          >
+          <Button size="lg" data-load-more onClick={() => setShown((n) => n + 10)}>
             {labels.loadMore}
-          </button>
+          </Button>
         </div>
       )}
       {note && (
@@ -237,9 +228,9 @@ export default function Comments({
       )}
       {items && !signedIn && (
         <p style={{ marginTop: 24 }}>
-          <a className="btn" href={`${loginHref}?next=${encodeURIComponent(location.pathname)}`}>
+          <Button size="lg" href={`${loginHref}?next=${encodeURIComponent(location.pathname)}`}>
             {labels.signInToComment}
-          </a>
+          </Button>
         </p>
       )}
       {signedIn && !replyTo && composer()}

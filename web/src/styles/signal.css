@@ -215,50 +215,6 @@ html.tx-pending.tx-acc::after {
 .sec-label .mono:first-child {
   color: var(--acc);
 }
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  height: 52px;
-  padding: 0 24px;
-  border: 1px solid var(--fg);
-  border-radius: var(--rb);
-  font: 500 15px var(--sans);
-  position: relative;
-  overflow: hidden;
-  transition: color 0.35s;
-  isolation: isolate;
-}
-.btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--acc);
-  transform: translateY(101%);
-  transition: transform 0.4s cubic-bezier(0.7, 0, 0.2, 1);
-  z-index: -1;
-}
-.btn:hover {
-  color: var(--on-acc);
-  border-color: var(--acc);
-}
-.btn:hover::before {
-  transform: none;
-}
-.btn.solid {
-  background: var(--fg);
-  color: var(--bg);
-}
-.btn.solid:hover {
-  color: var(--on-acc);
-}
-.btn svg {
-  width: 16px;
-  transition: transform 0.3s;
-}
-.btn:hover svg {
-  transform: translate(3px, -3px);
-}
 .tagp {
   display: inline-block;
   padding: 3px 10px;
@@ -1555,7 +1511,7 @@ html.tx-pending.tx-acc::after {
 .langhint button { color: var(--muted); font-size: 18px; line-height: 1; }
 .sq.lang { width: auto; padding-inline: 12px; font: 500 12px var(--mono); }
 :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
-html[dir='rtl'] .row .arr, html[dir='rtl'] .tile .go svg, html[dir='rtl'] .btn svg { scale: -1 1; }
+html[dir='rtl'] .row .arr, html[dir='rtl'] .tile .go svg { scale: -1 1; }
 
 /* language dropdown built from links (no JS needed to navigate) */
 .dd-menu a, .dd-menu span.off { display: flex; justify-content: space-between; gap: 18px; width: 100%; padding: 10px 12px; text-align: start; border-radius: calc(var(--r) / 2.5); font-size: 15px; }
@@ -1580,13 +1536,11 @@ html[dir='rtl'] .row .arr, html[dir='rtl'] .tile .go svg, html[dir='rtl'] .btn s
 .auth-form input, .auth-form textarea { background: none; border: 0; border-bottom: 1px solid var(--fg); outline: 0; padding: 10px 0; color: var(--fg); font: 400 20px var(--sans); }
 .auth-form input:focus, .auth-form textarea:focus { border-color: var(--acc); }
 .auth-form small { font: 500 12px var(--mono); }
-.auth-form .btn { justify-self: start; cursor: pointer; }
-.auth-form .btn:disabled { opacity: .5; }
+.auth-form .ui-btn { justify-self: start; }
 .auth-result { font: 500 14px var(--mono); min-height: 1.4em; }
 .auth-result[data-kind='ok'] { color: var(--acc); }
 .auth-result[data-kind='err'] { color: #ff6b6b; }
 .auth-links { display: grid; gap: 8px; color: var(--muted); } .auth-links a:hover { color: var(--acc); }
-.linkbtn { justify-self: start; color: var(--acc); border-bottom: 1px solid; font: 500 13px var(--mono); }
 .oauth { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 40px; }
 .me-link[data-signed-in] { color: var(--acc); }
 
@@ -1641,7 +1595,7 @@ html[lang='fa'] {
 }
 html[lang='fa'] body { line-height: 1.85; }
 html[lang='fa'] *:not([dir='ltr']):not([dir='ltr'] *) { letter-spacing: 0 !important; text-transform: none !important; }
-html[lang='fa'] .mono, html[lang='fa'] .nav a, html[lang='fa'] .kbd, html[lang='fa'] .tagp, html[lang='fa'] .ftab, html[lang='fa'] .btn { font-size: 13.5px; font-weight: 500; }
+html[lang='fa'] .mono, html[lang='fa'] .nav a, html[lang='fa'] .kbd, html[lang='fa'] .tagp, html[lang='fa'] .ftab, 
 html[lang='fa'] .nav a em { font-size: 12px; margin-inline-end: 8px; }
 html[lang='fa'] .hero h1, html[lang='fa'] .brand { font-family: 'Bricolage Grotesque Variable', system-ui, sans-serif; }
 html[lang='fa'] .meta-grid p { font-size: 18px; margin-top: 6px; }
@@ -1691,8 +1645,7 @@ html.mm-lock { overflow: hidden; }
 .reply-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 4px; }
 .reply-head .mono { color: var(--acc); font-size: 12px; }
 .reply-quote { flex-basis: 100%; color: var(--muted); font-size: 15px; line-height: 1.5; quotes: '“' '”'; display: block; overflow-wrap: anywhere; }
-.reply-head .linkbtn { margin-inline-start: auto; }
-
+.reply-head 
 /* ---- home cards ---- */
 html { scrollbar-gutter: stable; }
 .cards { display: grid; grid-template-columns: repeat(12, 1fr); gap: 22px; padding-block: 10px 30px; }

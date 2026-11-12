@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Select } from '../ui/Select';
 import {
   display,
   formatLocal,
@@ -166,7 +167,7 @@ export default function DateTimePicker({
           {withTime && (
             <div className="dtp-time">
               <span className="mono muted">Time</span>
-              <select
+              <Select
                 aria-label="Hour"
                 value={time.hour}
                 onChange={(e) =>
@@ -179,9 +180,9 @@ export default function DateTimePicker({
                     {pad(h)}
                   </option>
                 ))}
-              </select>
+              </Select>
               :
-              <select
+              <Select
                 aria-label="Minute"
                 value={time.minute}
                 onChange={(e) =>
@@ -194,7 +195,7 @@ export default function DateTimePicker({
                     {pad(m)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
           <div className="dtp-foot">

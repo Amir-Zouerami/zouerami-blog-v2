@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
+import { Button } from '../../ui/Button';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, icons, openTab } from '../contextMenu';
 import DateRange from '../DateRange';
@@ -124,19 +125,12 @@ export default function Comments() {
         <span className="grow" />
         <DateRange label="Posted" from={range.from} to={range.to} onChange={setRange} />
         {(['pending', 'approved', 'rejected'] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`adm-btn ${status === s ? 'solid' : ''}`}
-            onClick={() => setStatus(s)}
-          >
+          <Button key={s} variant={status === s ? 'solid' : 'ghost'} onClick={() => setStatus(s)}>
             {s} {counts[s] !== undefined ? `(${counts[s]})` : ''}
-          </button>
+          </Button>
         ))}
         {status === 'pending' && !!visible.length && (
-          <button type="button" className="adm-btn" onClick={() => void approveAll()}>
-            Approve all
-          </button>
+          <Button onClick={() => void approveAll()}>Approve all</Button>
         )}
       </div>
       {!rows ? (
@@ -161,22 +155,12 @@ export default function Comments() {
               <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{c.body}</p>
               <div className="row-inline">
                 {status !== 'approved' && (
-                  <button
-                    type="button"
-                    className="adm-btn solid"
-                    onClick={() => void set(c.id, 'approved')}
-                  >
+                  <Button variant="solid" onClick={() => void set(c.id, 'approved')}>
                     Approve
-                  </button>
+                  </Button>
                 )}
                 {status !== 'rejected' && (
-                  <button
-                    type="button"
-                    className="adm-btn"
-                    onClick={() => void set(c.id, 'rejected')}
-                  >
-                    Reject
-                  </button>
+                  <Button onClick={() => void set(c.id, 'rejected')}>Reject</Button>
                 )}
                 <Confirm message="Delete this comment permanently?" onYes={() => void del(c.id)} />
               </div>

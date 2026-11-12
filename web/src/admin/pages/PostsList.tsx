@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
+import { Button } from '../../ui/Button';
+import { Select } from '../../ui/Select';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, goto, icons, openTab } from '../contextMenu';
 import DateRange from '../DateRange';
@@ -149,7 +151,7 @@ export default function PostsList() {
           aria-label="Search posts"
         />
         <DateRange label="Published" from={range.from} to={range.to} onChange={setRange} />
-        <select
+        <Select
           value={filter}
           onChange={(e) => setFilter(e.target.value as typeof filter)}
           aria-label="Filter by status"
@@ -157,10 +159,10 @@ export default function PostsList() {
           <option value="all">All</option>
           <option value="draft">Drafts</option>
           <option value="published">Published</option>
-        </select>
-        <a className="adm-btn solid" href="#/posts/new">
+        </Select>
+        <Button variant="solid" href="#/posts/new">
           New post
-        </a>
+        </Button>
       </div>
       {!rows ? (
         <p className="mono muted">Loading…</p>

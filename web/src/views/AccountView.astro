@@ -1,4 +1,5 @@
 ---
+import Button from '../ui/Button.astro';
 import { type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 const { locale } = Astro.props as { locale: Locale };
@@ -14,10 +15,10 @@ const login = localePath(locale, '/login');
     <p class="muted" style="max-width:56ch;margin-bottom:20px">{a.deleteHelp}</p>
     <form class="auth-form" data-astro-reload data-delete-form>
       <label data-pw-row><span class="mono muted">{a.deletePassword}</span><input type="password" name="password" autocomplete="current-password" dir="ltr" /></label>
-      <button class="btn" type="submit">{a.deleteBtn}</button>
+      <Button size="lg" type="submit">{a.deleteBtn}</Button>
       <p class="auth-result" data-msg role="status"></p>
     </form>
-    <p style="margin-top:40px;display:flex;gap:20px"><button class="btn" type="button" data-signout data-home={localePath(locale, '/')}>{a.signOut}</button><a class="mono muted" href={localePath(locale, '/privacy')}>{a.privacyLink}</a></p>
+    <p style="margin-top:40px;display:flex;gap:20px"><Button size="lg" data-signout data-home={localePath(locale, '/')}>{a.signOut}</Button><a class="mono muted" href={localePath(locale, '/privacy')}>{a.privacyLink}</a></p>
   </main>
   <script>
     import { api } from '../lib/client-api';
