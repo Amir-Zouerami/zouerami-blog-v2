@@ -1,4 +1,5 @@
 ---
+import Button from '../ui/Button.astro';
 import Base from '../layouts/Base.astro';
 import { type Locale, localePath, t } from '../i18n';
 const { locale, path } = Astro.props as { locale: Locale; path: string };
@@ -19,6 +20,6 @@ const tr = t(locale).notFound;
       <div class="muted">{tr.missing}</div>
       <div><span class="p">$</span> {tr.try} <a href={localePath(locale, '/')} style="color:var(--acc);border-bottom:1px solid">cd ~</a> <span class="caret"></span></div>
     </div>
-    <div><a class="btn solid" href={localePath(locale, '/')}>{tr.home}</a></div>
+    <div><Button variant="solid" size="lg" href={localePath(locale, '/')}>{tr.home}</Button></div>
   </main>
 </Base>

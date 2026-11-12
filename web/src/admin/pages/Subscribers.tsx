@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
+import { Button } from '../../ui/Button';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, icons, mailTo } from '../contextMenu';
 import DateRange from '../DateRange';
@@ -69,9 +70,9 @@ export default function Subscribers() {
         <span className="mono muted">
           {confirmed} confirmed / {visible.length} shown
         </span>
-        <button type="button" className="adm-btn" onClick={csv} disabled={!visible.length}>
+        <Button onClick={csv} disabled={!visible.length}>
           Export CSV
-        </button>
+        </Button>
       </div>
       {!rows ? (
         <p className="mono muted">Loading…</p>

@@ -91,3 +91,33 @@ test('blog page: featured collage on top, then 3-up recent posts without duplica
   await page.goto('/blog?tag=DevOps');
   await expect(page.locator('.cards:not(.cards-all)')).toHaveCount(0); // filters show plain results
 });
+
+test('shared UI kit: no native checkboxes or default selects/file inputs are visible in the back office', async ({
+  page,
+}) => {
+  await page.goto('/login');
+  await page.getByLabel(/email/i).fill('dev-admin@example.com');
+  await page.getByLabel(/password/i).fill('dev-admin-password-1');
+  await page.locator('form button[type=submit]').click();
+  await page.waitForURL((u) => !u.pathname.endsWith('/login'));
+  await page.goto('/admin#/posts/new');
+  const sw = page.getByRole('switch', { name: /featured section/i });
+  await expect(sw).toHaveAttribute('aria-checked', 'false');
+  await sw.click();
+  await expect(sw).toHaveAttribute('aria-checked', 'true');
+  await sw.focus();
+  await page.keyboard.press('Space');
+  await expect(sw).toHaveAttribute('aria-checked', 'false');
+  expect(await page.locator('.adm input[type=checkbox]').count()).toBe(0);
+  // the cover file input is hidden behind our picker
+  await expect(page.locator('.ui-file button')).toBeVisible();
+  await expect(page.locator('.ui-file input[type=file]')).toBeHidden();
+  await page.goto('/admin#/posts');
+  await expect(page.locator('.ui-select select').first()).toBeVisible();
+  expect(
+    await page
+      .locator('.ui-select select')
+      .first()
+      .evaluate((e) => getComputedStyle(e).appearance),
+  ).toBe('none');
+});

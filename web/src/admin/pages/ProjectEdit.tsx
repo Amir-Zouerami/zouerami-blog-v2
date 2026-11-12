@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Button } from '../../ui/Button';
+import { FilePicker } from '../../ui/FilePicker';
+import { Select } from '../../ui/Select';
 import { errText, fileUrl, pb, type Rec, SLUG, slugify } from '../api';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
@@ -196,9 +199,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
           </span>
         )}
         {dirty && id && (
-          <button
-            type="button"
-            className="adm-btn"
+          <Button
             disabled={saving}
             data-discard
             onClick={() => {
@@ -209,19 +210,17 @@ export default function ProjectEdit({ id }: { id: string | null }) {
             }}
           >
             Discard changes
-          </button>
+          </Button>
         )}
-        <button type="button" className="adm-btn" disabled={saving} onClick={() => void save()}>
+        <Button disabled={saving} onClick={() => void save()}>
           {saving ? 'Saving…' : 'Save'}
-        </button>
+        </Button>
         {f.status === 'published' ? (
-          <button type="button" className="adm-btn" onClick={() => void save('draft')}>
-            Unpublish
-          </button>
+          <Button onClick={() => void save('draft')}>Unpublish</Button>
         ) : (
-          <button type="button" className="adm-btn solid" onClick={() => void save('published')}>
+          <Button variant="solid" onClick={() => void save('published')}>
             Publish
-          </button>
+          </Button>
         )}
       </div>
       <div className="adm-grid">
@@ -239,11 +238,11 @@ export default function ProjectEdit({ id }: { id: string | null }) {
           />
         </Field>
         <Field label="Category">
-          <select value={f.category} onChange={(e) => set({ category: e.target.value })}>
+          <Select value={f.category} onChange={(e) => set({ category: e.target.value })}>
             {CATEGORIES.map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Year">
           <input
@@ -286,17 +285,16 @@ export default function ProjectEdit({ id }: { id: string | null }) {
           />
         </Field>
         <Field label="Status">
-          <select value={f.status} onChange={(e) => set({ status: e.target.value })}>
+          <Select value={f.status} onChange={(e) => set({ status: e.target.value })}>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
-          </select>
+          </Select>
         </Field>
-        <Field label="Cover (optional)">
-          <input
-            type="file"
+        <Field group label="Cover (optional)">
+          <FilePicker
             accept="image/*"
-            onChange={(e) => {
-              setCoverFile(e.target.files?.[0] ?? null);
+            onChange={(file) => {
+              setCoverFile(file);
               setDirty(true);
             }}
           />
@@ -320,12 +318,10 @@ export default function ProjectEdit({ id }: { id: string | null }) {
             })}{' '}
             was kept in this browser.
           </span>
-          <button type="button" className="adm-btn solid" onClick={restoreDraft}>
+          <Button variant="solid" onClick={restoreDraft}>
             Restore it
-          </button>
-          <button type="button" className="adm-btn" onClick={draft.discard}>
-            Discard
-          </button>
+          </Button>
+          <Button onClick={draft.discard}>Discard</Button>
         </div>
       )}
       <LangTabs

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button } from '../../ui/Button';
 import { errText, pb, type Rec } from '../api';
 import { useToast } from '../ui';
 
@@ -58,9 +59,9 @@ export default function Dashboard() {
       <div className="adm-bar">
         <h1>Dashboard</h1>
         <span className="grow" />
-        <a className="adm-btn solid" href="#/posts/new">
+        <Button variant="solid" href="#/posts/new">
           Write a post
-        </a>
+        </Button>
       </div>
       <div className="adm-cards">
         {card('Published posts', d.pub, '#/posts')}

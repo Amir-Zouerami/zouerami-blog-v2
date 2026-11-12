@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
+import { Button } from '../ui/Button';
 
 type Toast = { id: number; text: string; kind: 'ok' | 'err' };
 const ToastCtx = createContext<(text: string, kind?: 'ok' | 'err') => void>(() => {});
@@ -61,15 +62,14 @@ export function Field({
 
 export function Confirm({ message, onYes }: { message: string; onYes: () => void }) {
   return (
-    <button
-      type="button"
-      className="adm-btn danger"
+    <Button
+      variant="danger"
       onClick={() => {
         if (confirm(message)) onYes();
       }}
     >
       Delete
-    </button>
+    </Button>
   );
 }
 

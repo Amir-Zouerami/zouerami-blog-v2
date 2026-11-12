@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { MenuEntry } from '../../lib/context-menu';
+import { Button } from '../../ui/Button';
 import { errText, pb, type Rec } from '../api';
 import { contextMenuProps, copyText, goto, icons, openTab } from '../contextMenu';
 import { Pager, usePaged } from '../Pager';
@@ -80,9 +81,9 @@ export default function ProjectsList() {
       <div className="adm-bar">
         <h1>Projects</h1>
         <span className="grow" />
-        <a className="adm-btn solid" href="#/projects/new">
+        <Button variant="solid" href="#/projects/new">
           New project
-        </a>
+        </Button>
       </div>
       {!rows ? (
         <p className="mono muted">Loading…</p>

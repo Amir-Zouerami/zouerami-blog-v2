@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '../../ui/Button';
+import { FilePicker } from '../../ui/FilePicker';
+import { Switch } from '../../ui/Switch';
 import { errText, fileUrl, pb, type Rec, randomToken, SLUG, slugify } from '../api';
 import DateTimePicker from '../DateTimePicker';
 import { fromPocketBase, toPocketBase } from '../date';
@@ -322,9 +325,7 @@ export default function PostEdit({ id }: { id: string | null }) {
           </span>
         )}
         {dirty && id && (
-          <button
-            type="button"
-            className="adm-btn"
+          <Button
             disabled={saving}
             data-discard
             onClick={() => {
@@ -335,29 +336,19 @@ export default function PostEdit({ id }: { id: string | null }) {
             }}
           >
             Discard changes
-          </button>
+          </Button>
         )}
-        <button type="button" className="adm-btn" disabled={saving} onClick={() => void save()}>
+        <Button disabled={saving} onClick={() => void save()}>
           {saving ? 'Saving…' : 'Save (Ctrl+S)'}
-        </button>
+        </Button>
         {status === 'published' ? (
-          <button
-            type="button"
-            className="adm-btn"
-            disabled={saving}
-            onClick={() => void save('draft')}
-          >
+          <Button disabled={saving} onClick={() => void save('draft')}>
             Unpublish
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
-            className="adm-btn solid"
-            disabled={saving}
-            onClick={() => void save('published')}
-          >
+          <Button variant="solid" disabled={saving} onClick={() => void save('published')}>
             Publish
-          </button>
+          </Button>
         )}
       </div>
 
@@ -372,12 +363,10 @@ export default function PostEdit({ id }: { id: string | null }) {
             })}{' '}
             was kept in this browser.
           </span>
-          <button type="button" className="adm-btn solid" onClick={restoreDraft}>
+          <Button variant="solid" onClick={restoreDraft}>
             Restore it
-          </button>
-          <button type="button" className="adm-btn" onClick={draft.discard}>
-            Discard
-          </button>
+          </Button>
+          <Button onClick={draft.discard}>Discard</Button>
         </div>
       )}
 
@@ -425,20 +414,18 @@ export default function PostEdit({ id }: { id: string | null }) {
           <DateTimePicker label="Publish date" withTime value={date} onChange={touch(setDate)} />
         </Field>
         <Field
+          group
           label="Featured"
           hint="Featured posts (3–5 work best) form the collage at the top of the blog page."
         >
-          <label className="row-inline">
-            <input
-              type="checkbox"
-              checked={featured}
-              onChange={(e) => {
-                setFeatured(e.target.checked);
-                setDirty(true);
-              }}
-            />
-            <span>Show in the featured section</span>
-          </label>
+          <Switch
+            checked={featured}
+            label="Show in the featured section"
+            onChange={(v) => {
+              setFeatured(v);
+              setDirty(true);
+            }}
+          />
         </Field>
         <Field label="Tags (comma separated)">
           <input
@@ -453,12 +440,11 @@ export default function PostEdit({ id }: { id: string | null }) {
             ))}
           </datalist>
         </Field>
-        <Field label="Cover image (optional)">
-          <input
-            type="file"
+        <Field group label="Cover image (optional)">
+          <FilePicker
             accept="image/*"
-            onChange={(e) => {
-              setCoverFile(e.target.files?.[0] ?? null);
+            onChange={(file) => {
+              setCoverFile(file);
               setDirty(true);
             }}
           />
@@ -476,25 +462,23 @@ export default function PostEdit({ id }: { id: string | null }) {
           }
         >
           <div className="row-inline">
-            <button type="button" className="adm-btn" onClick={() => void generateToken()}>
+            <Button onClick={() => void generateToken()}>
               {token ? 'Regenerate' : 'Generate'}
-            </button>
+            </Button>
             {token && (
-              <button
-                type="button"
-                className="adm-btn"
+              <Button
                 onClick={() => {
                   void navigator.clipboard.writeText(location.origin + previewUrl);
                   toast('Link copied');
                 }}
               >
                 Copy
-              </button>
+              </Button>
             )}
             {token && post && (
-              <a className="adm-btn" href={previewUrl} target="_blank" rel="noopener noreferrer">
+              <Button href={previewUrl} target="_blank" rel="noopener noreferrer">
                 Open
-              </a>
+              </Button>
             )}
           </div>
         </Field>

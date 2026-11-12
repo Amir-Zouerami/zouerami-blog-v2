@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/client-api';
+import { Button } from '../ui/Button';
 import Comments from './pages/Comments';
 import Dashboard from './pages/Dashboard';
 import PostEdit from './pages/PostEdit';
@@ -54,9 +55,7 @@ export default function AdminApp() {
       <main className="adm-denied">
         <h1>Admins only</h1>
         <p className="muted">You are signed in as {me.name}, but this account is not an admin.</p>
-        <a className="adm-btn" href="/">
-          Back to the site
-        </a>
+        <Button href="/">Back to the site</Button>
       </main>
     );
   }

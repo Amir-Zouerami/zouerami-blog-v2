@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pageWindow, paginate } from '../lib/paginate';
+import { Button } from '../ui/Button';
 
 /** Client-side paging for a list that is already loaded. Resets to page 1 whenever `resetKey` changes (filters). */
 export function usePaged<T>(items: T[], size = 25, resetKey = '') {
@@ -26,14 +27,9 @@ export function Pager({
     <nav className="adm-pager" aria-label="Pages">
       <span className="mono muted">{total} items</span>
       <span className="grow" />
-      <button
-        type="button"
-        className="adm-btn"
-        disabled={page <= 1}
-        onClick={() => setPage(page - 1)}
-      >
+      <Button disabled={page <= 1} onClick={() => setPage(page - 1)}>
         ← Prev
-      </button>
+      </Button>
       {pageWindow(page, pages).map((n, i) =>
         n === '…' ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: static ellipsis markers
@@ -41,25 +37,19 @@ export function Pager({
             …
           </span>
         ) : (
-          <button
-            type="button"
+          <Button
             key={n}
-            className={`adm-btn${n === page ? ' solid' : ''}`}
+            variant={n === page ? 'solid' : 'ghost'}
             aria-current={n === page ? 'page' : undefined}
             onClick={() => setPage(n)}
           >
             {n}
-          </button>
+          </Button>
         ),
       )}
-      <button
-        type="button"
-        className="adm-btn"
-        disabled={page >= pages}
-        onClick={() => setPage(page + 1)}
-      >
+      <Button disabled={page >= pages} onClick={() => setPage(page + 1)}>
         Next →
-      </button>
+      </Button>
     </nav>
   );
 }
