@@ -34,13 +34,14 @@ export class Lanyard {
   readonly pts: Particle[] = [];
   private readonly rest: number[] = [];
   private readonly o: Required<Omit<LanyardOptions, 'anchor'>> & { anchor: Vec };
-  private grab: { dx: number; dy: number; tx: number; ty: number } | null = null;
+  private grab: { dx: number; dy: number; tx: number; ty: number; sx: number; sy: number } | null =
+    null;
 
   constructor(opts: LanyardOptions) {
     this.o = {
-      gravity: 2600,
-      damping: 0.992,
-      iterations: 10,
+      gravity: 2400,
+      damping: 0.9935,
+      iterations: 14,
       minX: -Infinity,
       maxX: Infinity,
       ...opts,
@@ -88,7 +89,7 @@ export class Lanyard {
   /** Start dragging: `at` is where the pointer is, in the same coordinates as the particles. */
   startDrag(at: Vec): void {
     const c = this.center;
-    this.grab = { dx: c.x - at.x, dy: c.y - at.y, tx: at.x, ty: at.y };
+    this.grab = { dx: c.x - at.x, dy: c.y - at.y, tx: at.x, ty: at.y, sx: at.x, sy: at.y };
   }
   dragTo(at: Vec): void {
     if (this.grab) {
@@ -117,10 +118,13 @@ export class Lanyard {
       p.y += vy + gravity * dt * dt;
     }
     if (this.grab) {
+      // the grab point eases towards the pointer, so 60 Hz pointer events do not turn into visible steps
+      this.grab.sx += (this.grab.tx - this.grab.sx) * 0.3;
+      this.grab.sy += (this.grab.ty - this.grab.sy) * 0.3;
       const c = this.center;
-      const k = 0.35;
-      const mx = (this.grab.tx + this.grab.dx - c.x) * k;
-      const my = (this.grab.ty + this.grab.dy - c.y) * k;
+      const k = 0.22;
+      const mx = (this.grab.sx + this.grab.dx - c.x) * k;
+      const my = (this.grab.sy + this.grab.dy - c.y) * k;
       for (const p of [this.top, this.bottom]) {
         p.x += mx;
         p.y += my;
@@ -149,6 +153,17 @@ export class Lanyard {
       if (p.x < minX) p.x = minX;
       else if (p.x > maxX) p.x = maxX;
     }
+  }
+
+  /**
+   * Particle positions blended between the previous and the current step (`alpha` 0–1). Drawing this instead of the raw
+   * state removes the judder that comes from running physics at a fixed rate on screens with another refresh rate.
+   */
+  pose(alpha: number): Vec[] {
+    return this.pts.map((p) => ({
+      x: p.px + (p.x - p.px) * alpha,
+      y: p.py + (p.y - p.py) * alpha,
+    }));
   }
 
   /** Sum of squared speeds (px/step): ~0 when everything has come to rest. */

@@ -208,3 +208,23 @@ test.describe('home hero and CV upload', () => {
     );
   });
 });
+
+test('hero marquee lists backend tech, not site-stack words', async ({ page }) => {
+  await page.goto('/');
+  const words = await page.locator('.marq span').allTextContents();
+  for (const w of [
+    'RabbitMQ',
+    'Kafka',
+    'Bun',
+    'Node.js',
+    'PostgreSQL',
+    'Redis',
+    'C#',
+    'ASP.NET',
+    'API Gateway',
+    'Observability',
+    'CI/CD',
+  ])
+    expect(words).toContain(w);
+  for (const w of ['Go', 'PocketBase', 'Astro']) expect(words).not.toContain(w);
+});
