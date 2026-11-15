@@ -1,11 +1,12 @@
 ---
 import HeroName from '../components/HeroName';
 import Lanyard from '../components/Lanyard';
-import PostCard from '../components/PostCard.astro';
+import PostTile from '../components/PostTile.astro';
 import ProjectTile from '../components/ProjectTile.astro';
 import { dirOf, localePath, type Locale, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { loadHome } from '../lib/pages';
+import { tileVariants } from '../lib/tiles';
 
 const { locale } = Astro.props as { locale: Locale };
 const tr = t(locale);
@@ -44,7 +45,7 @@ const words = tr.home.marquee;
       <>
         <section class="pad" style="padding-top:90px">
           <div class="sec-label"><span class="mono">[01]</span><span class="mono">{tr.home.latestWriting}</span><a class="mono" href={localePath(locale, '/blog')}>{tr.home.allPosts}</a></div>
-          <div class="cards">{posts.map((p, i) => <PostCard post={p} {locale} rank={i} />)}</div>
+          <div class="ptiles">{posts.map((p, i) => <PostTile post={p} {locale} variant={tileVariants(posts.length)[i] ?? "third"} />)}</div>
         </section>
         <section class="pad" style="padding-top:110px">
           <div class="sec-label"><span class="mono">[02]</span><span class="mono">{tr.home.selectedWork}</span><a class="mono" href={localePath(locale, '/work')}>{tr.home.allProjects}</a></div>

@@ -111,12 +111,14 @@ test.describe('public reading', () => {
   }) => {
     await page.goto('/fa/blog');
     await expect(
-      page.locator('.card h3', { hasText: 'چرا دوباره وبلاگم را از نو ساختم' }),
+      page.locator('.ptile h3, .card h3', { hasText: 'چرا دوباره وبلاگم را از نو ساختم' }),
     ).toBeVisible();
-    await expect(page.locator('.card h3', { hasText: 'Why I rebuilt my blog' })).toHaveCount(0);
+    await expect(
+      page.locator('.ptile h3, .card h3', { hasText: 'Why I rebuilt my blog' }),
+    ).toHaveCount(0);
     await page.goto('/fa');
-    await expect(page.locator('.card h3', { hasText: 'چرا دوباره' })).toBeVisible();
-    await page.locator('.card', { hasText: 'چرا دوباره' }).click();
+    await expect(page.locator('.ptile h3', { hasText: 'چرا دوباره' })).toBeVisible();
+    await page.locator('.ptile', { hasText: 'چرا دوباره' }).click();
     await page.waitForURL('**/fa/blog/hello-bilingual');
     await expect(page.locator('h1')).toHaveText('چرا دوباره وبلاگم را از نو ساختم');
     await expect(page.locator('.prose')).toHaveAttribute('lang', 'fa');

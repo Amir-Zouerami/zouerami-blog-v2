@@ -211,7 +211,7 @@ test.describe('home and 404', () => {
     await page.goto('/');
     await expect(page.getByText('Latest writing')).toBeVisible();
     await expect(page.getByText('Selected work')).toBeVisible();
-    await expect(page.locator('.card').first()).toBeVisible();
+    await expect(page.locator('.ptile').first()).toBeVisible();
     await expect(page.locator('.tile').first()).toBeVisible();
     expect(await page.content()).not.toContain('An unfinished draft');
   });

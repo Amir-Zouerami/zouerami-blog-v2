@@ -1,5 +1,7 @@
 ---
 import PostCard from '../components/PostCard.astro';
+import PostTile from '../components/PostTile.astro';
+import { tileVariants } from '../lib/tiles';
 import { faDigits, formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { allTags, filterPosts, groupByYear, loadBlogIndex } from '../lib/pages';
@@ -20,8 +22,6 @@ const pageNo = pageParam(Astro.url.searchParams.get('page'));
 const featured = plain && pageNo === 1 ? list.filter((p) => p.featured).slice(0, 5) : [];
 const recent = featured.length ? list.filter((p) => !featured.includes(p)) : list;
 const paged = paginate(recent, pageNo, PER_PAGE);
-/** Collage spans so the featured block always fills its rows, whatever the count (1–5). */
-const spanFor = (i: number, n: number) => (n === 1 ? 'card-s12' : n === 3 && i === 2 ? 'card-s12' : n === 4 && i >= 2 ? 'card-s6' : '');
 const groups = groupByYear(paged.items, locale);
 const tags = allTags(all);
 const href = (t: string) => {
@@ -60,8 +60,8 @@ const num = (n: number) => formatNumber(n, locale);
     {featured.length > 0 && (
       <>
         <div class="sec-label" style="margin-top:30px"><span class="mono">[★]</span><span class="mono">{tr.blog.featured}</span><span></span></div>
-        <div class="cards">
-          {featured.map((p, i) => <PostCard post={p} {locale} rank={i} extra={spanFor(i, featured.length)} />)}
+        <div class="ptiles">
+          {featured.map((p, i) => <PostTile post={p} {locale} variant={tileVariants(featured.length)[i] ?? "third"} />)}
         </div>
         <div class="sec-label" style="margin-top:40px"><span class="mono">[↓]</span><span class="mono">{tr.blog.recent}</span><span></span></div>
       </>
