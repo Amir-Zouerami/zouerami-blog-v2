@@ -32,6 +32,7 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
   const stitchL = useRef<SVGPathElement>(null);
   const stitchR = useRef<SVGPathElement>(null);
   const mid = useRef<SVGPathElement>(null);
+  const shadow = useRef<HTMLDivElement>(null);
   const hintEl = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -140,6 +141,14 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       turn += (Math.max(-20, Math.min(20, vx * 2.6)) - turn) * 0.12;
       cardEl.style.transform = `translate(${t.x}px, ${t.y}px) rotate(${angle}rad) translate(${-CARD_W / 2}px, ${-CLIP}px) rotateY(${turn}deg)`;
       cardEl.style.setProperty('--glare', String(50 + turn * 2.2));
+      // light position slides with the tilt and the swing, so the gloss and the foil react like a real card
+      const deg = (angle * 180) / Math.PI;
+      cardEl.style.setProperty('--gx', `${50 + deg * 1.4 + turn * 2.4}%`);
+      cardEl.style.setProperty('--gy', `${28 - deg * 0.5}%`);
+      cardEl.style.setProperty('--foil', `${50 + deg * 2.2 + turn * 3}%`);
+      const sh = shadow.current;
+      if (sh)
+        sh.style.transform = `translate(${cx + 26 + deg * 0.6}px, ${(t.y + b.y) / 2 + 34}px) rotate(${angle}rad)`;
     };
 
     const frame = (now: number) => {
@@ -254,8 +263,12 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
         <path ref={edgeL} className="lanyard-edge" fill="none" />
         <path ref={edgeR} className="lanyard-edge" fill="none" />
       </svg>
+      <div className="lanyard-shadow" ref={shadow} style={{ width: CARD_W, height: CARD_H }} />
       <div className="lanyard-card" ref={card} style={{ width: CARD_W, height: CARD_H }}>
         <div className="lc-clip" />
+        <i className="lc-thick lc-thick-3" />
+        <i className="lc-thick lc-thick-2" />
+        <i className="lc-thick lc-thick-1" />
         <div className="lc-face">
           <div className="lc-slot" />
           <div className="lc-photo">
@@ -269,7 +282,10 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
             <span>{id}</span>
             <span>{site}</span>
           </div>
+          <div className="lc-grain" />
+          <div className="lc-holo" />
           <div className="lc-glare" />
+          <div className="lc-spec" />
         </div>
       </div>
       <span className="lanyard-hint mono muted" ref={hintEl}>

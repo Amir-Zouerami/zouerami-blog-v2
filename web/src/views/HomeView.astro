@@ -37,7 +37,7 @@ const words = tr.home.marquee;
         <div><span class="mono muted">{tr.home.scroll}</span><p>↓</p></div>
       </div>
     </section>
-    <div class="marq" aria-hidden="true"><div>{[...words, ...words].map((w) => <span>{w}</span>)}</div></div>
+    <div class="marq" aria-hidden="true"><div>{[...words, ...words, ...words, ...words].map((w, i) => <span class={(i % words.length) % 2 ? 'o' : ''}>{w}</span>)}</div></div>
     {unavailable ? (
       <section class="pad" style="padding-block:90px"><p role="alert">{tr.home.unavailable}</p></section>
     ) : (
