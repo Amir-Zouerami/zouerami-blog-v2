@@ -158,6 +158,7 @@ test.describe('home hero and CV upload', () => {
     expect((name?.y ?? 0) - ((top?.y ?? 0) + (top?.height ?? 0))).toBeLessThan(160);
     const card = page.locator('.lanyard-card.live');
     await expect(card).toBeVisible();
+    await page.waitForTimeout(3200); // the strap is lowered in from the top first; let it settle
     const box = (await card.boundingBox()) as {
       x: number;
       y: number;
@@ -254,4 +255,18 @@ test('card covers use resized thumbnails that actually load', async ({ page, req
   const res = await request.get(src);
   expect(res.status()).toBe(200);
   expect(res.headers()['content-type']).toContain('image');
+});
+
+test('the lanyard is hidden until it has loaded, then drops in from above the page', async ({
+  page,
+}) => {
+  await page.goto('/', { waitUntil: 'commit' });
+  const lanyard = page.locator('.lanyard');
+  await expect(lanyard).toHaveClass(/live/, { timeout: 8000 });
+  await page.waitForTimeout(3200);
+  const top = await page.locator('.lanyard-card').evaluate((e) => e.getBoundingClientRect().top);
+  expect(top).toBeGreaterThan(0); // arrived below the header
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(page.locator('.lanyard.ready')).toBeVisible(); // reduced motion: shown still, never hidden
 });
