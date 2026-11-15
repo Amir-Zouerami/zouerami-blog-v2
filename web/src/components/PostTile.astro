@@ -19,7 +19,7 @@ const { post, locale, variant } = Astro.props;
   </div>
   <div class="ptile-top">
     <span class="card-tags">{post.tags.slice(0, 2).map((t) => <span class="tagp">{t}</span>)}</span>
-    <span class="ptile-meta mono muted">{formatDate(post.date, locale)}<span class="card-langs" dir="ltr">{(['en', 'fa'] as const).map((l) => <span class={`lg ${post.langs.includes(l) ? '' : 'off'}`} title={post.langs.includes(l) ? undefined : (locale === 'fa' ? 'هنوز به این زبان نوشته نشده' : 'Not written in this language yet')}>{l.toUpperCase()}</span>)}</span></span>
+    <span class="ptile-meta mono muted"><bdi dir={locale === 'fa' ? 'rtl' : 'ltr'}>{formatDate(post.date, locale)}</bdi><span class="card-langs" dir="ltr">{(['en', 'fa'] as const).map((l) => <span class={`lg ${post.langs.includes(l) ? '' : 'off'}`} title={post.langs.includes(l) ? undefined : (locale === 'fa' ? 'هنوز به این زبان نوشته نشده' : 'Not written in this language yet')}>{l.toUpperCase()}</span>)}</span></span>
   </div>
   <div class="ptile-bottom">
     <h3 dir={dirOf(post.titleLang)} lang={post.titleLang}>{post.title}</h3>

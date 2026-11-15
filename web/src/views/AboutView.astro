@@ -18,7 +18,7 @@ const words = tr.about.statement.split(' ');
     <div class="sec-label" style="margin-top:110px"><span class="mono">[02]</span><span class="mono">{tr.about.uses}</span><span></span></div>
     <div class="stackgrid" dir="ltr">{uses.map((s) => <div>{s}</div>)}</div>
     <div class="sec-label" style="margin-top:110px"><span class="mono">[03]</span><span class="mono">{tr.about.now}</span><span></span></div>
-    <p class="h-big" style="padding-block:40px;max-width:18ch">{tr.about.nowText} <span class="it" style="color:var(--acc)">{tr.about.nowEm}</span></p>
+    <p class="now-line">{tr.about.nowText} <span class="it" style="color:var(--acc)">{tr.about.nowEm}</span></p>
     <div style="display:flex;gap:12px;flex-wrap:wrap"><Button variant="solid" size="lg" href={localePath(locale, '/cv')}>{tr.about.resume}</Button><Button size="lg" href="mailto:hello@zouerami.dev">{tr.about.hello}</Button></div>
   </main>
   <script>

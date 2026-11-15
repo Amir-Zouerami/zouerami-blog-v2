@@ -26,7 +26,7 @@ const pct = (v: number, total: number) => `${(v / total) * 100}%`;
       <article class={`tl-item ${left ? 'side-a' : 'side-b'}${it.open ? ' now' : ''}`} data-item style={`--x:${pct(p?.x ?? 0, 1000)};--y:${pct(p?.y ?? 0, g.height)}`}>
         <span class="tl-node" aria-hidden="true"></span>
         <div class="tl-card">
-          <span class="tl-year" dir="ltr">{locale === 'fa' ? faDigits(it.when) : it.when}{it.open ? ' →' : ''}</span>
+          <span class="tl-year" dir={locale === 'fa' ? 'rtl' : 'ltr'}>{locale === 'fa' ? faDigits(it.when) : it.when}{it.open ? ' →' : ''}</span>
           <h3>{it.title}</h3>
           <p class="muted">{it.text}</p>
         </div>
