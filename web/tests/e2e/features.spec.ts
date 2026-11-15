@@ -42,8 +42,17 @@ test.describe('writing features', () => {
 
   test('home shows posts as cards', async ({ page }) => {
     await page.goto('/');
-    expect(await page.locator('.cards .card').count()).toBeGreaterThanOrEqual(3);
-    await expect(page.locator('.card-xl')).toHaveCount(1);
+    expect(await page.locator('.ptiles .ptile').count()).toBeGreaterThanOrEqual(3);
+    await expect(page.locator('.ptile-big')).toHaveCount(1);
+    // the bento has no empty gap: the tiles' union reaches the bottom of the grid
+    const gap = await page.locator('.ptiles').evaluate((g) => {
+      const box = g.getBoundingClientRect();
+      const bottoms = [...g.querySelectorAll('.ptile')].map(
+        (t) => t.getBoundingClientRect().bottom,
+      );
+      return box.bottom - Math.max(...bottoms);
+    });
+    expect(gap).toBeLessThan(60);
   });
 
   test('Persian blog index groups by Jalali year', async ({ page }) => {
@@ -76,7 +85,7 @@ test('blog page: featured collage on top, then 3-up recent posts without duplica
   page,
 }) => {
   await page.goto('/blog');
-  const featured = page.locator('.cards:not(.cards-all) .card');
+  const featured = page.locator('.ptiles .ptile');
   const n = await featured.count();
   expect(n).toBeGreaterThanOrEqual(3);
   expect(n).toBeLessThanOrEqual(5);
@@ -89,7 +98,7 @@ test('blog page: featured collage on top, then 3-up recent posts without duplica
   );
   expect(tops.filter((t) => t === tops[0]).length).toBe(3);
   await page.goto('/blog?tag=DevOps');
-  await expect(page.locator('.cards:not(.cards-all)')).toHaveCount(0); // filters show plain results
+  await expect(page.locator('.ptiles')).toHaveCount(0); // filters show plain results
 });
 
 test('shared UI kit: no native checkboxes or default selects/file inputs are visible in the back office', async ({
@@ -295,4 +304,23 @@ test('reading progress pill: hidden at the top, follows the scroll, and takes yo
   await pill.locator('[data-to-top]').click();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(10);
   await expect(page.locator('.ring')).toHaveCount(0); // the old ring is gone
+});
+
+test('admin dashboard stat cards spread across the full width', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/login');
+  await page.getByLabel(/email/i).fill('dev-admin@example.com');
+  await page.getByLabel(/password/i).fill('dev-admin-password-1');
+  await page.locator('form button[type=submit]').click();
+  await page.waitForURL((u) => !u.pathname.endsWith('/login'));
+  await page.goto('/admin#/');
+  const grid = page.locator('.adm-cards').first();
+  await expect(grid.locator('.adm-card').first()).toBeVisible();
+  const main = (await page.locator('.adm-main').boundingBox()) as { width: number };
+  const box = (await grid.boundingBox()) as { width: number };
+  expect(box.width).toBeGreaterThan(main.width * 0.85);
+  const lefts = await grid
+    .locator('.adm-card')
+    .evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().left))).size);
+  expect(lefts).toBeGreaterThan(2); // several columns, not one stacked block
 });

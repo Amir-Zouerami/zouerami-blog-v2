@@ -36,7 +36,7 @@ test.describe('blog index', () => {
   }) => {
     await page.goto('/blog');
     await expect(page.locator('h1')).toContainText('Writing');
-    const titles = await page.locator('.card h3').allTextContents();
+    const titles = await page.locator('.ptile h3, .card h3').allTextContents(); // featured tiles first, then the list
     expect(titles[0]).toContain('Why I rebuilt my blog');
     expect(titles.join('|')).not.toContain('An unfinished draft');
     await expect(page.locator('.year').first()).toHaveText('2026');

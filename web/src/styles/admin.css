@@ -390,6 +390,6 @@ fieldset.adm-field { border: 0; padding: 0; margin: 0; min-width: 0; } fieldset.
 fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
 .adm-pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 18px; }
 
-.adm-cards { display: grid; gap: 18px; max-width: 760px; }
-.adm-card { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--bg2); }
-.adm-card h2 { font: 600 18px var(--sans); margin: 0; }
+.cv-slots { display: grid; gap: 18px; max-width: 760px; }
+.cv-slot { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--bg2); }
+.cv-slot h2 { font: 600 18px var(--sans); margin: 0; }

@@ -62,7 +62,7 @@ function Slot({
   const href = row ? `/pb/api/files/cv_files/${row.id}/${encodeURIComponent(row.file)}` : '';
 
   return (
-    <section className="adm-card" data-cv-slot={lang}>
+    <section className="cv-slot" data-cv-slot={lang}>
       <h2>{label}</h2>
       {row ? (
         <p className="muted">
@@ -117,7 +117,7 @@ export default function Cv() {
       {!rows ? (
         <p className="mono muted">Loading…</p>
       ) : (
-        <div className="adm-cards">
+        <div className="cv-slots">
           {LANGS.map(([lang, label]) => (
             <Slot
               key={lang}
