@@ -28,6 +28,11 @@ export interface LanyardOptions {
   iterations?: number;
   minX?: number;
   maxX?: number;
+  /**
+   * Start with the rope bunched up in a tight zigzag right under the anchor and the card below it, instead of hanging
+   * straight. Released, everything falls and the rope pays out until it goes taut: a real drop.
+   */
+  folded?: boolean;
 }
 
 export class Lanyard {
@@ -41,14 +46,22 @@ export class Lanyard {
     this.o = {
       gravity: 2400,
       damping: 0.9935,
-      iterations: 14,
+      iterations: 28,
+      folded: false,
       minX: -Infinity,
       maxX: Infinity,
       ...opts,
     };
-    const { anchor, segments, segLen, cardLen } = this.o;
-    for (let i = 0; i <= segments; i++) this.add(anchor.x, anchor.y + i * segLen, i === 0 ? 0 : 1);
-    this.add(anchor.x, anchor.y + segments * segLen + cardLen, 3); // card bottom: heavy
+    const { anchor, segments, segLen, cardLen, folded } = this.o;
+    // folded: a zigzag whose segments still have the right length but barely advance downwards
+    const half = segLen * 0.49;
+    const dy = Math.sqrt(segLen * segLen - (2 * half) ** 2);
+    for (let i = 0; i <= segments; i++) {
+      const x = folded && i > 0 ? anchor.x + (i % 2 ? half : -half) : anchor.x;
+      this.add(x, anchor.y + i * (folded ? dy : segLen), i === 0 ? 0 : 1);
+    }
+    const top = this.pts[segments] as Particle;
+    this.add(top.x, top.y + cardLen, 3); // card bottom: heavy
     for (let i = 0; i < segments; i++) this.rest.push(segLen);
     this.rest.push(cardLen);
   }

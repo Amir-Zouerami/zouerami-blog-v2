@@ -4,15 +4,12 @@ import { Lanyard as Sim } from '../lib/lanyard-physics';
 const CARD_W = 236;
 const CARD_H = 340;
 const CLIP = 26; // distance from the card's top edge to where the strap clips on
-const SEG = 16;
-const SEGMENTS = 8;
+const SEG = 22;
+const SEGMENTS = 27;
 const STRAP_W = 24;
 const DT = 1 / 120;
-const REST_Y = -8;
-/** The strap starts this far above the box (card entirely out of view) and is lowered into place. */
-const DROP_FROM = -(CARD_H + SEGMENTS * SEG + 120);
-const DROP_MS = 1150;
-const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2;
+/** The strap hangs from far above the box (clipped there): rope length SEG * SEGMENTS puts the card where it used to rest. */
+const ANCHOR_Y = -480;
 
 interface Props {
   photo: string;
@@ -58,7 +55,8 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
 
     const rect = () => el.getBoundingClientRect();
     const sim = new Sim({
-      anchor: { x: rect().width / 2, y: DROP_FROM },
+      anchor: { x: rect().width / 2, y: ANCHOR_Y },
+      folded: true,
       segments: SEGMENTS,
       segLen: SEG,
       cardLen: CARD_H - CLIP,
@@ -71,8 +69,6 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
     let running = false;
     let visible = true;
     let idleSince = 0;
-    let dropStart = 0;
-    let anchorY = DROP_FROM;
     let prevCx = sim.center.x;
 
     let turn = 0;
@@ -166,22 +162,12 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       if (!running) return;
       acc += Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (dropStart) {
-        // lowering the strap from above the page: the physics makes the card trail and swing as it arrives
-        const k = Math.min(1, (now - dropStart) / DROP_MS);
-        anchorY = DROP_FROM + (REST_Y - DROP_FROM) * easeOutBack(k);
-        sim.setAnchor({ x: rect().width / 2, y: anchorY });
-        if (k >= 1) {
-          dropStart = 0;
-          anchorY = REST_Y;
-        }
-      }
       while (acc >= DT) {
         sim.step(DT);
         acc -= DT;
       }
       draw(acc / DT);
-      if (dropStart || sim.dragging || sim.energy() > 0.004) idleSince = 0;
+      if (sim.dragging || sim.energy() > 0.004) idleSince = 0;
       else if (!idleSince) idleSince = now;
       if (idleSince && now - idleSince > 600) {
         running = false;
@@ -212,7 +198,8 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       cardEl.classList.add('live');
       el.classList.add('live');
       draw(1);
-      dropStart = performance.now();
+      // let go: the card falls, the rope pays out and snaps taut, and the card swings out of it
+      sim.nudge(rtl ? -160 : 160);
       wake();
     };
     const photoEl = cardEl.querySelector('img');
@@ -247,7 +234,7 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
 
     const resize = new ResizeObserver(() => {
       const r = rect();
-      sim.setAnchor({ x: r.width / 2, y: anchorY }, 0, r.width);
+      sim.setAnchor({ x: r.width / 2, y: ANCHOR_Y }, 0, r.width);
       wake();
     });
     resize.observe(el);
@@ -260,14 +247,7 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
     const vis = () => (document.hidden ? (running = false) : wake());
     document.addEventListener('visibilitychange', vis);
 
-    // a welcome swing so people notice it moves (towards the page's text, away from the edge)
-    const hello = setTimeout(() => {
-      sim.nudge(rtl ? 380 : -380);
-      wake();
-    }, 900 + DROP_MS);
-
     return () => {
-      clearTimeout(hello);
       cancelAnimationFrame(raf);
       running = false;
       cardEl.removeEventListener('pointerdown', down);
