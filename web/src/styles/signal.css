@@ -1787,7 +1787,7 @@ button.pg { background: none; font: inherit; cursor: pointer; } button.pg:disabl
 /* ---- hero: name + lanyard ---- */
 .hero-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); align-items: center; gap: 12px; }
 .hero-name h1 { font-size: min(calc(var(--hero) * .74), 11vw); }
-.lanyard { position: relative; height: 500px; container-type: inline-size; perspective: 1000px; touch-action: pan-y; }
+.lanyard { position: relative; clip-path: inset(0 -300px -300px -300px); height: 500px; container-type: inline-size; perspective: 1000px; touch-action: pan-y; }
 /* until the island has loaded and the photo is decoded the lanyard is not shown; it is then lowered in from the top */
 @media (scripting: enabled) { .lanyard:not(.live):not(.ready) { visibility: hidden; } }
 .lanyard-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }

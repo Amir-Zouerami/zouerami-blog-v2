@@ -74,3 +74,44 @@ describe('Lanyard physics', () => {
     expect(a.center).toEqual(b.center);
   });
 });
+
+describe('Lanyard drop (folded start)', () => {
+  const folded = () =>
+    new Lanyard({
+      anchor: { x: 200, y: -480 },
+      segments: 27,
+      segLen: 22,
+      cardLen: 314,
+      minX: 0,
+      maxX: 400,
+      folded: true,
+    });
+  it('starts bunched up above the visible area, all of it above y = 0', () => {
+    const l = folded();
+    for (const p of l.pts) expect(p.y).toBeLessThan(0);
+  });
+  it('falls under gravity, goes taut and settles hanging under the anchor with the clip near its old rest position', () => {
+    const l = folded();
+    l.nudge(150);
+    let maxSpeed = 0;
+    for (let i = 0; i < 120 * 30; i++) {
+      l.step(1 / 120);
+      maxSpeed = Math.max(maxSpeed, Math.sqrt(l.energy()));
+    }
+    expect(maxSpeed).toBeGreaterThan(1); // it actually fell (fast), it was not slid into place
+    expect(l.energy()).toBeLessThan(0.01);
+    expect(l.top.x).toBeCloseTo(200, 0);
+    expect(l.top.y).toBeGreaterThan(80);
+    expect(l.top.y).toBeLessThan(130);
+  });
+  it('really accelerates: the card is falling faster half-way down than at the start', () => {
+    const l = folded();
+    const speeds: number[] = [];
+    for (let i = 0; i < 60; i++) {
+      const y0 = l.bottom.y;
+      l.step(1 / 120);
+      speeds.push(l.bottom.y - y0);
+    }
+    expect(speeds[50] as number).toBeGreaterThan((speeds[5] as number) * 3);
+  });
+});
