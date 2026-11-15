@@ -93,7 +93,7 @@ async function engine(theme: 'dark' | 'light'): Promise<Mermaid> {
             background: '#e8e7df',
             primaryColor: '#ffffff',
             primaryTextColor: '#0d0d0e',
-            primaryBorderColor: '#2a3bff',
+            primaryBorderColor: '#cf1f5a',
             lineColor: '#6d6d66',
             secondaryColor: '#f1f0ea',
             tertiaryColor: '#e8e7df',
