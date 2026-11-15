@@ -1874,4 +1874,4 @@ html[lang='fa'] .lc-body span { font-family: "Vazirmatn Variable", sans-serif; f
 .lc-foot { text-shadow: 0 1px 0 rgb(255 255 255 / .07); }
 /* the card's shadow falls on the page and swings with it */
 .lanyard-shadow { position: absolute; left: -118px; top: -26px; border-radius: 22px; pointer-events: none; background: rgb(0 0 0 / .5); filter: blur(22px); opacity: .55; will-change: transform; transform: translate(calc(50cqw + 26px), 158px); }
-[data-theme='light'] .lanyard-shadow { opacity: .28; }
+[data-theme='light'] .lanyard-shadow { opacity: .13; }
