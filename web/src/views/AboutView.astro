@@ -1,7 +1,7 @@
 ---
 import Button from '../ui/Button.astro';
 import { timeline, uses } from '../data/about';
-import { type Locale, t } from '../i18n';
+import { type Locale, localePath, t } from '../i18n';
 import AboutTimeline from '../components/AboutTimeline.astro';
 import Base from '../layouts/Base.astro';
 
@@ -19,7 +19,7 @@ const words = tr.about.statement.split(' ');
     <div class="stackgrid" dir="ltr">{uses.map((s) => <div>{s}</div>)}</div>
     <div class="sec-label" style="margin-top:110px"><span class="mono">[03]</span><span class="mono">{tr.about.now}</span><span></span></div>
     <p class="h-big" style="padding-block:40px;max-width:18ch">{tr.about.nowText} <span class="it" style="color:var(--acc)">{tr.about.nowEm}</span></p>
-    <div style="display:flex;gap:12px;flex-wrap:wrap"><Button variant="solid" size="lg" href="/resume.pdf">{tr.about.resume}</Button><Button size="lg" href="mailto:hello@zouerami.dev">{tr.about.hello}</Button></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap"><Button variant="solid" size="lg" href={localePath(locale, '/cv')}>{tr.about.resume}</Button><Button size="lg" href="mailto:hello@zouerami.dev">{tr.about.hello}</Button></div>
   </main>
   <script>
     import '../scripts/timeline';

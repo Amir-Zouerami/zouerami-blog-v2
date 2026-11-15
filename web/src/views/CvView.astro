@@ -1,0 +1,32 @@
+---
+import { type Locale, localePath, t } from '../i18n';
+import Base from '../layouts/Base.astro';
+import { CV_FILES } from '../data/cv';
+import Button from '../ui/Button.astro';
+
+const { locale } = Astro.props as { locale: Locale };
+const tr = t(locale);
+const c = tr.cv;
+const want = Astro.url.searchParams.get('lang');
+const shown: Locale = want === 'en' || want === 'fa' ? want : locale;
+const file = CV_FILES[shown];
+---
+<Base title={`${c.title} — zouerami`} description={c.description} {locale} nav="about">
+  <main id="main" class="pad">
+    <div style="padding-block:70px 20px"><span class="mono muted">{c.crumb}</span><h1 class="h-big" style="margin-top:14px">{c.title}</h1></div>
+    <div class="cv-bar">
+      <span class="mono muted">{c.versions}</span>
+      <span class="langseg" role="group">
+        {(['en', 'fa'] as const).map((l) => (
+          <a class={l === shown ? 'cur' : ''} lang={l} hreflang={l} href={`${localePath(locale, '/cv')}?lang=${l}`} aria-current={l === shown ? 'true' : undefined} data-cv-lang={l}>{c[l]}</a>
+        ))}
+      </span>
+      <span class="grow"></span>
+      <Button href={file} download data-cv-download>{c.download}</Button>
+      <Button href={file} target="_blank" rel="noopener" variant="solid">{c.open}</Button>
+    </div>
+    <object class="cv-frame" data={`${file}#view=FitH`} type="application/pdf" aria-label={c.title} data-cv-frame>
+      <p class="mono muted">{c.fallback} <a class="ui-link" href={file}>{c.download}</a></p>
+    </object>
+  </main>
+</Base>

@@ -121,3 +121,28 @@ test('shared UI kit: no native checkboxes or default selects/file inputs are vis
       .evaluate((e) => getComputedStyle(e).appearance),
   ).toBe('none');
 });
+
+test.describe('cv page', () => {
+  test('shows the PDF of the site language, lets you switch version and download', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/cv');
+    await expect(page.locator('[data-cv-frame]')).toHaveAttribute(
+      'data',
+      /amir-zouerami-cv-en\.pdf/,
+    );
+    await page.locator('[data-cv-lang="fa"]').click();
+    await page.waitForURL('**/cv?lang=fa');
+    await expect(page.locator('[data-cv-frame]')).toHaveAttribute(
+      'data',
+      /amir-zouerami-cv-fa\.pdf/,
+    );
+    await expect(page.locator('[data-cv-download]')).toHaveAttribute('href', /cv-fa\.pdf$/);
+    const pdf = await request.get('/cv/amir-zouerami-cv-fa.pdf');
+    expect(pdf.status()).toBe(200);
+    expect(pdf.headers()['content-type']).toContain('pdf');
+    await page.goto('/fa/cv');
+    await expect(page.locator('[data-cv-frame]')).toHaveAttribute('data', /cv-fa\.pdf/);
+  });
+});

@@ -98,6 +98,17 @@ export const en = {
     nextProject: 'Next project',
     notTranslated: 'This project page is only available in English.',
   },
+  cv: {
+    title: 'CV',
+    description: 'The CV of Amir Zouerami, in English and Persian.',
+    crumb: 'Index / CV',
+    download: 'Download PDF',
+    open: 'Open in new tab',
+    versions: 'Versions',
+    en: 'English',
+    fa: 'فارسی',
+    fallback: 'Your browser cannot show PDFs inline.',
+  },
   about: {
     title: 'About',
     description: 'About Amir Zouerami: timeline, tools and what I am up to now.',
