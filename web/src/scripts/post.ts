@@ -38,14 +38,18 @@ function reading(signal: AbortSignal): void {
   let queued = false;
   const paint = () => {
     queued = false;
-    const h = document.documentElement;
-    const k = Math.min(1, Math.max(0, h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)));
+    // progress through the article itself: 100% once its last line reaches the bottom of the screen (phone browsers
+    // never report an exact scrollHeight - dynamic toolbars - so measuring the whole page stalled around 91%)
+    const art = document.querySelector('article') ?? document.body;
+    const r = art.getBoundingClientRect();
+    const span = Math.max(1, r.height - innerHeight * 0.6);
+    const k = Math.min(1, Math.max(0, (innerHeight * 0.4 - r.top) / span));
     if (bar) bar.style.width = `${k * 100}%`;
     if (!pill) return;
     const pct = Math.round(k * 100);
     if (num) num.textContent = digits(pct);
     if (fill) fill.style.transform = `scaleX(${k})`;
-    const finished = k > 0.97;
+    const finished = k >= 0.99;
     if (left)
       left.textContent = finished
         ? (pill.dataset.done ?? '')

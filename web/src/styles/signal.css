@@ -1914,3 +1914,44 @@ html[lang='fa'] .rpill-left { font-family: "Vazirmatn Variable", sans-serif; fon
 }
 .ptile .card-tags { position: static; display: flex; flex-wrap: wrap; gap: 6px; inset: auto; }
 .ptiles { padding-bottom: 0; }
+
+/* ---- mobile / tablet pass ---- */
+.art > article, .art > aside { min-width: 0; }
+.prose { overflow-wrap: anywhere; }
+.prose pre, .prose .term { max-width: 100%; }
+.prose table { display: block; max-width: 100%; overflow-x: auto; }
+.prose img, .prose video, .prose iframe { max-width: 100%; height: auto; }
+@media (max-width: 1000px) {
+  .art { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-block: 28px 0; }
+  /* the sidebar's table of contents goes away, but like / save / share stay: shown as a row above the text */
+  .side { display: block; position: static; order: -1; }
+  .side > .mono, .side #toc { display: none; }
+  .side .acts { margin-top: 0; }
+  .side .acts button { min-height: 40px; padding-inline: 16px; font-size: 13px; }
+  .term { margin-inline: 0; }
+}
+@media (max-width: 720px) {
+  .post-head { padding-block: 36px 18px; }
+  .meta-grid { margin-top: 28px; }
+  .meta-grid.meta-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .meta-grid p { font-size: 15px; }
+  .term pre { padding: 14px; font-size: 13px; }
+  .langbar { margin-bottom: 22px; }
+}
+@media (max-width: 480px) {
+  .head { gap: 8px; }
+  .head > * { min-width: 0; }
+  .tools { gap: 6px; }
+  .tools .kbd { display: none; }
+  .brand { font-size: 17px; }
+}
+@media (max-width: 380px) {
+  .tools .btn, .tools a, .tools button { padding-inline: 10px; }
+}
+html, body { overflow-x: clip; }
+@media (max-width: 720px) {
+  .nav { max-width: calc(100vw - 16px); justify-content: space-between; }
+  .nav a { padding: 10px 12px; }
+  .nav a em { display: none; }
+}
+@media (max-width: 380px) { .nav a { padding-inline: 9px; font-size: 11px; } }
