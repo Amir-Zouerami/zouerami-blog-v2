@@ -12,6 +12,7 @@ export const en = {
       'Amir Zouerami: developer, writer and tinkerer. Notes on the web, design and Persian typography.',
     available: 'Available for work',
     roles: 'Developer / Writer / Tinkerer',
+    card: { role: 'Backend Engineer', id: 'ID 0001', hint: 'drag me ↘' },
     currently: 'Currently',
     currentlyText: 'Rebuilding this site, in public.',
     latestNote: 'Latest note',

@@ -1,5 +1,6 @@
 ---
 import HeroName from '../components/HeroName';
+import Lanyard from '../components/Lanyard';
 import PostCard from '../components/PostCard.astro';
 import ProjectTile from '../components/ProjectTile.astro';
 import { dirOf, localePath, type Locale, t } from '../i18n';
@@ -22,8 +23,13 @@ const words = tr.home.marquee;
   <main id="main">
     <section class="hero pad">
       <div class="hero-top"><span class="mono live">{tr.home.available}</span><span class="mono muted">{tr.home.roles}</span></div>
-      <HeroName client:visible />
-      {locale === 'fa' && <p class="fa-name" lang="fa" dir="rtl">امیر زوارمی</p>}
+      <div class="hero-main">
+        <div class="hero-name">
+          <HeroName client:visible />
+          {locale === 'fa' && <p class="fa-name" lang="fa" dir="rtl">امیر زوارمی</p>}
+        </div>
+        <Lanyard client:visible photo="/me.jpg" name={locale === 'fa' ? 'امیر زوارمی' : 'Amir Zouerami'} role={tr.home.card.role} id={tr.home.card.id} hint={tr.home.card.hint} site="zouerami.dev" />
+      </div>
       <div class="hero-row">
         <div><span class="mono muted">{tr.home.currently}</span><p>{tr.home.currentlyText}</p></div>
         <div><span class="mono muted">{tr.home.latestNote}</span><p>{latest ? <a href={localePath(locale, `/blog/${latest.slug}`)} style="border-bottom:1px solid var(--acc)" dir={dirOf(latest.titleLang)} lang={latest.titleLang}>{latest.title} ↗</a> : '—'}</p></div>
