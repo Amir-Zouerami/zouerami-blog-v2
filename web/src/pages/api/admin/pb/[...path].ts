@@ -8,7 +8,7 @@ export const prerender = false;
 
 /** Collections the back office may touch, record endpoints only (no schema, settings, backups, logs, superusers). */
 const ALLOWED =
-  /^api\/collections\/(posts|post_translations|projects|project_translations|comments|subscribers|users)\/records(\/[a-z0-9]{15})?$/;
+  /^api\/collections\/(posts|post_translations|projects|project_translations|comments|subscribers|users|cv_files)\/records(\/[a-z0-9]{15})?$/;
 
 interface PbError {
   message?: string;

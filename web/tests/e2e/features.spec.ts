@@ -146,3 +146,65 @@ test.describe('cv page', () => {
     await expect(page.locator('[data-cv-frame]')).toHaveAttribute('data', /cv-fa\.pdf/);
   });
 });
+
+test.describe('home hero and CV upload', () => {
+  test('the hero has no huge gap, the lanyard sits opposite the name, and dragging it moves the card', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    const name = await page.locator('#heroName').boundingBox();
+    const top = await page.locator('.hero-top').boundingBox();
+    expect((name?.y ?? 0) - ((top?.y ?? 0) + (top?.height ?? 0))).toBeLessThan(160);
+    const card = page.locator('.lanyard-card.live');
+    await expect(card).toBeVisible();
+    const box = (await card.boundingBox()) as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    expect(box.x).toBeGreaterThan((name?.x ?? 0) + (name?.width ?? 0) - 40); // to the right of the English name
+    await expect(card.locator('img')).toHaveAttribute('src', '/me.jpg');
+    await page.mouse.move(box.x + 100, box.y + 150);
+    await page.mouse.down();
+    await page.mouse.move(box.x - 120, box.y + 150, { steps: 10 });
+    await page.waitForTimeout(200);
+    const dragged = (await card.boundingBox()) as { x: number };
+    expect(dragged.x).toBeLessThan(box.x - 50);
+    await page.mouse.up();
+    // Persian: mirrored, the card moves to the left of the name
+    await page.goto('/fa');
+    const fa = (await page.locator('.lanyard-card').boundingBox()) as { x: number };
+    expect(fa.x).toBeLessThan(720);
+  });
+
+  test('an uploaded CV PDF shows on /cv and can be removed again', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel(/email/i).fill('dev-admin@example.com');
+    await page.getByLabel(/password/i).fill('dev-admin-password-1');
+    await page.locator('form button[type=submit]').click();
+    await page.waitForURL((u) => !u.pathname.endsWith('/login'));
+    await page.goto('/admin#/cv');
+    const slot = page.locator('[data-cv-slot="en"]');
+    await slot.locator('input[type=file]').setInputFiles('public/cv/amir-zouerami-cv-en.pdf');
+    await slot.getByRole('button', { name: /Upload|Replace/ }).click();
+    await expect(slot.getByText('Live now:')).toBeVisible();
+    await page.goto('/cv');
+    await expect(page.locator('[data-cv-frame]')).toHaveAttribute(
+      'data',
+      /\/pb\/api\/files\/cv_files\//,
+    );
+    await page.goto('/admin#/cv');
+    page.once('dialog', (d) => d.accept());
+    await page.locator('[data-cv-slot="en"]').getByRole('button', { name: 'Delete' }).click();
+    await expect(
+      page.locator('[data-cv-slot="en"]').getByText('Nothing uploaded yet'),
+    ).toBeVisible();
+    await page.goto('/cv');
+    await expect(page.locator('[data-cv-frame]')).toHaveAttribute(
+      'data',
+      /\/cv\/amir-zouerami-cv-en\.pdf/,
+    );
+  });
+});

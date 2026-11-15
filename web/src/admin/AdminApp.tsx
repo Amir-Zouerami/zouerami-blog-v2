@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/client-api';
 import { Button } from '../ui/Button';
 import Comments from './pages/Comments';
+import Cv from './pages/Cv';
 import Dashboard from './pages/Dashboard';
 import PostEdit from './pages/PostEdit';
 import PostsList from './pages/PostsList';
@@ -25,6 +26,7 @@ const NAV: [string, string][] = [
   ['/', 'Dashboard'],
   ['/posts', 'Posts'],
   ['/projects', 'Projects'],
+  ['/cv', 'CV'],
   ['/comments', 'Comments'],
   ['/subscribers', 'Subscribers'],
   ['/users', 'Users'],
@@ -68,6 +70,9 @@ export default function AdminApp() {
       break;
     case 'projects':
       view = id ? <ProjectEdit key={id} id={id === 'new' ? null : id} /> : <ProjectsList />;
+      break;
+    case 'cv':
+      view = <Cv />;
       break;
     case 'comments':
       view = <Comments />;
