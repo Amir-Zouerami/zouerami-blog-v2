@@ -180,9 +180,10 @@ export default function MarkdownEditor({
 
   // live preview through the exact public rendering pipeline
   useEffect(() => {
-    setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
     const ctl = new AbortController();
     const t = setTimeout(() => {
+      // counted with the preview (debounced), not on every keystroke
+      setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
       previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'en')
         .then((r) => {
           setHtml(r.html);

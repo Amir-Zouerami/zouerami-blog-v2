@@ -244,3 +244,14 @@ test('marquee loops seamlessly: the second half of the strip is identical to the
     expect(anim).toBe(url === '/fa' ? 'marq-rtl' : 'marq');
   }
 });
+
+test('card covers use resized thumbnails that actually load', async ({ page, request }) => {
+  await page.goto('/blog');
+  const img = page.locator('.card-img img').first();
+  if (!(await img.count())) test.skip(true, 'no post with an uploaded cover in the seed data');
+  const src = (await img.getAttribute('src')) as string;
+  expect(src).toMatch(/\?thumb=\d+x0$/);
+  const res = await request.get(src);
+  expect(res.status()).toBe(200);
+  expect(res.headers()['content-type']).toContain('image');
+});

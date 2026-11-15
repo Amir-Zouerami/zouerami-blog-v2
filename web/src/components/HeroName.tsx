@@ -19,27 +19,37 @@ export default function HeroName() {
   useEffect(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (matchMedia('(pointer: coarse)').matches) return;
+    const chars = [...(ref.current?.querySelectorAll<HTMLElement>('.ch') ?? [])];
     let x = -999;
     let y = -999;
     let raf = 0;
-    const move = (e: PointerEvent) => {
-      x = e.clientX;
-      y = e.clientY;
-    };
-    addEventListener('pointermove', move);
-    const loop = () => {
-      ref.current?.querySelectorAll<HTMLElement>('.ch').forEach((c) => {
-        const r = c.getBoundingClientRect();
+    let visible = true;
+    // the loop only runs while the pointer is moving over a visible hero: no per-frame layout work when idle
+    const frame = () => {
+      raf = 0;
+      // read every rect first, then write every style: one layout pass instead of one per letter
+      const rects = chars.map((c) => c.getBoundingClientRect());
+      chars.forEach((c, i) => {
+        const r = rects[i] as DOMRect;
         c.style.fontVariationSettings = morphSettings(
           Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2)),
         );
       });
-      raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
+    const move = (e: PointerEvent) => {
+      x = e.clientX;
+      y = e.clientY;
+      if (visible && !raf) raf = requestAnimationFrame(frame);
+    };
+    const io = new IntersectionObserver(([entry]) => {
+      visible = !!entry?.isIntersecting;
+    });
+    if (ref.current) io.observe(ref.current);
+    addEventListener('pointermove', move, { passive: true });
     return () => {
       removeEventListener('pointermove', move);
       cancelAnimationFrame(raf);
+      io.disconnect();
     };
   }, []);
   return (

@@ -53,6 +53,7 @@ services:
     volumes:
       - ./nginx/prod.conf:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/proxy_web.conf:/etc/nginx/proxy_web.conf:ro
+      - ./nginx/security_headers.conf:/etc/nginx/security_headers.conf:ro
       - certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
       - nginx_cache:/var/cache/nginx
