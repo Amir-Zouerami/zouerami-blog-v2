@@ -8,5 +8,6 @@ export default defineConfig({
   adapter: node({ mode: 'standalone' }),
   integrations: [react({ compiler: true })],
   vite: { plugins: [tailwindcss()], ssr: { external: ['@resvg/resvg-js', 'pino', 'pino-pretty'] } },
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
   server: { host: true, port: 4321 },
 });

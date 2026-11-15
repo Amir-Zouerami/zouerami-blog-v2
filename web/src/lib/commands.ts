@@ -16,6 +16,7 @@ export function staticCommands(locale: Locale): Command[] {
     { id: 'blog', label: tr.nav.blog, hint: tr.palette.page, href: localePath(locale, '/blog') },
     { id: 'work', label: tr.nav.work, hint: tr.palette.page, href: localePath(locale, '/work') },
     { id: 'about', label: tr.nav.about, hint: tr.palette.page, href: localePath(locale, '/about') },
+    { id: 'cv', label: tr.cv.title, hint: tr.palette.page, href: localePath(locale, '/cv') },
     { id: 'theme', label: tr.toggleTheme, hint: tr.palette.action, run: 'toggle-theme' },
   ];
 }

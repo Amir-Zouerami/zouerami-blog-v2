@@ -62,7 +62,7 @@ export function buildSitemap(
     return en ? [...a, { lang: 'x-default', href: en.href }] : a;
   };
   const urls: Url[] = [];
-  for (const path of ['/', '/blog', '/work', '/about', '/privacy']) {
+  for (const path of ['/', '/blog', '/work', '/about', '/cv', '/privacy']) {
     for (const l of ['en', 'fa'] as Locale[]) {
       urls.push({
         loc: absoluteUrl(site, localePath(l, path)),

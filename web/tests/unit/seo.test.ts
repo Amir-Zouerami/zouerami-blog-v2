@@ -47,6 +47,8 @@ describe('sitemap', () => {
       '/fa/work/lumen',
       '/about',
       '/fa/about',
+      '/cv',
+      '/fa/cv',
     ])
       expect(xml).toContain(`<loc>${p === '/' ? `${SITE}/` : SITE + p}</loc>`);
   });

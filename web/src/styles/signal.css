@@ -1490,6 +1490,8 @@ html.tx-pending.tx-acc::after {
   overflow: hidden;
   background: var(--acc);
   color: var(--on-acc);
+  will-change: transform;
+  contain: strict;
 }
 #wipe[hidden] {
   display: none;
@@ -1767,3 +1769,12 @@ html[lang='fa'] .pg { font-family: "Vazirmatn Variable", sans-serif; }
 .post-head h1[dir='rtl'] { max-width: none; }
 .post-head:has(h1[dir='rtl']) .meta-grid { direction: ltr; }
 button.pg { background: none; font: inherit; cursor: pointer; } button.pg:disabled { opacity: .35; cursor: not-allowed; }
+
+/* the curtain is the page transition: skip the browser's own cross-fade of the whole page */
+::view-transition-group(root), ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+
+/* ---- CV page ---- */
+.cv-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.cv-bar .grow { flex: 1; }
+.cv-bar .langseg { margin-top: 0; }
+.cv-frame { display: block; width: 100%; height: min(86vh, 1200px); border: 1px solid var(--line2); border-radius: var(--r); background: #fff; margin-bottom: 60px; }

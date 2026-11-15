@@ -5,6 +5,7 @@ export function destinationLabel(url: URL): string {
   if (path.startsWith('/blog')) return 'Blog';
   if (path.startsWith('/work')) return 'Work';
   if (path.startsWith('/about')) return 'About';
+  if (path.startsWith('/cv')) return 'CV';
   return 'zouerami';
 }
 

@@ -10,6 +10,7 @@ describe('wipe', () => {
     expect(destinationLabel(u('/blog/some-slug'))).toBe('Blog');
     expect(destinationLabel(u('/work/lumen'))).toBe('Work');
     expect(destinationLabel(u('/about'))).toBe('About');
+    expect(destinationLabel(u('/fa/cv'))).toBe('CV');
     expect(destinationLabel(u('/fa/blog/x'))).toBe('Blog');
     expect(destinationLabel(u('/fa'))).toBe('Home');
     expect(destinationLabel(u('/nope'))).toBe('zouerami');

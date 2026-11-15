@@ -16,7 +16,12 @@ function clear(): void {
   el.hidden = true;
 }
 
-const EASE = 'cubic-bezier(.7,0,.2,1)';
+const EASE = 'cubic-bezier(.76,0,.24,1)';
+const COVER_MS = 380;
+const REVEAL_MS = 440;
+/** Two frames: lets the new page paint and its islands start hydrating before the curtain lifts, so the lift is not janky. */
+const settle = () =>
+  new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
 async function cover(label: string): Promise<void> {
   const el = overlay();
@@ -28,7 +33,7 @@ async function cover(label: string): Promise<void> {
   clearTimeout(timer);
   timer = setTimeout(clear, SAFETY_MS + 3000);
   await el.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], {
-    duration: 650,
+    duration: COVER_MS,
     easing: EASE,
     fill: 'both',
   }).finished;
@@ -39,7 +44,7 @@ async function reveal(): Promise<void> {
   if (!el?.classList.contains('on')) return;
   try {
     await el.animate([{ transform: 'none' }, { transform: 'translateY(-100%)' }], {
-      duration: 650,
+      duration: REVEAL_MS,
       easing: EASE,
       fill: 'both',
     }).finished;
@@ -60,13 +65,15 @@ export function initWipe(): void {
     if (!shouldAnimate(reduced()) || ev.to.pathname === ev.from.pathname) return;
     const original = ev.loader;
     ev.loader = async () => {
+      // fetch the next page WHILE the curtain comes down (it used to wait for the curtain first: two sequential delays)
+      const loading = original();
       try {
         await cover(destinationLabel(ev.to));
       } catch {
         clear();
       }
       try {
-        await original();
+        await loading;
       } catch (err) {
         clear();
         throw err;
@@ -74,7 +81,7 @@ export function initWipe(): void {
     };
   });
   document.addEventListener('astro:page-load', () => {
-    void reveal();
+    void settle().then(reveal);
   });
   // Any failure path must never leave the screen covered.
   window.addEventListener('pageshow', clear);
