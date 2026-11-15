@@ -201,7 +201,7 @@ test.describe('work and about', () => {
     await expect(page.locator('.tl-item')).toHaveCount(5);
     await expect(page.locator('.tl-svg .tl-main')).toHaveCount(1);
     await page.goto('/fa/about');
-    await expect(page.locator('.tl-item').first()).toContainText('بازسازی');
+    await expect(page.locator('.tl-item').first()).toContainText('لندین');
   });
 });
 
