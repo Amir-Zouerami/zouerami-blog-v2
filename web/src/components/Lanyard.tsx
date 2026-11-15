@@ -8,6 +8,11 @@ const SEG = 16;
 const SEGMENTS = 8;
 const STRAP_W = 24;
 const DT = 1 / 120;
+const REST_Y = -8;
+/** The strap starts this far above the box (card entirely out of view) and is lowered into place. */
+const DROP_FROM = -(CARD_H + SEGMENTS * SEG + 120);
+const DROP_MS = 1150;
+const easeOutBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2;
 
 interface Props {
   photo: string;
@@ -45,12 +50,15 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
     const sR = stitchR.current;
     const midEl = mid.current;
     if (!el || !cardEl || !bandEl || !eL || !eR || !sL || !sR || !midEl) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.classList.add('ready'); // shown still, no motion
+      return;
+    }
     const rtl = getComputedStyle(el).direction === 'rtl';
 
     const rect = () => el.getBoundingClientRect();
     const sim = new Sim({
-      anchor: { x: rect().width / 2, y: -8 },
+      anchor: { x: rect().width / 2, y: DROP_FROM },
       segments: SEGMENTS,
       segLen: SEG,
       cardLen: CARD_H - CLIP,
@@ -63,6 +71,8 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
     let running = false;
     let visible = true;
     let idleSince = 0;
+    let dropStart = 0;
+    let anchorY = DROP_FROM;
     let prevCx = sim.center.x;
 
     let turn = 0;
@@ -156,12 +166,22 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       if (!running) return;
       acc += Math.min(0.05, (now - last) / 1000);
       last = now;
+      if (dropStart) {
+        // lowering the strap from above the page: the physics makes the card trail and swing as it arrives
+        const k = Math.min(1, (now - dropStart) / DROP_MS);
+        anchorY = DROP_FROM + (REST_Y - DROP_FROM) * easeOutBack(k);
+        sim.setAnchor({ x: rect().width / 2, y: anchorY });
+        if (k >= 1) {
+          dropStart = 0;
+          anchorY = REST_Y;
+        }
+      }
       while (acc >= DT) {
         sim.step(DT);
         acc -= DT;
       }
       draw(acc / DT);
-      if (sim.dragging || sim.energy() > 0.004) idleSince = 0;
+      if (dropStart || sim.dragging || sim.energy() > 0.004) idleSince = 0;
       else if (!idleSince) idleSince = now;
       if (idleSince && now - idleSince > 600) {
         running = false;
@@ -184,9 +204,22 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     };
 
-    cardEl.classList.add('live');
-    el.classList.add('live');
-    draw(1);
+    // stay invisible until the photo is ready, then let the strap down from the top of the page
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      cardEl.classList.add('live');
+      el.classList.add('live');
+      draw(1);
+      dropStart = performance.now();
+      wake();
+    };
+    const photoEl = cardEl.querySelector('img');
+    void Promise.race([
+      photoEl?.decode().catch(() => {}),
+      new Promise((r) => setTimeout(r, 900)),
+    ]).then(start);
 
     const down = (e: PointerEvent) => {
       if (e.button !== 0) return;
@@ -214,7 +247,7 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
 
     const resize = new ResizeObserver(() => {
       const r = rect();
-      sim.setAnchor({ x: r.width / 2, y: -8 }, 0, r.width);
+      sim.setAnchor({ x: r.width / 2, y: anchorY }, 0, r.width);
       wake();
     });
     resize.observe(el);
@@ -229,9 +262,9 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
 
     // a welcome swing so people notice it moves (towards the page's text, away from the edge)
     const hello = setTimeout(() => {
-      sim.nudge(rtl ? 520 : -520);
+      sim.nudge(rtl ? 380 : -380);
       wake();
-    }, 500);
+    }, 900 + DROP_MS);
 
     return () => {
       clearTimeout(hello);
