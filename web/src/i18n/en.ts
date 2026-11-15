@@ -121,7 +121,7 @@ export const en = {
     description: 'About Amir Zouerami: timeline, tools and what I am up to now.',
     crumb: 'Index / About',
     statement:
-      'I make calm, fast things for the web, and *write* down what I learn so future-me can skip the pain.',
+      'Technical Lead and backend engineer building distributed systems and fintech platforms, and *writing* down what I learn.',
     timeline: 'Timeline',
     uses: 'Uses',
     now: 'Now',
