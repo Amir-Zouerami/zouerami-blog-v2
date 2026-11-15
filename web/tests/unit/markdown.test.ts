@@ -118,3 +118,18 @@ describe('readingMinutes', () => {
     expect(readingMinutes('word '.repeat(2000))).toBe(10);
   });
 });
+
+describe('highlighter start-up', { timeout: 30000 }, () => {
+  const o = { resolveImage: (n: string) => n, lang: 'en' as const };
+  it('the first document renders quickly (no multi-second cold start)', async () => {
+    const t = performance.now();
+    await renderMarkdown('hello', o);
+    expect(performance.now() - t).toBeLessThan(4000);
+  });
+  it('highlights languages that are not preloaded, and falls back to plain text for unknown ones', async () => {
+    const rust = await renderMarkdown('```rust\nfn main() {}\n```', o);
+    expect(rust.html).toContain('style=');
+    const odd = await renderMarkdown('```notalanguage\nx\n```', o);
+    expect(odd.html).toContain('<pre');
+  });
+});

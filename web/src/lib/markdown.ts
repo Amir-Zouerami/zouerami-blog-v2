@@ -1,4 +1,4 @@
-import rehypeShiki from '@shikijs/rehype';
+import rehypeShikiFromHighlighter from '@shikijs/rehype/core';
 import type { Element, Root } from 'hast';
 import { toString as mdText } from 'mdast-util-to-string';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
@@ -8,6 +8,7 @@ import remarkDirective from 'remark-directive';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
+import { bundledLanguages, createHighlighter, type Highlighter } from 'shiki';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 import { faDigits } from '../i18n/format';
@@ -217,48 +218,100 @@ function rehypeSignal(options: RenderOptions, headings: Heading[]) {
   };
 }
 
-// Built once: Shiki's highlighter is expensive to create. Per-call state travels in `file.data`.
+// Built once. `@shikijs/rehype` on its own spent ~10 s on its very first document (it prepares for every bundled
+// language), which made the first post after each start hang. So we create the highlighter ourselves with just the
+// languages in use and load others on demand, before a document is processed.
 type Data = { options: RenderOptions; headings: Heading[] };
-const processor = unified()
-  .use(remarkParse)
-  .use(remarkGfm)
-  .use(remarkDirective)
-  .use(function callouts() {
-    return (tree, file) => remarkCallouts((file.data as Data).options.lang ?? 'en')(tree as never);
-  })
-  .use(remarkRehype) // raw HTML in the source is dropped, never passed through
-  .use(rehypeSlug)
-  .use(rehypeTerm)
-  .use(rehypeShiki, {
-    themes: { light: 'github-light-default', dark: 'github-dark-default' },
-    defaultColor: false,
-    fallbackLanguage: 'text',
-    lazy: true,
-  })
-  .use(function signal() {
-    return (tree: Root, file) => {
-      const d = file.data as Data;
-      return rehypeSignal(d.options, d.headings)(tree);
-    };
-  })
-  // a "#" link on every heading so a section can be shared (added after the TOC text was collected)
-  .use(function anchors() {
-    return (tree: Root, file) => {
-      const lang = (file.data as Data).options.lang ?? 'en';
-      const run = rehypeAutolinkHeadings({
-        behavior: 'append',
-        test: (node) => node.properties?.id !== 'footnote-label',
-        properties: { className: ['anchor'], ariaLabel: ANCHOR_LABEL[lang] },
-        content: { type: 'text', value: '#' },
-      });
-      return run(tree);
-    };
-  })
-  .use(rehypeStringify)
-  .freeze();
+const THEMES = { light: 'github-light-default', dark: 'github-dark-default' } as const;
+const COMMON_LANGS = [
+  'text',
+  'ts',
+  'tsx',
+  'js',
+  'json',
+  'bash',
+  'sh',
+  'yaml',
+  'html',
+  'css',
+  'sql',
+  'go',
+  'python',
+  'dockerfile',
+  'nginx',
+  'diff',
+  'markdown',
+];
+
+function buildProcessor(highlighter: Highlighter) {
+  return (
+    unified()
+      .use(remarkParse)
+      .use(remarkGfm)
+      .use(remarkDirective)
+      .use(function callouts() {
+        return (tree, file) =>
+          remarkCallouts((file.data as Data).options.lang ?? 'en')(tree as never);
+      })
+      .use(remarkRehype) // raw HTML in the source is dropped, never passed through
+      .use(rehypeSlug)
+      .use(rehypeTerm)
+      .use(rehypeShikiFromHighlighter, highlighter, {
+        themes: THEMES,
+        defaultColor: false,
+        fallbackLanguage: 'text',
+      })
+      .use(function signal() {
+        return (tree: Root, file) => {
+          const d = file.data as Data;
+          return rehypeSignal(d.options, d.headings)(tree);
+        };
+      })
+      // a "#" link on every heading so a section can be shared (added after the TOC text was collected)
+      .use(function anchors() {
+        return (tree: Root, file) => {
+          const lang = (file.data as Data).options.lang ?? 'en';
+          const run = rehypeAutolinkHeadings({
+            behavior: 'append',
+            test: (node) => node.properties?.id !== 'footnote-label',
+            properties: { className: ['anchor'], ariaLabel: ANCHOR_LABEL[lang] },
+            content: { type: 'text', value: '#' },
+          });
+          return run(tree);
+        };
+      })
+      .use(rehypeStringify)
+      .freeze()
+  );
+}
+
+let ready:
+  | Promise<{ highlighter: Highlighter; processor: ReturnType<typeof buildProcessor> }>
+  | undefined;
+function engine() {
+  ready ??= createHighlighter({ themes: [THEMES.light, THEMES.dark], langs: COMMON_LANGS }).then(
+    (highlighter) => ({ highlighter, processor: buildProcessor(highlighter) }),
+  );
+  return ready;
+}
+
+/** Starts creating the highlighter now (call at boot); resolves when markdown can be rendered without a cold start. */
+export const warmMarkdownEngine = (): Promise<unknown> => engine();
+
+const FENCE = /^ {0,3}(?:`{3,}|~{3,})\s*([A-Za-z0-9_+#.-]+)/gm;
 
 export async function renderMarkdown(md: string, options: RenderOptions): Promise<Rendered> {
   if (!md.trim()) return { html: '', headings: [] };
+  const { highlighter, processor } = await engine();
+  // load the grammars this document needs (unknown names fall back to plain text)
+  const loaded = new Set(highlighter.getLoadedLanguages());
+  const wanted = new Set<string>();
+  for (const m of md.matchAll(FENCE)) {
+    const name = (m[1] ?? '').toLowerCase();
+    if (name in bundledLanguages && !loaded.has(name)) wanted.add(name);
+  }
+  if (wanted.size)
+    await Promise.all([...wanted].map((l) => highlighter.loadLanguage(l as never).catch(() => {})));
   const headings: Heading[] = [];
   const file = await processor.process({ value: md, data: { options, headings } });
   return { html: String(file), headings };
