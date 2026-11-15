@@ -16,7 +16,7 @@ const Body = z.object({
 
 /** Renders markdown with the exact pipeline the public site uses (admin-only). */
 export const POST = adminOnly(async ({ request }) => {
-  const body = await readJson(request, Body, 'Invalid request.');
+  const body = await readJson(request, Body, 'Invalid request.', 600_000);
   if (!body.ok) return body.response;
   const { html, headings } = await renderMarkdown(body.data.markdown, {
     lang: body.data.lang,

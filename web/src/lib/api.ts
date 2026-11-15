@@ -81,8 +81,21 @@ export async function readJson<T>(
   request: Request,
   schema: ZodType<T>,
   message = 'Please check the form and try again.',
+  /** Largest body accepted (bytes). Every form here is tiny; only the admin markdown preview needs more. */
+  maxBytes = 100_000,
 ): Promise<BodyResult<T>> {
-  const raw = await request.json().catch(() => undefined);
+  const declared = Number(request.headers.get('content-length') ?? 0);
+  if (declared > maxBytes)
+    return { ok: false, response: fail(413, 'payload_too_large', 'That request is too large.') };
+  const text = await request.text().catch(() => '');
+  if (text.length > maxBytes)
+    return { ok: false, response: fail(413, 'payload_too_large', 'That request is too large.') };
+  let raw: unknown;
+  try {
+    raw = text ? JSON.parse(text) : undefined;
+  } catch {
+    raw = undefined;
+  }
   const parsed = schema.safeParse(raw);
   if (parsed.success) return { ok: true, data: parsed.data };
   const fields: Record<string, string> = {};

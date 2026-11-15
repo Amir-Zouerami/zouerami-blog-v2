@@ -26,6 +26,11 @@ function announce(): void {
     },
     'web server ready',
   );
+  // without a secret every sign-up, comment and subscribe skips the bot check: fine locally, a mistake in production
+  if (c.secureCookies && !c.turnstile.secret)
+    rootLogger().warn(
+      'TURNSTILE_SECRET is not set: bot protection is OFF on a production (https) site',
+    );
 }
 
 /** `x-trace-id` on the response; rebuilds the Response when its headers are immutable (proxied/redirect responses). */
