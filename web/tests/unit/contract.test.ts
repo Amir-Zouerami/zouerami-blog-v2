@@ -55,3 +55,22 @@ describe('logging', () => {
     );
   });
 });
+
+describe('readJson size limit', () => {
+  it('rejects an oversized body with 413 before parsing it', async () => {
+    const { readJson } = await import('../../src/lib/api');
+    const { z } = await import('zod');
+    const big = JSON.stringify({ a: 'x'.repeat(200_000) });
+    const res = await readJson(
+      new Request('http://x/', { method: 'POST', body: big }),
+      z.object({ a: z.string() }),
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.response.status).toBe(413);
+    const fine = await readJson(
+      new Request('http://x/', { method: 'POST', body: '{"a":"b"}' }),
+      z.object({ a: z.string() }),
+    );
+    expect(fine.ok).toBe(true);
+  });
+});
