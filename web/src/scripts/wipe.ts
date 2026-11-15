@@ -1,6 +1,8 @@
 import { destinationLabel, shouldAnimate } from '../lib/wipe';
 
-const SAFETY_MS = 2500;
+/** Longest the curtain may stay down. It must outlast a slow page: lifting it while the next page is still loading made navigation look like it did nothing. */
+const SAFETY_MS = 25_000;
+let pending = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function overlay(): HTMLElement | null {
@@ -31,7 +33,7 @@ async function cover(label: string): Promise<void> {
   el.hidden = false;
   el.classList.add('on');
   clearTimeout(timer);
-  timer = setTimeout(clear, SAFETY_MS + 3000);
+  timer = setTimeout(clear, SAFETY_MS);
   await el.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], {
     duration: COVER_MS,
     easing: EASE,
@@ -66,7 +68,9 @@ export function initWipe(): void {
     const original = ev.loader;
     ev.loader = async () => {
       // fetch the next page WHILE the curtain comes down (it used to wait for the curtain first: two sequential delays)
+      pending = true;
       const loading = original();
+      void loading.catch(() => {}); // handled below; keeps an early failure from being reported as unhandled
       try {
         await cover(destinationLabel(ev.to));
       } catch {
@@ -77,6 +81,8 @@ export function initWipe(): void {
       } catch (err) {
         clear();
         throw err;
+      } finally {
+        pending = false;
       }
     };
   });
@@ -85,5 +91,6 @@ export function initWipe(): void {
   });
   // Any failure path must never leave the screen covered.
   window.addEventListener('pageshow', clear);
-  window.addEventListener('error', () => setTimeout(clear, SAFETY_MS));
+  // an unrelated script error must not lift the curtain in the middle of a navigation
+  window.addEventListener('error', () => setTimeout(() => !pending && clear(), 2500));
 }

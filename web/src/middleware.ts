@@ -7,6 +7,7 @@ import { getConfig } from './lib/config';
 import { isCrossSiteWrite } from './lib/csrf';
 import { rootLogger, runWithContext } from './lib/log';
 import { isUuid, uuidv7 } from './lib/uuid7';
+import { warmMarkdown } from './lib/warmup';
 
 /** Static assets: not worth a log line each. */
 const QUIET = /^\/(_astro|fonts)\/|^\/favicon\.svg$/;
@@ -16,6 +17,7 @@ let announced = false;
 function announce(): void {
   if (announced) return;
   announced = true;
+  warmMarkdown();
   const c = getConfig();
   rootLogger().info(
     {

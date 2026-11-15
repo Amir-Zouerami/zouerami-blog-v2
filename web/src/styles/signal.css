@@ -898,35 +898,6 @@ html[dir='rtl'] .marq div { animation-name: marq-rtl; }
   align-self: start;
   font-size: 14px;
 }
-.ring {
-  width: 76px;
-  height: 76px;
-  position: relative;
-  margin-bottom: 26px;
-}
-.ring svg {
-  transform: rotate(-90deg);
-}
-.ring circle {
-  fill: none;
-  stroke-width: 3;
-}
-.ring .bg {
-  stroke: var(--line2);
-}
-.ring .fg {
-  stroke: var(--acc);
-  stroke-dasharray: 201;
-  stroke-dashoffset: 201;
-  stroke-linecap: round;
-}
-.ring b {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font: 500 14px var(--mono);
-}
 .side a {
   display: block;
   padding-block: 6px;
@@ -1875,3 +1846,30 @@ html[lang='fa'] .lc-body span { font-family: "Vazirmatn Variable", sans-serif; f
 /* the card's shadow falls on the page and swings with it */
 .lanyard-shadow { position: absolute; left: -118px; top: -26px; border-radius: 22px; pointer-events: none; background: rgb(0 0 0 / .5); filter: blur(22px); opacity: .55; will-change: transform; transform: translate(calc(50cqw + 26px), 158px); }
 [data-theme='light'] .lanyard-shadow { opacity: .13; }
+
+/* ---- reading progress: a floating glass pill (replaces the old ring) ---- */
+.rpill {
+  position: fixed; z-index: 140; inset-inline: 0; margin-inline: auto; width: max-content; max-width: calc(100vw - 32px);
+  bottom: max(22px, env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 14px; padding: 8px 8px 8px 18px;
+  border: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 66%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 12px 40px -12px rgb(0 0 0 / .5), inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
+  opacity: 0; translate: 0 24px; pointer-events: none; transition: opacity .35s, translate .45s cubic-bezier(.2, .9, .2, 1);
+}
+.rpill.show { opacity: 1; translate: 0 0; pointer-events: auto; }
+.rpill-pct { display: inline-flex; align-items: baseline; gap: 1px; min-width: 3.2ch; font-size: 15px; font-variant-numeric: tabular-nums; }
+.rpill-pct b { font-weight: 700; } .rpill-pct small { color: var(--muted); font-size: 11px; }
+.rpill-track { position: relative; width: clamp(80px, 16vw, 170px); height: 5px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 14%, transparent); overflow: hidden; }
+.rpill-track i {
+  position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); border-radius: inherit; will-change: transform;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 70%, transparent), var(--acc)); box-shadow: 0 0 14px var(--acc);
+}
+[dir='rtl'] .rpill-track i { transform-origin: right center; }
+.rpill-left { color: var(--muted); font-size: 12px; white-space: nowrap; transition: color .3s; }
+.rpill.done .rpill-left { color: var(--acc); }
+.rpill-top { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); cursor: pointer; transition: background-color .2s, color .2s, transform .2s; }
+.rpill-top:hover { background: var(--acc); color: var(--on-acc); transform: translateY(-2px); }
+.rpill.done .rpill-top { background: var(--acc); color: var(--on-acc); }
+html[lang='fa'] .rpill-left { font-family: "Vazirmatn Variable", sans-serif; font-size: 12.5px; }
+@media (max-width: 760px) { .rpill { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 66px); padding-inline-start: 14px; gap: 10px; } .rpill-left { display: none; } }
+@media (prefers-reduced-motion: reduce) { .rpill { transition: opacity .2s; translate: 0 0; } }

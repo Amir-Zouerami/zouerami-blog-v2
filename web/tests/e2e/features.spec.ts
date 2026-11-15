@@ -270,3 +270,29 @@ test('the lanyard is hidden until it has loaded, then drops in from above the pa
   await page.reload();
   await expect(page.locator('.lanyard.ready')).toBeVisible(); // reduced motion: shown still, never hidden
 });
+
+test('reading progress pill: hidden at the top, follows the scroll, and takes you back up', async ({
+  page,
+}) => {
+  await page.goto('/blog/diagrams-demo');
+  const pill = page.locator('#rpill');
+  await expect(pill).not.toHaveClass(/show/);
+  await page.evaluate(() =>
+    window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.5),
+  );
+  await expect(pill).toHaveClass(/show/);
+  const mid = Number(await page.locator('#rpill-num').textContent());
+  expect(mid).toBeGreaterThan(30);
+  expect(mid).toBeLessThan(70);
+  await expect(page.locator('#rpill-left')).toContainText(/min left/);
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      return pill.evaluate((e) => e.classList.contains('done'));
+    })
+    .toBe(true);
+  await expect(page.locator('#rpill-left')).toHaveText('Done reading');
+  await pill.locator('[data-to-top]').click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(10);
+  await expect(page.locator('.ring')).toHaveCount(0); // the old ring is gone
+});

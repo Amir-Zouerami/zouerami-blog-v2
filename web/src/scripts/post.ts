@@ -27,16 +27,53 @@ function countView(slug: string): void {
 
 function reading(signal: AbortSignal): void {
   const bar = document.getElementById('rp-bar');
-  const ring = document.getElementById('ring-fg');
-  const num = document.getElementById('ring-num');
-  const update = () => {
+  const pill = document.getElementById('rpill');
+  const num = document.getElementById('rpill-num');
+  const fill = document.getElementById('rpill-fill');
+  const left = document.getElementById('rpill-left');
+  const minutes = Number(pill?.dataset.min ?? 0);
+  const fa = document.documentElement.lang === 'fa';
+  const digits = (n: number) =>
+    fa ? n.toLocaleString('fa-IR', { useGrouping: false }) : String(n);
+  let queued = false;
+  const paint = () => {
+    queued = false;
     const h = document.documentElement;
-    const k = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
+    const k = Math.min(1, Math.max(0, h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)));
     if (bar) bar.style.width = `${k * 100}%`;
-    ring?.setAttribute('style', `stroke-dashoffset:${201 * (1 - k)}`);
-    if (num) num.textContent = `${Math.round(k * 100)}%`;
+    if (!pill) return;
+    const pct = Math.round(k * 100);
+    if (num) num.textContent = digits(pct);
+    if (fill) fill.style.transform = `scaleX(${k})`;
+    const finished = k > 0.97;
+    if (left)
+      left.textContent = finished
+        ? (pill.dataset.done ?? '')
+        : `${digits(Math.max(1, Math.ceil(minutes * (1 - k))))} ${pill.dataset.left ?? ''}`;
+    pill.classList.toggle('show', k > 0.02);
+    pill.classList.toggle('done', finished);
   };
+  const update = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(paint);
+  };
+  document.addEventListener(
+    'click',
+    (e) => {
+      if ((e.target as Element).closest('[data-to-top]'))
+        scrollTo({
+          top: 0,
+          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+    },
+    { signal },
+  );
   addEventListener('scroll', update, { passive: true, signal });
+  // diagrams and images change the page height after load: keep the percentage honest
+  const resize = new ResizeObserver(update);
+  resize.observe(document.body);
+  signal.addEventListener('abort', () => resize.disconnect());
   update();
 }
 
