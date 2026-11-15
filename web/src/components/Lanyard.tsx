@@ -8,6 +8,9 @@ const SEG = 22;
 const SEGMENTS = 27;
 const STRAP_W = 24;
 const DT = 1 / 120;
+/** Resting position of the highlight (% of the card): the top-left corner, away from the photo's face. */
+const GLOW_X = 14;
+const GLOW_Y = 5;
 /** The strap hangs from far above the box (clipped there): rope length SEG * SEGMENTS puts the card where it used to rest. */
 const ANCHOR_Y = -480;
 
@@ -149,8 +152,8 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       cardEl.style.setProperty('--glare', String(50 + turn * 2.2));
       // light position slides with the tilt and the swing, so the gloss and the foil react like a real card
       const deg = (angle * 180) / Math.PI;
-      cardEl.style.setProperty('--gx', `${50 + deg * 1.4 + turn * 2.4}%`);
-      cardEl.style.setProperty('--gy', `${28 - deg * 0.5}%`);
+      cardEl.style.setProperty('--gx', `${GLOW_X + deg * 1.4 + turn * 2.4}%`);
+      cardEl.style.setProperty('--gy', `${GLOW_Y - deg * 0.5}%`);
       cardEl.style.setProperty('--foil', `${50 + deg * 2.2 + turn * 3}%`);
       const sh = shadow.current;
       if (sh)
