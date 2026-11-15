@@ -307,7 +307,7 @@ html.tx-pending.tx-acc::after {
 .hero {
   display: flex;
   flex-direction: column;
-  padding-block: 18px 0;
+  padding-block: 44px 0;
   position: relative;
 }
 .hero-top {
@@ -335,7 +335,7 @@ html.tx-pending.tx-acc::after {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--line);
-  margin-top: 36px;
+  margin-top: 72px;
 }
 .hero-row > div {
   padding: 18px 18px 22px;
@@ -1779,23 +1779,36 @@ button.pg { background: none; font: inherit; cursor: pointer; } button.pg:disabl
 
 /* ---- hero: name + lanyard ---- */
 .hero-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); align-items: center; gap: 12px; }
-.hero-main .hero h1, .hero-name h1 { font-size: min(var(--hero), 12.5vw); }
-.lanyard { position: relative; height: 470px; container-type: inline-size; perspective: 1000px; touch-action: pan-y; }
+.hero-name h1 { font-size: min(calc(var(--hero) * .74), 11vw); }
+.lanyard { position: relative; height: 500px; container-type: inline-size; perspective: 1000px; touch-action: pan-y; }
 .lanyard-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.lanyard-strap { stroke: var(--acc); stroke-width: 11px; stroke-linecap: round; stroke-linejoin: round; }
-.lanyard-strap-edge { stroke: color-mix(in srgb, var(--acc) 55%, #000); stroke-width: 14px; stroke-linecap: round; stroke-linejoin: round; }
-.lanyard-strap-static { position: absolute; left: calc(50% - 5.5px); top: -8px; width: 11px; height: 134px; background: var(--acc); border-radius: 0 0 6px 6px; }
+.lanyard-band { fill: color-mix(in srgb, var(--acc) 88%, #fff); }
+.lanyard-edge { stroke: color-mix(in srgb, var(--acc) 55%, #000); stroke-width: 1.4px; stroke-linejoin: round; }
+.lanyard-stitch { stroke: color-mix(in srgb, var(--acc) 45%, #000); stroke-width: 1px; stroke-dasharray: 3 3; opacity: .6; }
+.lanyard-print { font: 700 8.5px var(--mono); letter-spacing: .22em; fill: color-mix(in srgb, var(--acc) 30%, #000); opacity: .72; }
+.lanyard-strap-static { position: absolute; left: calc(50% - 12px); top: -8px; width: 24px; height: 138px; background: color-mix(in srgb, var(--acc) 88%, #fff); border-inline: 1.4px solid color-mix(in srgb, var(--acc) 55%, #000); }
 .lanyard.live .lanyard-strap-static { display: none; }
 .lanyard-card {
   position: absolute; left: 0; top: 0; transform-origin: 0 0; transform-style: preserve-3d;
   transform: translate(calc(50cqw - 118px), 124px);
-  display: flex; flex-direction: column; gap: 12px; padding: 36px 16px 14px;
-  border: 1px solid var(--line2); border-radius: 18px; background: var(--bg2); overflow: hidden;
-  box-shadow: 0 30px 60px -20px rgb(0 0 0 / .55), inset 0 1px 0 color-mix(in srgb, var(--fg) 12%, transparent);
   will-change: transform; user-select: none; -webkit-user-select: none;
 }
 .lanyard-card.live { cursor: grab; touch-action: none; }
 .lanyard-card.grabbing { cursor: grabbing; }
+.lc-face {
+  position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; padding: 36px 16px 14px;
+  border: 1px solid var(--line2); border-radius: 18px; background: var(--bg2); overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgb(0 0 0 / .55), inset 0 1px 0 color-mix(in srgb, var(--fg) 12%, transparent);
+}
+/* the metal clip the strap runs through */
+.lc-clip {
+  position: absolute; z-index: 2; left: 50%; top: -8px; width: 30px; height: 46px; margin-left: -15px;
+  border-radius: 8px 8px 11px 11px;
+  background: linear-gradient(100deg, #6b7078 0%, #e4e7ec 22%, #9aa0a8 48%, #f4f6f8 70%, #747a82 100%);
+  box-shadow: 0 2px 5px rgb(0 0 0 / .45), inset 0 0 0 1px rgb(0 0 0 / .25);
+}
+.lc-clip::before { content: ""; position: absolute; left: 7px; right: 7px; top: 8px; height: 16px; border-radius: 5px; background: #14161a; box-shadow: inset 0 2px 3px rgb(0 0 0 / .7); }
+.lc-clip::after { content: ""; position: absolute; left: 50%; bottom: 7px; width: 14px; height: 7px; margin-left: -7px; border-radius: 99px; background: #14161a; box-shadow: inset 0 1px 2px rgb(0 0 0 / .8); }
 .lc-slot { position: absolute; top: 12px; left: 50%; width: 54px; height: 9px; margin-left: -27px; border-radius: 99px; background: var(--bg); box-shadow: inset 0 1px 3px rgb(0 0 0 / .5); }
 .lc-photo { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--bg); }
 .lc-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; pointer-events: none; }
