@@ -12,62 +12,61 @@ export const timeline: Record<Locale, TimelineItem[]> = {
     {
       when: 'Jan 2026',
       title: 'Technical Lead, Landin',
-      text: "Backend and infrastructure for Iran's leading no-code landing page platform: microservices, payment gateways, RabbitMQ, and automated SSL for thousands of custom domains.",
+      text: 'Leading backend architecture for a multi-tenant SaaS platform: event-driven microservices, message queues and automated infrastructure.',
       open: true,
     },
     {
       when: 'Mar 2024',
       title: 'Node.js Developer, Part',
-      text: 'Fintech microservices and an API gateway handling tens of thousands of daily transactions. Open-sourced Schematica and taught at Part College.',
+      text: 'Built high-throughput financial services behind an API gateway, with queues and strict data consistency.',
     },
     {
       when: 'Jan 2024',
       title: 'Software Engineer, License Market',
-      text: 'React and Next.js with a Tailwind design system, Docker CI/CD, and caching that roughly halved API response times.',
+      text: 'Full-stack work on a web marketplace: component design system, CI/CD pipelines and caching.',
     },
     {
       when: 'May 2021',
       title: 'Open source, grammY',
-      text: 'Wrote and still maintain the official rate-limiting plugin that protects thousands of Telegram bots from abuse.',
+      text: 'Maintaining a widely used rate-limiting library in the Telegram bot ecosystem.',
       open: true,
     },
     {
       when: '2014',
       title: 'English Translation, M.A. & B.A.',
-      text: 'Ferdowsi University of Mashhad (2014–2021), alongside CS50 and Web Programming from Harvard Extension School.',
+      text: 'Studied translation at Ferdowsi University of Mashhad, then computer science through Harvard Extension School.',
     },
   ],
   fa: [
     {
       when: 'ژانویه ۲۰۲۶',
       title: 'تکنیکال لید، لندین',
-      text: 'بکاند و زیرساخت پیشروترین پلتفرم ساخت لندینگ‌پیج بدون کد در ایران: میکروسرویس، درگاه‌های پرداخت، RabbitMQ و صدور خودکار SSL برای هزاران دامنه اختصاصی.',
+      text: 'طراحی معماری بک‌اند یک پلتفرم SaaS چندمستاجری: میکروسرویس‌های رویدادمحور، صف پیام و زیرساخت خودکار.',
       open: true,
     },
     {
       when: 'مارس ۲۰۲۴',
       title: 'توسعه‌دهنده Node.js، پارت',
-      text: 'میکروسرویس‌های فین‌تک و API Gateway با ده‌ها هزار تراکنش روزانه. انتشار متن‌باز Schematica و تدریس در کالج پارت.',
+      text: 'ساخت سرویس‌های مالی پرترافیک پشت API Gateway، با صف پیام و سخت‌گیری روی سازگاری داده.',
     },
     {
       when: 'ژانویه ۲۰۲۴',
       title: 'مهندس نرم‌افزار، لایسنس مارکت',
-      text: 'React و Next.js با سیستم طراحی Tailwind، CI/CD با Docker و کشینگی که زمان پاسخ API را تقریباً نصف کرد.',
+      text: 'کار فول‌استک روی یک مارکت‌پلیس وب: سیستم طراحی کامپوننتی، پایپ‌لاین CI/CD و کشینگ.',
     },
     {
       when: 'مه ۲۰۲۱',
       title: 'متن‌باز، grammY',
-      text: 'نوشتن و نگهداری Middleware رسمی محدودکننده نرخ درخواست که هزاران بات تلگرام را در برابر سوءاستفاده محافظت می‌کند.',
+      text: 'نگهداری یک کتابخانه پرکاربرد محدودسازی نرخ درخواست در اکوسیستم بات‌های تلگرام.',
       open: true,
     },
     {
       when: '۲۰۱۴',
       title: 'مترجمی زبان انگلیسی، کارشناسی ارشد و کارشناسی',
-      text: 'دانشگاه فردوسی مشهد (۲۰۱۴ تا ۲۰۲۱) در کنار CS50 و برنامه‌نویسی وب از Harvard Extension School.',
+      text: 'تحصیل ترجمه در دانشگاه فردوسی مشهد و سپس علوم کامپیوتر از طریق Harvard Extension School.',
     },
   ],
 };
-
 export const uses = [
   'TypeScript',
   'Bun',

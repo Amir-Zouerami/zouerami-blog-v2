@@ -1694,6 +1694,7 @@ html[lang='fa'] .year { font-size: 18px; font-weight: 500; }
 .tl-year { font: 600 13px var(--mono); color: var(--acc); }
 .tl-card h3 { font: 500 20px / 1.25 var(--serif); margin: 6px 0; }
 [dir='rtl'] .tl-svg, [dir='rtl'] .tl-item { scale: -1 1; }
+html[lang='fa'] .tl-card h3 { font: 700 19px / 1.5 "Vazirmatn Variable", sans-serif; letter-spacing: 0; }
 [dir='rtl'] .tl-item { scale: 1; left: auto; right: var(--x); }
 [dir='rtl'] .tl-svg { transform-origin: center; }
 [dir='rtl'] .side-a .tl-card { left: auto; right: 36px; } [dir='rtl'] .side-b .tl-card { right: auto; left: 36px; }
@@ -1955,3 +1956,8 @@ html, body { overflow-x: clip; }
   .nav a em { display: none; }
 }
 @media (max-width: 380px) { .nav a { padding-inline: 9px; font-size: 11px; } }
+.now-line { font: var(--hw) clamp(22px, 3vw, 34px) / 1.35 var(--head); letter-spacing: var(--hls); padding-block: 28px 36px; max-width: 34ch; }
+.now-line .it { color: var(--acc); font-family: var(--serif); font-style: italic; font-weight: 400; }
+html[lang='fa'] .now-line { font-family: "Vazirmatn Variable", sans-serif; font-weight: 700; letter-spacing: 0; line-height: 1.7; }
+html[lang='fa'] .now-line .it { font-family: "Vazirmatn Variable", sans-serif; font-style: normal; }
+.post-head h1[dir="rtl"] { font-size: clamp(36px, 7vw, 64px); }
