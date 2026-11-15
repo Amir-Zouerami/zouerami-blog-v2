@@ -25,8 +25,11 @@ const lang = {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 function tick(): void {
+  if (document.hidden) return;
+  const clocks = document.querySelectorAll<HTMLElement>('[data-clock]');
+  if (!clocks.length) return;
   const d = new Date();
-  for (const el of document.querySelectorAll<HTMLElement>('[data-clock]')) {
+  for (const el of clocks) {
     el.textContent = `${el.dataset.label ?? 'Local'} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
 }
@@ -62,22 +65,33 @@ function spotlight(signal: AbortSignal): void {
   let my = innerHeight / 3;
   let x = mx;
   let y = my;
+  let running = false;
+  const frame = () => {
+    if (signal.aborted || !spot.isConnected) {
+      running = false;
+      return;
+    }
+    x += (mx - x) * 0.14;
+    y += (my - y) * 0.14;
+    spot.style.transform = `translate(${x}px,${y}px)`;
+    // once the glow has caught up with the pointer there is nothing to animate: stop until the pointer moves again
+    if (Math.abs(mx - x) < 0.2 && Math.abs(my - y) < 0.2) running = false;
+    else requestAnimationFrame(frame);
+  };
   addEventListener(
     'pointermove',
     (e) => {
       mx = e.clientX;
       my = e.clientY;
       spot.classList.add('on');
+      if (!running) {
+        running = true;
+        requestAnimationFrame(frame);
+      }
     },
-    { signal },
+    { passive: true, signal },
   );
-  const frame = () => {
-    if (signal.aborted || !spot.isConnected) return;
-    x += (mx - x) * 0.14;
-    y += (my - y) * 0.14;
-    spot.style.transform = `translate(${x}px,${y}px)`;
-    requestAnimationFrame(frame);
-  };
+  running = true;
   frame();
 }
 

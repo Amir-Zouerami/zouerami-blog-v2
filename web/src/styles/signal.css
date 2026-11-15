@@ -1833,6 +1833,8 @@ html[lang='fa'] .lc-body span { font-family: "Vazirmatn Variable", sans-serif; f
 }
 @media (prefers-reduced-motion: reduce) { .lanyard-card { will-change: auto; } }
 
+/* a filter on the card would flatten its 3D thickness layers and repaint every frame, so none is used; blends stay inside the face */
+.lc-face { isolation: isolate; }
 /* ---- TEST: realistic PVC card (delete this block, the extra <i>/<div> layers in Lanyard.tsx and the --gx/--foil lines to go back) ---- */
 .lc-face {
   background:
@@ -1871,4 +1873,3 @@ html[lang='fa'] .lc-body span { font-family: "Vazirmatn Variable", sans-serif; f
 /* the card's shadow falls on the page and swings with it */
 .lanyard-shadow { position: absolute; left: -118px; top: -26px; border-radius: 22px; pointer-events: none; background: rgb(0 0 0 / .5); filter: blur(22px); opacity: .55; will-change: transform; transform: translate(calc(50cqw + 26px), 158px); }
 [data-theme='light'] .lanyard-shadow { opacity: .28; }
-.lanyard.live .lanyard-card { filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); }
