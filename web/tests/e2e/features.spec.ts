@@ -228,3 +228,19 @@ test('hero marquee lists backend tech, not site-stack words', async ({ page }) =
     expect(words).toContain(w);
   for (const w of ['Go', 'PocketBase', 'Astro']) expect(words).not.toContain(w);
 });
+
+test('marquee loops seamlessly: the second half of the strip is identical to the first, for any word count', async ({
+  page,
+}) => {
+  for (const url of ['/', '/fa']) {
+    await page.goto(url);
+    const items = await page
+      .locator('.marq span')
+      .evaluateAll((els) => els.map((e) => `${e.textContent}|${e.className}`));
+    const half = items.length / 2;
+    expect(items.length % 4).toBe(0);
+    expect(items.slice(0, half)).toEqual(items.slice(half));
+    const anim = await page.locator('.marq div').evaluate((e) => getComputedStyle(e).animationName);
+    expect(anim).toBe(url === '/fa' ? 'marq-rtl' : 'marq');
+  }
+});
