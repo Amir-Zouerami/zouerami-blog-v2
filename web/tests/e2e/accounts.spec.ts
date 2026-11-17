@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import PocketBase from 'pocketbase';
 import { dataOf, envelope } from './envelope';
+import { guard } from './guard';
 
 const PB = process.env.PB_TEST_URL ?? 'http://127.0.0.1:8090';
 const MAIL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:8025';
@@ -48,12 +49,16 @@ test('register → cannot sign in unverified → verify by email → sign in', a
   page,
 }) => {
   const reg = await request.post('/api/auth/register', {
-    data: { email, password, name: 'Acct Tester' },
+    data: { email, password, name: 'Acct Tester', guard: await guard(request) },
   });
   expect(reg.status()).toBe(201);
   // duplicate registration looks identical (no enumeration)
   expect(
-    (await request.post('/api/auth/register', { data: { email, password, name: 'Dup' } })).status(),
+    (
+      await request.post('/api/auth/register', {
+        data: { email, password, name: 'Dup', guard: await guard(request) },
+      })
+    ).status(),
   ).toBe(201);
   const bad = await request.post('/api/auth/register', {
     data: { email: `x${stamp}@example.com`, password: 'short', name: 'X' },
@@ -74,9 +79,17 @@ test('register → cannot sign in unverified → verify by email → sign in', a
 
 test('forgot → reset password by email → old password stops working', async ({ request }) => {
   expect(
-    (await request.post('/api/auth/forgot', { data: { email: 'nobody@example.com' } })).status(),
+    (
+      await request.post('/api/auth/forgot', {
+        data: { email: 'nobody@example.com', guard: await guard(request) },
+      })
+    ).status(),
   ).toBe(200);
-  expect((await request.post('/api/auth/forgot', { data: { email } })).status()).toBe(200);
+  expect(
+    (
+      await request.post('/api/auth/forgot', { data: { email, guard: await guard(request) } })
+    ).status(),
+  ).toBe(200);
   const link = linkIn(await mailTo(email, 'Reset'), '/reset');
   const token = new URL(link).searchParams.get('token');
   const fresh = 'brand-new-password-3';
@@ -129,7 +142,7 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
 
   // first comment is held: author sees it as pending, others do not
   const c1 = await request.post('/api/comments', {
-    data: { post: post.id, body: 'First! <b>bold</b>' },
+    data: { post: post.id, body: 'First! <b>bold</b>', guard: await guard(request) },
   });
   expect(c1.status()).toBe(201);
   expect((await dataOf<{ pending: boolean }>(c1)).pending).toBe(true);
@@ -155,7 +168,7 @@ test('likes, bookmarks, comments (first held, then approved) as a signed-in user
   );
   expect(pubAfter.comments[0]?.author).toBe('Acct Tester');
   const c2 = await request.post('/api/comments', {
-    data: { post: post.id, body: 'Second', parent: held.id },
+    data: { post: post.id, body: 'Second', parent: held.id, guard: await guard(request) },
   });
   expect((await dataOf<{ pending: boolean }>(c2)).pending).toBe(false);
 
@@ -262,10 +275,18 @@ test('newsletter: double opt-in, duplicates look identical, unsubscribe works', 
 }) => {
   const sub = `sub-${stamp}@example.com`;
   expect(
-    (await request.post('/api/subscribe', { data: { email: sub, locale: 'en' } })).status(),
+    (
+      await request.post('/api/subscribe', {
+        data: { email: sub, locale: 'en', guard: await guard(request) },
+      })
+    ).status(),
   ).toBe(200);
   expect(
-    (await request.post('/api/subscribe', { data: { email: sub, locale: 'en' } })).status(),
+    (
+      await request.post('/api/subscribe', {
+        data: { email: sub, locale: 'en', guard: await guard(request) },
+      })
+    ).status(),
   ).toBe(200);
   expect((await request.post('/api/subscribe', { data: { email: 'not-an-email' } })).status()).toBe(
     400,
@@ -298,7 +319,11 @@ test('all emails use the Signal Dark design and are English, even for Persian-si
 }) => {
   const mail = `design-${stamp}@example.com`;
   expect(
-    (await request.post('/api/subscribe', { data: { email: mail, locale: 'fa' } })).status(),
+    (
+      await request.post('/api/subscribe', {
+        data: { email: mail, locale: 'fa', guard: await guard(request) },
+      })
+    ).status(),
   ).toBe(200);
   const sub = await mailTo(mail, 'Confirm your subscription');
   expect(sub).toContain('<html lang="en" dir="ltr"');
@@ -310,7 +335,12 @@ test('all emails use the Signal Dark design and are English, even for Persian-si
   expect(
     (
       await request.post('/api/auth/register', {
-        data: { email: mail, password: 'a-long-password-123', name: 'Design' },
+        data: {
+          email: mail,
+          password: 'a-long-password-123',
+          name: 'Design',
+          guard: await guard(request),
+        },
       })
     ).status(),
   ).toBe(201);
@@ -319,7 +349,11 @@ test('all emails use the Signal Dark design and are English, even for Persian-si
   expect(verify).toContain('http://localhost:8088/verify?token=');
   expect(verify).not.toMatch(/\{\{|\{TOKEN\}/);
 
-  expect((await request.post('/api/auth/forgot', { data: { email: mail } })).status()).toBe(200);
+  expect(
+    (
+      await request.post('/api/auth/forgot', { data: { email: mail, guard: await guard(request) } })
+    ).status(),
+  ).toBe(200);
   const reset = await mailTo(mail, 'Reset your');
   expect(reset).toContain('http://localhost:8088/reset?token=');
   expect(reset).toContain('#d4ff3a');

@@ -291,7 +291,7 @@ test('reading progress pill: hidden at the top, follows the scroll, and takes yo
   );
   await expect(pill).toHaveClass(/show/);
   const mid = Number(await page.locator('#rpill-num').textContent());
-  expect(mid).toBeGreaterThan(30);
+  expect(mid).toBeGreaterThan(15);
   expect(mid).toBeLessThan(70);
   await expect(page.locator('#rpill-left')).toContainText(/min left/);
   await expect

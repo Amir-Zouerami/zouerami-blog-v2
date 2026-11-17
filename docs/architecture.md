@@ -17,7 +17,7 @@ browser ── nginx ──┬── web (Astro SSR + React islands, Node)  ─�
 | `lib/pages.ts` | Page loaders (`loadPostPage`, `loadHome`, …) + `load()` mapping missing → 404 and backend failure → 503. Rendered-markdown LRU. |
 | `lib/markdown.ts` | unified pipeline (GFM, heading numbers/slugs, Shiki, `img:` resolution, safe links). Raw HTML in sources is dropped. |
 | `lib/auth/` | `session.ts` (JWT), `cookies.ts`, `refresh.ts` (PocketBase re-validation), `user.ts`, `guards.ts` (`authed` / `adminOnly` route wrappers). |
-| `lib/csrf.ts`, `http.ts`, `turnstile.ts` | Origin check, JSON helpers, Turnstile verification. |
+| `lib/csrf.ts`, `http.ts`, `guard.ts` | Origin check, JSON helpers, bot guard (signed proof-of-work challenge from `/api/guard`, checked server-side, single use). `sha256-pow.ts` is the solver the browser runs in a Web Worker. |
 | `i18n/` | `locale.ts` (paths, direction), `format.ts` (Jalali dates, digits), `en.ts` / `fa.ts` dictionaries, `index.ts` barrel. |
 | `scripts/` | Browser behaviour as modules (`site`, `post`, `wipe`, `cursor`, `subscribe`, `auth-forms`); per-page listeners are torn down via `onPage()`. |
 | `admin/` | Back-office React app: `pages/` (one per screen), shared `MarkdownEditor`, `LangTabs`, `ImageLibrary`. |
@@ -29,7 +29,7 @@ One framework-free engine, used by the public site, the admin and the editor. `s
 ## API contract and logging
 - **Every JSON endpoint** (and the PocketBase hook endpoints) answers `{ "meta": { "status", "code", "message"?, "fields"? }, "data": …|null, "traceId": "<uuidv7>" }` — success and failure alike (no 204s). Helpers live in `lib/api.ts` (`ok`, `created`, `fail`, `readJson`); browser code uses `lib/client-api.ts`. A unit test fails if a route builds a raw `Response` or logs through `console`, and an e2e test walks every endpoint.
 - **traceId**: middleware assigns a UUIDv7 per request (a valid inbound `x-trace-id` is reused), returns it in the header **and** body, binds it to a pino child logger, and stores it in an `AsyncLocalStorage` so any code can call `getLog()`. Find a response's logs with `docker compose logs web | grep <traceId>`.
-- **Logs**: pino. `LOG_PRETTY=true` (dev compose) → coloured, multi-line; production → JSON lines. Passwords, tokens, cookies and Turnstile responses are redacted; emails are masked (`a***@example.com`). Every request logs method, path, status, duration and user id; domain events (login, register, comment, moderation, deletion…) log at info, rejected input at warn, failures at error.
+- **Logs**: pino. `LOG_PRETTY=true` (dev compose) → coloured, multi-line; production → JSON lines. Passwords, tokens, cookies and guard solutions are redacted; emails are masked (`a***@example.com`). Every request logs method, path, status, duration and user id; domain events (login, register, comment, moderation, deletion…) log at info, rejected input at warn, failures at error.
 
 ## Authentication
 1. `POST /api/auth/login` → PocketBase verifies the password once → we set two httpOnly cookies: a 10-minute signed **JWT** (`session`) and the user's **PocketBase token** (`refresh`, path `/api`).

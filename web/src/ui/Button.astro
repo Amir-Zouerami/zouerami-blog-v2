@@ -13,4 +13,4 @@ const cls = buttonClass(variant, size, extra);
 ---
 {href !== undefined
   ? <a class={cls} href={href} {...rest}><slot /></a>
-  : <button class={cls} type={type as string} {...rest}><slot /></button>}
+  : <button class={cls} type={type as 'button' | 'submit' | 'reset'} {...rest}><slot /></button>}

@@ -1,14 +1,12 @@
 ---
 import Button from '../ui/Button.astro';
 import { type Locale, localePath, t } from '../i18n';
-import { getConfig } from '../lib/config';
 import Base from '../layouts/Base.astro';
 
 export type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify' | 'confirm-subscription' | 'unsubscribe';
 const { locale, mode } = Astro.props as { locale: Locale; mode: Mode };
 const tr = t(locale);
 const a = tr.auth;
-const siteKey = getConfig().turnstile.siteKey ?? '';
 const titles: Record<Mode, string> = {
   login: a.loginTitle,
   register: a.registerTitle,
@@ -44,12 +42,12 @@ const tp = mode in tokenPages ? tokenPages[mode as keyof typeof tokenPages] : nu
       </div>
     ) : (
       <>
-      <form class="auth-form" data-astro-reload data-endpoint={`/api/auth/${mode}`} data-msgs={msgs} data-on-ok={mode === 'login' ? 'redirect' : undefined} data-home={localePath(locale, '/account')} data-use-token={mode === 'reset' ? '' : undefined} data-reset="" method="post" novalidate={false}>
+      <form class="auth-form" data-astro-reload data-endpoint={`/api/auth/${mode}`} data-msgs={msgs} data-on-ok={mode === 'login' ? 'redirect' : undefined} data-home={localePath(locale, '/account')} data-use-token={mode === 'reset' ? '' : undefined} data-guard={mode === 'register' || mode === 'forgot' ? '' : undefined} data-reset="" method="post" novalidate={false}>
         {mode === 'register' && <label><span class="mono muted">{a.name}</span><input name="name" required maxlength="60" autocomplete="nickname" /></label>}
         {mode !== 'reset' && <label><span class="mono muted">{a.email}</span><input type="email" name="email" required autocomplete="email" dir="ltr" /></label>}
         {(mode === 'login' || mode === 'register') && <label><span class="mono muted">{a.password}</span><input type="password" name="password" required minlength={mode === 'register' ? 10 : 1} maxlength="128" autocomplete={mode === 'login' ? 'current-password' : 'new-password'} dir="ltr" />{mode === 'register' && <small class="muted">{a.passwordHint}</small>}</label>}
         {mode === 'reset' && <label><span class="mono muted">{a.newPassword}</span><input type="password" name="password" required minlength="10" maxlength="128" autocomplete="new-password" dir="ltr" /></label>}
-        {siteKey && (mode === 'register' || mode === 'forgot') && <div class="cf-turnstile" data-sitekey={siteKey}></div>}
+        {(mode === 'register' || mode === 'forgot') && <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />}
         <Button variant="solid" size="lg" type="submit">{mode === 'login' ? a.signIn : mode === 'register' ? a.signUp : mode === 'reset' ? a.save : a.send}</Button>
         <p class="auth-result" data-msg role="status" aria-live="polite"></p>
         {mode === 'login' && <Button variant="link" data-resend hidden>{a.resend}</Button>}
@@ -67,7 +65,6 @@ const tp = mode in tokenPages ? tokenPages[mode as keyof typeof tokenPages] : nu
       )}
       </>
     )}
-    {siteKey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
   </main>
   <script>
     import { runTokenPage } from '../scripts/auth-forms';

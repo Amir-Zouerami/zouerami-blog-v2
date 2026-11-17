@@ -1,5 +1,6 @@
 import { type SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api, describe } from '../lib/client-api';
+import { guardToken } from '../lib/guard-client';
 import { Button } from '../ui/Button';
 
 interface Comment {
@@ -48,13 +49,11 @@ export default function Comments({
   loginHref,
   labels,
   locale,
-  siteKey,
 }: {
   postId: string;
   loginHref: string;
   labels: Labels;
   locale: 'en' | 'fa';
-  siteKey?: string;
 }) {
   const [items, setItems] = useState<Comment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -92,24 +91,20 @@ export default function Comments({
     composerRef.current?.querySelector('textarea')?.focus({ preventScroll: true });
   }, [replyTo]);
 
-  useEffect(() => {
-    if (!siteKey || document.getElementById('cf-turnstile-script')) return;
-    const s = document.createElement('script');
-    s.id = 'cf-turnstile-script';
-    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
-    s.async = true;
-    document.head.appendChild(s);
-  }, [siteKey]);
-
   const submit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (busy || !text.trim()) return;
     setBusy(true);
     setError('');
-    const turnstile =
-      (new FormData(e.currentTarget).get('cf-turnstile-response') as string | null) ?? undefined;
+    const website = (new FormData(e.currentTarget).get('website') as string | null) ?? undefined;
+    const guard = await guardToken().catch(() => null);
+    if (!guard) {
+      setBusy(false);
+      setError(labels.failed);
+      return;
+    }
     const r = await api<{ pending: boolean }>('/api/comments', {
-      json: { post: postId, body: text, parent: replyTo ?? undefined, turnstile },
+      json: { post: postId, body: text, parent: replyTo ?? undefined, guard, website },
     });
     setBusy(false);
     if (!r.ok) {
@@ -190,7 +185,14 @@ export default function Comments({
         aria-label={target ? `${labels.replyingTo} ${target.author}` : labels.placeholder}
         required
       />
-      {siteKey && <div className="cf-turnstile" data-sitekey={siteKey} />}
+      <input
+        className="hp"
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+      />
       <Button size="lg" type="submit" disabled={busy}>
         {target ? labels.reply : labels.post}
       </Button>

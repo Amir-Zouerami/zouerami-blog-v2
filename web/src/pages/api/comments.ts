@@ -2,9 +2,9 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { created, fail, ok, readJson } from '../../lib/api';
 import { authed } from '../../lib/auth/guards';
+import { verifyGuard } from '../../lib/guard';
 import { getLog } from '../../lib/log';
 import { anonPb, isRejected, pbStatus, userPb } from '../../lib/pb';
-import { verifyTurnstile } from '../../lib/turnstile';
 
 export const prerender = false;
 
@@ -13,7 +13,8 @@ const Create = z.object({
   post: Id,
   body: z.string().trim().min(1).max(2000),
   parent: Id.optional(),
-  turnstile: z.string().optional(),
+  guard: z.string().optional(),
+  website: z.string().max(200).optional(),
 });
 
 interface Row {
@@ -56,12 +57,12 @@ export const GET: APIRoute = async ({ url, cookies, locals }) => {
   }
 };
 
-export const POST = authed(async ({ request, clientAddress }, { user, pb }) => {
+export const POST = authed(async ({ request }, { user, pb }) => {
   const log = getLog();
   const body = await readJson(request, Create, 'Write between 1 and 2000 characters.');
   if (!body.ok) return body.response;
-  if (!(await verifyTurnstile(body.data.turnstile, clientAddress))) {
-    log.warn({ userId: user.id }, 'comment refused: Turnstile verification failed');
+  if (!verifyGuard(body.data.guard, body.data.website)) {
+    log.warn({ userId: user.id }, 'comment refused: bot guard failed');
     return fail(400, 'verification_failed', 'Verification failed. Please try again.');
   }
   try {

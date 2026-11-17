@@ -35,8 +35,4 @@ describe('parseConfig', () => {
   it('rejects a malformed SITE_URL', () => {
     expect(() => parseConfig({ ...ok, SITE_URL: 'not a url' })).toThrow(/SITE_URL/);
   });
-  it('turnstile keys are optional', () => {
-    expect(parseConfig(ok).turnstile).toEqual({ siteKey: undefined, secret: undefined });
-    expect(parseConfig({ ...ok, TURNSTILE_SECRET: 's' }).turnstile.secret).toBe('s');
-  });
 });

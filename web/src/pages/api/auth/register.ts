@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { created, fail, readJson } from '../../../lib/api';
+import { verifyGuard } from '../../../lib/guard';
 import { cleanText } from '../../../lib/http';
 import { getLog, maskEmail } from '../../../lib/log';
 import { anonPb, pbStatus } from '../../../lib/pb';
-import { verifyTurnstile } from '../../../lib/turnstile';
 
 export const prerender = false;
 
@@ -12,11 +12,12 @@ export const Body = z.object({
   email: z.email().max(200),
   password: z.string().min(10, 'Use at least 10 characters').max(128),
   name: z.string().trim().min(1).max(60),
-  turnstile: z.string().optional(),
+  guard: z.string().optional(),
+  website: z.string().max(200).optional(),
 });
 
 /** Creates the account and emails a verification link. Existing addresses get the same answer (no enumeration). */
-export const POST: APIRoute = async ({ request, clientAddress }) => {
+export const POST: APIRoute = async ({ request }) => {
   const log = getLog();
   const body = await readJson(
     request,
@@ -24,8 +25,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     'Please check the form: valid email, name and a password of at least 10 characters.',
   );
   if (!body.ok) return body.response;
-  if (!(await verifyTurnstile(body.data.turnstile, clientAddress))) {
-    log.warn('register refused: Turnstile verification failed');
+  if (!verifyGuard(body.data.guard, body.data.website)) {
+    log.warn('register refused: bot guard failed');
     return fail(400, 'verification_failed', 'Verification failed. Please try again.');
   }
 

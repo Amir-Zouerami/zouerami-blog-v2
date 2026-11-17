@@ -187,7 +187,7 @@ describe('logging', () => {
     log.info(
       {
         password: 'hunter2',
-        body: { password: 'hunter3', token: 'tok', turnstile: 'cf' },
+        body: { password: 'hunter3', token: 'tok', guard: 'cf' },
         headers: { cookie: 'session=abc', authorization: 'Bearer x' },
       },
       'x',
