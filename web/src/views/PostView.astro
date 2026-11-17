@@ -76,7 +76,7 @@ const jsonLd =
       <div style="margin-bottom:26px">{post.tags.map((tg) => <span class="tagp">{tg}</span>)} </div>
       <h1 dir={dirOf(post.lang)} lang={post.lang}>{post.title}</h1>
       <div class="meta-grid meta-3">
-        <div><span class="mono muted">{tr.post.published}</span><p><bdi dir={locale === 'fa' ? 'rtl' : 'ltr'}>{formatDate(post.date, locale, true)}</bdi></p></div>
+        <div><span class="mono muted">{tr.post.published}</span><p><time datetime={new Date(post.date.replace(' ', 'T')).toISOString()}><bdi dir={locale === 'fa' ? 'rtl' : 'ltr'}>{formatDate(post.date, locale, true)}</bdi></time></p></div>
         <div><span class="mono muted">{tr.post.reading}</span><p>{fmt(data.minutes)} {tr.post.min}</p></div>
         <div><span class="mono muted">{tr.post.views}</span><p id="views">{fmt(post.views)}</p></div>
       </div>
