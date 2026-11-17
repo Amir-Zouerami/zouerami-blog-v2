@@ -1,4 +1,4 @@
-# zouerami.dev — blog + portfolio v2
+# amir-zouerami.dev — blog + portfolio v2
 
 Astro (server-rendered) + React 19 islands + Tailwind, content/auth in PocketBase, nginx in front, all in Docker Compose.
 Design source of truth: `../../design-mockups/round-2/s-signal-refined`. Spec and plans: `docs/planning/`.

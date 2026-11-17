@@ -2,8 +2,8 @@
 // and fills in the action link and site URL. Handlers are isolated, so hooks load this with require().
 
 const SUBJECTS = {
-  verify: 'Verify your email for zouerami.dev',
-  reset: 'Reset your zouerami.dev password',
+  verify: 'Verify your email for amir-zouerami.dev',
+  reset: 'Reset your amir-zouerami.dev password',
   subscribe: 'Confirm your subscription',
 };
 

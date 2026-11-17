@@ -4,7 +4,7 @@ import { parseConfig } from '../../src/lib/config';
 const ok = {
   PB_URL: 'http://pb:8090/',
   PB_PUBLIC_URL: '/pb',
-  SITE_URL: 'https://zouerami.dev/',
+  SITE_URL: 'https://amir-zouerami.dev/',
   AUTH_SECRET: 'x'.repeat(40),
 };
 
@@ -20,8 +20,8 @@ describe('parseConfig', () => {
     expect(c).toMatchObject({
       pbUrl: 'http://pb:8090',
       pbPublicUrl: '/pb',
-      siteUrl: 'https://zouerami.dev',
-      siteHost: 'zouerami.dev',
+      siteUrl: 'https://amir-zouerami.dev',
+      siteHost: 'amir-zouerami.dev',
       secureCookies: true,
     });
     expect(parseConfig({ ...ok, SITE_URL: 'http://localhost:8088' }).secureCookies).toBe(false);

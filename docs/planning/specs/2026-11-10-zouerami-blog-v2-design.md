@@ -1,4 +1,4 @@
-# zouerami.dev — blog + portfolio v2 (design spec)
+# amir-zouerami.dev — blog + portfolio v2 (design spec)
 
 Owner: Amir Zouerami (امیر زوارمی). Status: agreed in conversation, written up 2026-11-10.
 Visual source of truth: `../../../../../design-mockups/round-2/s-signal-refined/` (+ `round-2/shared/`) — the "Signal, refined" mockups. The mockups are static HTML/CSS/JS; port them, don't redesign them.
@@ -55,14 +55,14 @@ Page transitions use Astro's client router with the wipe overlay persisted acros
 - Persian pages carry Persian `<title>`/description, e.g. «امیر زوارمی — توسعه‌دهنده و نویسنده». Search Console + Bing verification after launch. No redirects needed from v1 (dead).
 
 ## 8. Accounts, interaction, abuse
-- Email+password and GitHub/Google. Email verification + password reset via SMTP (provider TBD: Resend/Brevo; SPF/DKIM on zouerami.dev).
+- Email+password and GitHub/Google. Email verification + password reset via SMTP (provider TBD: Resend/Brevo; SPF/DKIM on amir-zouerami.dev).
 - Cloudflare Turnstile on signup + comments; nginx rate limits; first-comment moderation.
 - View counts: tiny client beacon (pages are cached), once per visitor per day, bots ignored, no personal data.
 - Likes/bookmarks/comments are React islands; like fires a lazy canvas-confetti burst.
 - Privacy page and account deletion.
 
 ## 9. Infrastructure
-- Domain zouerami.dev (HTTPS-only TLD: TLS is mandatory). **No VPS yet**: develop locally with Compose; production compose + nginx + Let's Encrypt (certbot) written for the future VPS.
+- Domain amir-zouerami.dev (HTTPS-only TLD: TLS is mandatory). **No VPS yet**: develop locally with Compose; production compose + nginx + Let's Encrypt (certbot) written for the future VPS.
 - nginx: caches rendered HTML briefly and invalidates/short-TTLs on publish; long-cache for fingerprinted assets; proxies `/pb/` to PocketBase.
 - **Nightly PocketBase backups copied off-site** (object storage). Non-negotiable.
 - Admin for v1 = PocketBase's built-in dashboard. A custom admin is a separate later project.

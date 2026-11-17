@@ -48,7 +48,7 @@ services:
       - '80:80'
       - '443:443'
     environment:
-      SERVER_NAME: ${SERVER_NAME:-zouerami.dev}
+      SERVER_NAME: ${SERVER_NAME:-amir-zouerami.dev}
       CACHE_TTL: ${CACHE_TTL:-60}
       NGINX_ENVSUBST_FILTER: '^(SERVER_NAME|CACHE_TTL)$$'
     volumes:
