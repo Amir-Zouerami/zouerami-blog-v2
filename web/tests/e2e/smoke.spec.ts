@@ -61,3 +61,40 @@ test('only the public PocketBase endpoints are reachable through nginx (no bot-g
   }
   expect((await request.get('/pb/api/health')).status()).toBe(200);
 });
+
+test.describe('search engines', () => {
+  test('a trailing slash redirects permanently to the one canonical URL', async ({ request }) => {
+    const res = await request.get('/blog/', { maxRedirects: 0 });
+    expect(res.status()).toBe(301);
+    expect(res.headers().location).toBe('/blog');
+    const q = await request.get('/fa/blog/?tag=Design', { maxRedirects: 0 });
+    expect(q.headers().location).toBe('/fa/blog?tag=Design');
+  });
+
+  test('robots.txt, manifest, icons and security.txt are served', async ({ request }) => {
+    expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /pb/');
+    const manifest = (await (await request.get('/site.webmanifest')).json()) as {
+      icons: unknown[];
+    };
+    expect(manifest.icons.length).toBeGreaterThan(1);
+    for (const path of ['/apple-touch-icon.png', '/icon-192.png', '/icon-512.png'])
+      expect((await request.get(path)).status()).toBe(200);
+    expect(await (await request.get('/.well-known/security.txt')).text()).toContain('Contact:');
+  });
+
+  test('pages are indexable with a canonical URL, theme colour and large image previews', async ({
+    page,
+  }) => {
+    await page.goto('/blog/hello-bilingual');
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute(
+      'href',
+      /\/blog\/hello-bilingual$/,
+    );
+    await expect(page.locator('meta[name=robots]')).toHaveAttribute(
+      'content',
+      /max-image-preview:large/,
+    );
+    await expect(page.locator('meta[name=theme-color]').first()).toHaveAttribute('content', /#/);
+    await expect(page.locator('time[datetime]')).toHaveCount(1);
+  });
+});

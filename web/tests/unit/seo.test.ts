@@ -76,6 +76,8 @@ describe('rss + robots + escaping', () => {
     expect(r).toContain('Sitemap: https://amir-zouerami.dev/sitemap.xml');
     expect(r).toContain('Disallow: /api/');
     expect(r).toContain('Disallow: /account');
+    for (const p of ['/pb/', '/fa/forgot', '/fa/reset', '/fa/verify', '/unsubscribe'])
+      expect(r).toContain(`Disallow: ${p}`);
   });
 });
 

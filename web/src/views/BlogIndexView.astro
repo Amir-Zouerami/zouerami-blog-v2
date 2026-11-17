@@ -43,7 +43,7 @@ const count = (t: string) => (t === 'all' ? all.length : all.filter((p) => p.tag
 const num = (n: number) => formatNumber(n, locale);
 ---
 {page.kind === 'unavailable' ? <Unavailable {locale} /> : (
-<Base title={`${tr.blog.title} — zouerami`} description={tr.blog.description} {locale} nav="blog">
+<Base title={`${tr.blog.title}${paged.page > 1 ? ` · ${num(paged.page)}` : ''} — zouerami`} description={tr.blog.description} {locale} nav="blog" canonical={paged.page > 1 && plain ? pageHref(paged.page) : undefined}>
   <main id="main" class="pad">
     <div style="padding-block:70px 20px"><span class="mono muted">{tr.blog.crumb}</span><h1 class="h-big" style="margin-top:14px">{tr.blog.title}<sup class="mono" style="color:var(--acc);font-size:16px;vertical-align:top">{num(list.length)}</sup></h1></div>
     <form class="search-in" method="get" action={localePath(locale, '/blog')} role="search">

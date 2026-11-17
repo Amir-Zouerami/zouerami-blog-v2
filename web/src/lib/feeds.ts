@@ -95,6 +95,7 @@ export function robotsTxt(site: string): string {
   return `User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /pb/
 Disallow: /admin
 Disallow: /account
 Disallow: /fa/account
@@ -103,8 +104,15 @@ Disallow: /fa/login
 Disallow: /register
 Disallow: /fa/register
 Disallow: /forgot
+Disallow: /fa/forgot
 Disallow: /reset
+Disallow: /fa/reset
 Disallow: /verify
+Disallow: /fa/verify
+Disallow: /unsubscribe
+Disallow: /fa/unsubscribe
+Disallow: /subscribe/
+Disallow: /fa/subscribe/
 
 Sitemap: ${absoluteUrl(site, '/sitemap.xml')}
 `;
