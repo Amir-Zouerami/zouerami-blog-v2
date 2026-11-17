@@ -7,7 +7,7 @@ const Schema = z.object({
   PB_URL: z.string().min(1),
   /** Browser-facing PocketBase URL (proxied by nginx, e.g. `/pb`). */
   PB_PUBLIC_URL: z.string().min(1),
-  /** Canonical public origin, e.g. https://zouerami.dev. https ⇒ Secure cookies. */
+  /** Canonical public origin, e.g. https://amir-zouerami.dev. https ⇒ Secure cookies. */
   SITE_URL: z.url(),
   /** Signs session JWTs. Never ship the placeholder from .env.example. */
   AUTH_SECRET: z

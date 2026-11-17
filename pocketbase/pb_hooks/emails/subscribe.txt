@@ -6,5 +6,5 @@ Confirm subscription: {{URL}}
 
 If this was not you, ignore this email and nothing will be sent.
 
-zouerami.dev · Amir Zouerami
+amir-zouerami.dev · Amir Zouerami
 {{SITE}}

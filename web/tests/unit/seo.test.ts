@@ -4,7 +4,7 @@ import { blogPostingLd, breadcrumbLd, personLd } from '../../src/lib/jsonld';
 import { ogSvg, renderOg, wrapTitle } from '../../src/lib/og';
 import type { PostSummary, ProjectSummary } from '../../src/lib/schemas';
 
-const SITE = 'https://zouerami.dev';
+const SITE = 'https://amir-zouerami.dev';
 const post = (o: Partial<PostSummary>): PostSummary => ({
   featured: false,
   slug: 'a',
@@ -28,14 +28,14 @@ describe('sitemap', () => {
     [{ slug: 'lumen' } as ProjectSummary],
   );
   it('lists both languages for bilingual posts with hreflang pairs and x-default', () => {
-    expect(xml).toContain('<loc>https://zouerami.dev/blog/both</loc>');
-    expect(xml).toContain('<loc>https://zouerami.dev/fa/blog/both</loc>');
-    expect(xml).toContain('hreflang="x-default" href="https://zouerami.dev/blog/both"');
+    expect(xml).toContain('<loc>https://amir-zouerami.dev/blog/both</loc>');
+    expect(xml).toContain('<loc>https://amir-zouerami.dev/fa/blog/both</loc>');
+    expect(xml).toContain('hreflang="x-default" href="https://amir-zouerami.dev/blog/both"');
   });
   it('lists only the existing language for single-language posts', () => {
-    expect(xml).toContain('<loc>https://zouerami.dev/fa/blog/fa-only</loc>');
-    expect(xml).not.toContain('<loc>https://zouerami.dev/blog/fa-only</loc>');
-    expect(xml).not.toContain('hreflang="en" href="https://zouerami.dev/blog/fa-only"');
+    expect(xml).toContain('<loc>https://amir-zouerami.dev/fa/blog/fa-only</loc>');
+    expect(xml).not.toContain('<loc>https://amir-zouerami.dev/blog/fa-only</loc>');
+    expect(xml).not.toContain('hreflang="en" href="https://amir-zouerami.dev/blog/fa-only"');
   });
   it('includes static pages and projects in both languages', () => {
     for (const p of [
@@ -61,7 +61,7 @@ describe('rss + robots + escaping', () => {
   it('escapes XML and links to the right language', () => {
     const xml = rssXml(SITE, 'fa', [post({ slug: 'x' })]);
     expect(xml).toContain('A &amp; B &lt;title&gt;');
-    expect(xml).toContain('<link>https://zouerami.dev/fa/blog/x</link>');
+    expect(xml).toContain('<link>https://amir-zouerami.dev/fa/blog/x</link>');
     expect(xml).toContain('<language>fa-IR</language>');
     expect(xml).not.toContain('<title>A & B');
   });
@@ -73,7 +73,7 @@ describe('rss + robots + escaping', () => {
   });
   it('robots points at the sitemap and blocks api/account', () => {
     const r = robotsTxt(SITE);
-    expect(r).toContain('Sitemap: https://zouerami.dev/sitemap.xml');
+    expect(r).toContain('Sitemap: https://amir-zouerami.dev/sitemap.xml');
     expect(r).toContain('Disallow: /api/');
     expect(r).toContain('Disallow: /account');
   });
@@ -100,7 +100,7 @@ describe('json-ld', () => {
     });
     expect(d.inLanguage).toBe('fa-IR');
     expect(d.datePublished).toBe('2026-11-02T12:00:00.000Z');
-    expect(d.image).toBe('https://zouerami.dev/og/fa/a.png');
+    expect(d.image).toBe('https://amir-zouerami.dev/og/fa/a.png');
     expect(d.keywords).toBe('x, y');
   });
   it('breadcrumbs are positioned from 1', () => {

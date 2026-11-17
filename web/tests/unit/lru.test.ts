@@ -24,14 +24,14 @@ describe('Lru', () => {
 });
 
 describe('isCrossSiteWrite', () => {
-  const hosts = ['localhost:8088', 'zouerami.dev'];
+  const hosts = ['localhost:8088', 'amir-zouerami.dev'];
   it('allows same-site writes (either the request host or the public host)', () => {
     expect(isCrossSiteWrite('POST', 'http://localhost:8088', hosts)).toBe(false);
-    expect(isCrossSiteWrite('DELETE', 'https://zouerami.dev', hosts)).toBe(false);
+    expect(isCrossSiteWrite('DELETE', 'https://amir-zouerami.dev', hosts)).toBe(false);
   });
   it('blocks writes from other origins and malformed origins', () => {
     expect(isCrossSiteWrite('POST', 'https://evil.example', hosts)).toBe(true);
-    expect(isCrossSiteWrite('PATCH', 'https://zouerami.dev.evil.example', hosts)).toBe(true);
+    expect(isCrossSiteWrite('PATCH', 'https://amir-zouerami.dev.evil.example', hosts)).toBe(true);
     expect(isCrossSiteWrite('POST', 'null', hosts)).toBe(true);
   });
   it('never blocks reads or requests without an Origin header', () => {

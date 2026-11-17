@@ -1,6 +1,6 @@
 #!/bin/sh
 # One-time certificate issuance for a fresh VPS. Run from the repo root AFTER DNS points at the server.
-#   SERVER_NAME=zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh
+#   SERVER_NAME=amir-zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh
 set -eu
 : "${SERVER_NAME:?set SERVER_NAME}"
 : "${EMAIL:?set EMAIL}"

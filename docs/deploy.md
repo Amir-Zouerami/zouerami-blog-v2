@@ -1,12 +1,12 @@
-# Deploying zouerami.dev to a VPS
+# Deploying amir-zouerami.dev to a VPS
 
 > Nothing here has been run against a real server yet. The VPS work is intentionally the last step.
 > Everything below is idempotent and can be done by hand or scripted.
 
 ## 0. Prerequisites
 - A VPS (≥ 2 GB RAM, 2 vCPU is plenty), Debian/Ubuntu, with a public IPv4.
-- DNS: `A zouerami.dev → <ip>` and `A www.zouerami.dev → <ip>` (switch these only when the stack is ready; .dev needs HTTPS so the site is unreachable until step 4).
-- An SMTP provider (Resend/Brevo) with SPF + DKIM records for `zouerami.dev`, an S3-compatible bucket for backups (Backblaze B2 / R2 / S3), Cloudflare Turnstile keys, optional GitHub/Google OAuth apps.
+- DNS: `A amir-zouerami.dev → <ip>` and `A www.amir-zouerami.dev → <ip>` (switch these only when the stack is ready; .dev needs HTTPS so the site is unreachable until step 4).
+- An SMTP provider (Resend/Brevo) with SPF + DKIM records for `amir-zouerami.dev`, an S3-compatible bucket for backups (Backblaze B2 / R2 / S3), Cloudflare Turnstile keys, optional GitHub/Google OAuth apps.
 
 ## 1. Harden the server (ask before locking yourself out)
 ```sh
@@ -28,32 +28,32 @@ cp .env.example .env && chmod 600 .env
 Edit `.env` (all required in production):
 | Variable | Notes |
 |---|---|
-| `SITE_URL` | `https://zouerami.dev` (https ⇒ cookies get `Secure`) |
+| `SITE_URL` | `https://amir-zouerami.dev` (https ⇒ cookies get `Secure`) |
 | `AUTH_SECRET` | `openssl rand -base64 48` |
 | `PB_SUPERUSER_EMAIL/PASSWORD` | strong, unique; creates the admin on boot |
 | `SMTP_*`, `MAIL_FROM` | verification, reset and newsletter mail |
 | `TURNSTILE_SITE_KEY/SECRET` | sign-up, password reset, comments, newsletter |
 | `S3_BACKUP_*` | nightly off-site backup (see §6) |
-| `SERVER_NAME`, `CACHE_TTL` | `zouerami.dev`, `60` |
+| `SERVER_NAME`, `CACHE_TTL` | `amir-zouerami.dev`, `60` |
 
 Build images locally or in CI (`.github/workflows/release.yml` pushes `ghcr.io/<owner>/zouerami-{web,pocketbase}`); set `WEB_IMAGE` / `POCKETBASE_IMAGE` in `.env` to pull them instead of building on the VPS.
 
 ## 4. First start and TLS
 ```sh
 docker compose -f compose.prod.yaml up -d pocketbase web
-SERVER_NAME=zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh   # after DNS resolves
+SERVER_NAME=amir-zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh   # after DNS resolves
 docker compose -f compose.prod.yaml up -d
 ```
 Certificates renew automatically (the `certbot` container checks twice a day; nginx reloads every 12 h).
 
 ## 5. First content
-Write in the back office at `https://zouerami.dev/admin`: first sign up on the site, verify your email, then `docker compose -f compose.prod.yaml exec web bun run make-admin …` is not available in the runtime image, so promote yourself from the PocketBase dashboard instead (users → your row → role = admin) via the tunnel below.
+Write in the back office at `https://amir-zouerami.dev/admin`: first sign up on the site, verify your email, then `docker compose -f compose.prod.yaml exec web bun run make-admin …` is not available in the runtime image, so promote yourself from the PocketBase dashboard instead (users → your row → role = admin) via the tunnel below.
 
 PocketBase's own admin UI is **not public**. Tunnel to it: `ssh -L 8090:127.0.0.1:8090 deploy@<ip>` then open <http://127.0.0.1:8090/_/>.
 - Create posts (`posts`), then one `post_translations` row per language (`en` / `fa`). Status `draft` is invisible; set `preview_token` to preview a draft at `/blog/<slug>?token=<token>`.
 - Moderate comments in `comments` (change `status` from `pending` to `approved`/`rejected`). A user's first comment is held; later ones publish automatically.
-- OAuth: Collections → users → Options → OAuth2 → enable GitHub/Google; redirect URL `https://zouerami.dev/api/auth/oauth/callback`.
-- Search Console / Bing: verify the domain (DNS TXT) and submit `https://zouerami.dev/sitemap.xml`.
+- OAuth: Collections → users → Options → OAuth2 → enable GitHub/Google; redirect URL `https://amir-zouerami.dev/api/auth/oauth/callback`.
+- Search Console / Bing: verify the domain (DNS TXT) and submit `https://amir-zouerami.dev/sitemap.xml`.
 - After publishing, run `sh deploy/purge-cache.sh` to show it immediately (otherwise it appears within `CACHE_TTL` seconds).
 
 ## 6. Backups (non-negotiable)
@@ -63,7 +63,17 @@ docker compose -f compose.prod.yaml exec pocketbase ls /pb_data/backups
 ```
 **Restore:** stop the stack, replace the `pb_data` volume contents with the unzipped backup (`data.db`, `auxiliary.db`, `storage/`), start again. Test a restore on a scratch machine once.
 
-## 7. Updating and rollback
+## 7. Automatic deploys (GitHub Actions)
+Pushing to `main` runs: tests (`ci.yml`) → builds both images and pushes them to GHCR → copies `compose.prod.yaml`, `nginx/` and `deploy/` to the server over SSH → runs `deploy/deploy.sh`, which pulls the new images, restarts, checks health and **rolls back to the previous images if the check fails**. `.env` is never touched by CI; it lives only on the server.
+
+One-time setup:
+1. Make a deploy key on your machine: `ssh-keygen -t ed25519 -f deploy_key -N "" -C github-deploy`
+2. On the server as root: `DEPLOY_PUBKEY="<contents of deploy_key.pub>" sh bootstrap-server.sh` (copy `deploy/bootstrap-server.sh` there first). Then create `/srv/zouerami/.env` from `.env.example` (§3), `chmod 600`, owned by `deploy`.
+3. GitHub → repo → Settings → Secrets and variables → Actions → add secrets `DEPLOY_SSH_KEY` (contents of `deploy_key`, the private half) and `DEPLOY_KNOWN_HOSTS` (output of `ssh-keyscan -t ed25519 193.151.146.197`, checked against the fingerprint your host shows). Optional variables: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (defaults: `193.151.146.197`, `deploy`, `/srv/zouerami`). Create an environment named `production` (Settings → Environments); add yourself as a required reviewer if you want a click-to-approve gate.
+4. First certificate, once DNS resolves: on the server `cd /srv/zouerami && SERVER_NAME=amir-zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh`. The first CI deploy then works as usual (nginx starts only after the certificate exists, so do step 4 before the first push to `main`).
+5. Delete the local `deploy_key` files when done.
+
+## 8. Updating by hand and rollback
 ```sh
 git pull && docker compose -f compose.prod.yaml build web pocketbase   # or pull new image tags
 docker compose -f compose.prod.yaml up -d

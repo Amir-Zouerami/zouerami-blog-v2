@@ -20,7 +20,7 @@ export interface EmailCopy {
 
 export const COPY: Record<EmailKind, EmailCopy> = {
   verify: {
-    subject: 'Verify your email for zouerami.dev',
+    subject: 'Verify your email for amir-zouerami.dev',
     preheader: 'One click to finish creating your account.',
     title: 'Confirm your',
     titleEm: 'email.',
@@ -29,7 +29,7 @@ export const COPY: Record<EmailKind, EmailCopy> = {
     note: 'If you did not sign up, you can safely ignore this message.',
   },
   reset: {
-    subject: 'Reset your zouerami.dev password',
+    subject: 'Reset your amir-zouerami.dev password',
     preheader: 'Choose a new password. The link expires soon.',
     title: 'Reset your',
     titleEm: 'password.',
@@ -89,7 +89,7 @@ export function renderEmail(kind: EmailKind): string {
     </td></tr>
     <tr><td class="pad" style="padding:44px 40px 8px;text-align:left">
       <span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:${C.acc}"></span>
-      <span style="font:500 12px/16px ${MONO};letter-spacing:1px;text-transform:uppercase;color:${C.muted}">&nbsp;zouerami.dev</span>
+      <span style="font:500 12px/16px ${MONO};letter-spacing:1px;text-transform:uppercase;color:${C.muted}">&nbsp;amir-zouerami.dev</span>
     </td></tr>
     <tr><td class="pad" style="padding:8px 40px 0;text-align:left">
       <h1 class="h1" style="margin:0;font:700 54px/56px ${SANS};letter-spacing:-2px;color:${C.fg}">${esc(c.title)}<br><span style="font:italic 400 54px/56px ${SERIF};color:${C.acc};letter-spacing:0">${esc(c.titleEm)}</span></h1>
@@ -104,7 +104,7 @@ export function renderEmail(kind: EmailKind): string {
     </td></tr>
     <tr><td class="pad" style="padding:36px 40px 0;text-align:left"><div style="border-top:1px solid ${C.line};padding-top:18px;font:14px/22px ${SANS};color:${C.muted}">${esc(c.note)}</div></td></tr>
     <tr><td class="pad" style="padding:22px 40px 0;font:12px/18px ${MONO};color:${C.muted};text-align:left">
-      zouerami.dev &nbsp;·&nbsp; Amir Zouerami<br>
+      amir-zouerami.dev &nbsp;·&nbsp; Amir Zouerami<br>
       <a href="{{SITE}}" style="color:${C.muted}">{{SITE}}</a>
     </td></tr>
   </table>
@@ -116,5 +116,5 @@ export function renderEmail(kind: EmailKind): string {
 /** Plain-text twin for clients (and spam filters) that want one. */
 export function renderText(kind: EmailKind): string {
   const c = COPY[kind];
-  return `${c.title} ${c.titleEm}\n\n${c.body}\n\n${c.button}: {{URL}}\n\n${c.note}\n\nzouerami.dev · Amir Zouerami\n{{SITE}}\n`;
+  return `${c.title} ${c.titleEm}\n\n${c.body}\n\n${c.button}: {{URL}}\n\n${c.note}\n\namir-zouerami.dev · Amir Zouerami\n{{SITE}}\n`;
 }

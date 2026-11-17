@@ -286,7 +286,7 @@ export const en = {
         'Your control',
         'You can delete your account at any time from the account page: your account, comments, likes and saved posts are removed. You can unsubscribe from the newsletter with the link in every email.',
       ],
-      ['Contact', 'hello@zouerami.dev'],
+      ['Contact', 'hello@amir-zouerami.dev'],
     ],
   },
 };

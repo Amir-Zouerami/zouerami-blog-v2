@@ -6,5 +6,5 @@ Verify email: {{URL}}
 
 If you did not sign up, you can safely ignore this message.
 
-zouerami.dev · Amir Zouerami
+amir-zouerami.dev · Amir Zouerami
 {{SITE}}

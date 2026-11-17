@@ -85,7 +85,7 @@ ${Array.from({ length: 11 }, (_, i) => `<rect x="${((i + 1) * W) / 12}" y="0" wi
 <rect x="${rtl ? W - pad - 120 : pad}" y="140" width="120" height="6" fill="#d4ff3a"/>
 ${text}
 <text x="${x}" y="${H - 64}" font-family="${rtl ? "'Vazirmatn'" : "'Bricolage Grotesque 96pt ExtraBold'"}" font-size="30" fill="#85857f" text-anchor="${anchor}" direction="${rtl ? 'rtl' : 'ltr'}" unicode-bidi="plaintext">${esc(rtl ? rtlIsolate(foot) : foot)}</text>
-<text x="${rtl ? pad : W - pad}" y="${H - 64}" font-family="'Bricolage Grotesque 96pt ExtraBold'" font-size="30" fill="#d4ff3a" text-anchor="${rtl ? 'start' : 'end'}">zouerami.dev</text>
+<text x="${rtl ? pad : W - pad}" y="${H - 64}" font-family="'Bricolage Grotesque 96pt ExtraBold'" font-size="30" fill="#d4ff3a" text-anchor="${rtl ? 'start' : 'end'}">amir-zouerami.dev</text>
 </svg>`;
 }
 

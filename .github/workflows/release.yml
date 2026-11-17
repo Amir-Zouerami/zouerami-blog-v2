@@ -1,4 +1,5 @@
 name: release
+# main: test -> build images -> deploy to the VPS. Tags v*: test -> build images only.
 on:
   push:
     branches: [main]
@@ -8,8 +9,16 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   images:
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,7 +42,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=tag
-            type=sha
+            type=sha,format=long
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
@@ -42,3 +51,40 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production # add required reviewers in the repo settings if you want a manual approval gate
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || '193.151.146.197' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/srv/zouerami' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: SSH setup
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Ship compose, nginx and deploy files
+        run: |
+          tar czf - compose.prod.yaml nginx deploy \
+            | ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH' && tar xzf - -C '$DEPLOY_PATH'"
+      - name: Deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          TAG="sha-${{ github.sha }}"
+          printf '%s' "$GHCR_TOKEN" | ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$DEPLOY_PATH' && WEB_IMAGE=ghcr.io/$OWNER/zouerami-web:$TAG POCKETBASE_IMAGE=ghcr.io/$OWNER/zouerami-pocketbase:$TAG sh deploy/deploy.sh"
+      - name: Smoke test
+        run: curl -fsSI --retry 6 --retry-delay 10 --retry-all-errors https://amir-zouerami.dev/ -o /dev/null
