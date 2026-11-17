@@ -6,7 +6,7 @@
 ## 0. Prerequisites
 - A VPS (≥ 2 GB RAM, 2 vCPU is plenty), Debian/Ubuntu, with a public IPv4.
 - DNS: `A amir-zouerami.dev → <ip>` and `A www.amir-zouerami.dev → <ip>` (switch these only when the stack is ready; .dev needs HTTPS so the site is unreachable until step 4).
-- An SMTP provider (Resend/Brevo) with SPF + DKIM records for `amir-zouerami.dev`, an S3-compatible bucket for backups (Backblaze B2 / R2 / S3), Cloudflare Turnstile keys, optional GitHub/Google OAuth apps.
+- An SMTP provider (Resend/Brevo) with SPF + DKIM records for `amir-zouerami.dev`, an S3-compatible bucket for backups (Backblaze B2 / R2 / S3), optional GitHub/Google OAuth apps.
 
 ## 1. Harden the server (ask before locking yourself out)
 ```sh
@@ -32,7 +32,6 @@ Edit `.env` (all required in production):
 | `AUTH_SECRET` | `openssl rand -base64 48` |
 | `PB_SUPERUSER_EMAIL/PASSWORD` | strong, unique; creates the admin on boot |
 | `SMTP_*`, `MAIL_FROM` | verification, reset and newsletter mail |
-| `TURNSTILE_SITE_KEY/SECRET` | sign-up, password reset, comments, newsletter |
 | `S3_BACKUP_*` | nightly off-site backup (see §6) |
 | `SERVER_NAME`, `CACHE_TTL` | `amir-zouerami.dev`, `60` |
 
@@ -81,7 +80,7 @@ docker compose -f compose.prod.yaml up -d
 Rollback: check out the previous commit/tag and repeat. Migrations are forward-only; the pre-deploy nightly backup is the safety net.
 
 ## Security notes
-- Through nginx the browser can reach only four PocketBase endpoints (uploaded files, the view beacon, newsletter confirm/unsubscribe, health); every other `/pb/*` path is 404, so sign-up, comments and writes always go through the web app (Turnstile, validation, rate limits). The web app talks to PocketBase on the private Docker network.
+- Through nginx the browser can reach only four PocketBase endpoints (uploaded files, the view beacon, newsletter confirm/unsubscribe, health); every other `/pb/*` path is 404, so sign-up, comments and writes always go through the web app (the bot guard, validation, rate limits). The web app talks to PocketBase on the private Docker network.
 - Rate limits: sign-in/up/reset 10 req/min/IP, writes 30/min, pages 600/min (nginx `limit_req`).
 - Cookies: `session` (10 min JWT) and `refresh` are httpOnly, SameSite=Lax, Secure over HTTPS; state-changing API calls also check `Origin`.
-- CSP allows only self + Cloudflare Turnstile; there are no third-party fonts or analytics.
+- CSP allows only this site itself; there are no third-party fonts or analytics.

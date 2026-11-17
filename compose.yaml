@@ -41,8 +41,6 @@ services:
       PB_PUBLIC_URL: ${PB_PUBLIC_URL}
       SITE_URL: ${SITE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
-      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
-      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_PRETTY: ${LOG_PRETTY:-false}
     depends_on:

@@ -1,4 +1,5 @@
 import { api, describe } from '../lib/client-api';
+import { guardToken } from '../lib/guard-client';
 
 /** Progressive enhancement for the account forms: posts JSON, shows messages, never leaves the page on error. */
 const w = window as unknown as { __authForms?: boolean };
@@ -16,16 +17,20 @@ async function submit(form: HTMLFormElement) {
   const msgs = JSON.parse(form.dataset.msgs ?? '{}') as Msgs;
   const next = new URLSearchParams(location.search).get('next') ?? '';
   const data = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
-  if (data['cf-turnstile-response']) {
-    data.turnstile = data['cf-turnstile-response'];
-    delete data['cf-turnstile-response'];
-  }
   const token = new URLSearchParams(location.search).get('token');
   if (token && form.dataset.useToken !== undefined) data.token = token;
   const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
   if (btn) btn.disabled = true;
   say(form, '', 'ok');
   try {
+    if (form.dataset.guard !== undefined) {
+      const guard = await guardToken().catch(() => null);
+      if (!guard) {
+        say(form, msgs.generic ?? '');
+        return;
+      }
+      data.guard = guard;
+    }
     const res = await api(form.dataset.endpoint ?? '', {
       method: form.dataset.method ?? 'POST',
       json: data,

@@ -99,7 +99,7 @@ const jsonLd =
         {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
         {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(tr.post.langNames[post.lang])}</p>}
         <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={data.html}></div>
-        {!post.preview && <Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} siteKey={getConfig().turnstile.siteKey} />}
+        {!post.preview && <Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} />}
       </article>
       <div></div>
     </div>

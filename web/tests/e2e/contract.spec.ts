@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import { envelope } from './envelope';
+import { guard } from './guard';
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g'); // colour codes from pino-pretty
 
@@ -138,7 +139,12 @@ test.describe('regression: the UI reacts to sign-up', () => {
   test('an unverified user who signs in sees why, with a resend option', async ({ page }) => {
     const email = `unv-${Date.now()}@example.com`;
     await page.request.post('/api/auth/register', {
-      data: { email, password: 'a-long-password-123', name: 'Unv' },
+      data: {
+        email,
+        password: 'a-long-password-123',
+        name: 'Unv',
+        guard: await guard(page.request),
+      },
     });
     await page.goto('/login');
     await page.waitForLoadState('networkidle');

@@ -120,8 +120,7 @@ export const en = {
     title: 'About',
     description: 'About Amir Zouerami: timeline, tools and what I am up to now.',
     crumb: 'Index / About',
-    statement:
-      'Backend engineer building distributed systems, and *writing* down what I learn.',
+    statement: 'Backend engineer building distributed systems, and *writing* down what I learn.',
     timeline: 'Timeline',
     uses: 'Uses',
     now: 'Now',
@@ -280,7 +279,7 @@ export const en = {
       ],
       [
         'Third parties',
-        'Cloudflare Turnstile may check that a sign-up or comment comes from a person. Email is sent through an email delivery provider. If you sign in with GitHub or Google, they tell me your name and email address.',
+        'Sign-up, comments and the newsletter form run a small anti-bot check in your browser; it runs on this site and sends nothing to anyone else. Email is sent through an email delivery provider. If you sign in with GitHub or Google, they tell me your name and email address.',
       ],
       [
         'Your control',

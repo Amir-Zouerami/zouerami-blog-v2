@@ -1,4 +1,5 @@
 import { api } from '../lib/client-api';
+import { guardToken } from '../lib/guard-client';
 
 /** Newsletter form: posts JSON, reports the outcome inline. Falls back to a normal form post without JS. */
 document.addEventListener('submit', async (e) => {
@@ -9,9 +10,12 @@ document.addEventListener('submit', async (e) => {
   const say = (text: string) => {
     if (msg) msg.textContent = text;
   };
-  const res = await api('/api/subscribe', {
-    json: Object.fromEntries(new FormData(form).entries()),
-  });
+  const guard = await guardToken().catch(() => null);
+  const res = guard
+    ? await api('/api/subscribe', {
+        json: { ...Object.fromEntries(new FormData(form).entries()), guard },
+      })
+    : { ok: false, status: 503 };
   say(
     res.ok
       ? (form.dataset.ok ?? '')

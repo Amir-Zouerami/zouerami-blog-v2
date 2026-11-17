@@ -46,7 +46,7 @@ test('index answers 503 with a friendly message when PocketBase is down', async 
   }
 });
 
-test('only the public PocketBase endpoints are reachable through nginx (no Turnstile bypass)', async ({
+test('only the public PocketBase endpoints are reachable through nginx (no bot-guard bypass)', async ({
   request,
 }) => {
   for (const path of [

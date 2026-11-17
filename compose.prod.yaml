@@ -1,5 +1,5 @@
 # Production stack for the VPS. Standalone (does not layer on compose.yaml).
-#   cp .env.example .env   # fill in: SITE_URL, AUTH_SECRET, PB_SUPERUSER_*, SMTP_*, S3_*, TURNSTILE_*, OAuth ids
+#   cp .env.example .env   # fill in: SITE_URL, AUTH_SECRET, PB_SUPERUSER_*, SMTP_*, S3_*, OAuth ids
 #   docker compose -f compose.prod.yaml up -d
 name: zouerami
 services:
@@ -31,8 +31,6 @@ services:
       PB_PUBLIC_URL: /pb
       SITE_URL: ${SITE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
-      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
-      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_PRETTY: 'false' # JSON lines for log shipping
     depends_on:
