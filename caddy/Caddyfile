@@ -1,0 +1,23 @@
+# Certificate manager for amir-zouerami.dev (see docs/cert-auto-renewal.md).
+# Caddy issues and renews two Let's Encrypt certificates on its own, about 30 days before they expire:
+#   *.amir-zouerami.dev   (wildcard: www, mail, and any other subdomain)
+#   amir-zouerami.dev     (the bare domain, which a wildcard does not cover)
+# Validation is DNS-01: Caddy adds a temporary _acme-challenge TXT record through the Parspack API.
+# Nothing is served from here and no port is published; nginx reads the certificate files from the shared volume.
+{
+	admin off
+	http_port 8080
+	https_port 8443
+	acme_ca {$ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+	acme_dns parspack {$PARSPACK_API_TOKEN}
+	skip_install_trust
+}
+
+*.{$SERVER_NAME}, {$SERVER_NAME} {
+	tls {
+		# Parspack's name servers are several machines that sync with a delay: wait before asking Let's Encrypt to check
+		propagation_delay 45s
+		propagation_timeout 5m
+	}
+	respond "certificate manager" 404
+}
