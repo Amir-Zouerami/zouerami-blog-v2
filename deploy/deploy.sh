@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs ON THE SERVER (called by .github/workflows/release.yml over SSH), from the app directory (/srv/zouerami).
-#   WEB_IMAGE=ghcr.io/o/zouerami-web:sha-… POCKETBASE_IMAGE=ghcr.io/o/zouerami-pocketbase:sha-… sh deploy/deploy.sh
+#   WEB_IMAGE=ghcr.io/o/zouerami-web:sha-… POCKETBASE_IMAGE=ghcr.io/o/zouerami-pocketbase:sha-… [CADDY_IMAGE=ghcr.io/o/zouerami-caddy:sha-…] sh deploy/deploy.sh
 # Pulls the two images, restarts the stack, waits for it to be healthy, and puts the previous images back if it is not.
 set -eu
 : "${WEB_IMAGE:?}"
@@ -16,10 +16,16 @@ getenv() { grep "^$1=" .env | head -1 | cut -d= -f2- || true; }
 
 PREV_WEB=$(getenv WEB_IMAGE)
 PREV_PB=$(getenv POCKETBASE_IMAGE)
+PREV_CADDY=$(getenv CADDY_IMAGE)
 setenv WEB_IMAGE "$WEB_IMAGE"
 setenv POCKETBASE_IMAGE "$POCKETBASE_IMAGE"
+SERVICES="web pocketbase"
+if [ -n "${CADDY_IMAGE:-}" ]; then
+  setenv CADDY_IMAGE "$CADDY_IMAGE"
+  SERVICES="$SERVICES caddy"
+fi
 
-$COMPOSE pull web pocketbase
+$COMPOSE pull $SERVICES
 $COMPOSE up -d --remove-orphans
 
 healthy() {
@@ -44,6 +50,7 @@ else
   if [ -n "$PREV_WEB" ] && [ -n "$PREV_PB" ]; then
     setenv WEB_IMAGE "$PREV_WEB"
     setenv POCKETBASE_IMAGE "$PREV_PB"
+    [ -n "$PREV_CADDY" ] && setenv CADDY_IMAGE "$PREV_CADDY"
     $COMPOSE up -d --remove-orphans
   fi
   $COMPOSE logs --tail=60 web nginx || true

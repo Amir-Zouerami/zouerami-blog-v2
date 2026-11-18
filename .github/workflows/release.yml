@@ -27,6 +27,8 @@ jobs:
             context: web
           - name: pocketbase
             context: pocketbase
+          - name: caddy
+            context: caddy
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -74,7 +76,7 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
       - name: Ship compose, nginx and deploy files
         run: |
-          tar czf - compose.prod.yaml nginx deploy \
+          tar czf - compose.prod.yaml nginx deploy caddy \
             | ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH' && tar xzf - -C '$DEPLOY_PATH'"
       - name: Deploy
         env:
@@ -85,6 +87,6 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | ssh "$DEPLOY_USER@$DEPLOY_HOST" \
             "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
           ssh "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd '$DEPLOY_PATH' && WEB_IMAGE=ghcr.io/$OWNER/zouerami-web:$TAG POCKETBASE_IMAGE=ghcr.io/$OWNER/zouerami-pocketbase:$TAG sh deploy/deploy.sh"
+            "cd '$DEPLOY_PATH' && WEB_IMAGE=ghcr.io/$OWNER/zouerami-web:$TAG POCKETBASE_IMAGE=ghcr.io/$OWNER/zouerami-pocketbase:$TAG CADDY_IMAGE=ghcr.io/$OWNER/zouerami-caddy:$TAG sh deploy/deploy.sh"
       - name: Smoke test
         run: curl -fsSI --retry 6 --retry-delay 10 --retry-all-errors https://amir-zouerami.dev/ -o /dev/null

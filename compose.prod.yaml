@@ -48,29 +48,48 @@ services:
     environment:
       SERVER_NAME: ${SERVER_NAME:-amir-zouerami.dev}
       CACHE_TTL: ${CACHE_TTL:-60}
-      NGINX_ENVSUBST_FILTER: '^(SERVER_NAME|CACHE_TTL)$$'
+      # where the caddy container stores the certificates (the directory name follows the ACME server in use)
+      CERT_DIR: /caddy-data/caddy/certificates/${ACME_CA_DIR:-acme-v02.api.letsencrypt.org-directory}
+      NGINX_ENVSUBST_FILTER: '^(SERVER_NAME|CACHE_TTL|CERT_DIR)$$'
     volumes:
       - ./nginx/prod.conf:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/proxy_web.conf:/etc/nginx/proxy_web.conf:ro
       - ./nginx/security_headers.conf:/etc/nginx/security_headers.conf:ro
-      - certs:/etc/letsencrypt:ro
-      - certbot_www:/var/www/certbot:ro
+      - caddy_data:/caddy-data:ro
       - nginx_cache:/var/cache/nginx
     security_opt: ['no-new-privileges:true']
-    depends_on: [web, pocketbase]
-    # re-read certificates after renewal
+    depends_on:
+      web: { condition: service_started }
+      pocketbase: { condition: service_started }
+      caddy: { condition: service_healthy }
+    # pick up renewed certificates: reload every 12 hours
     command: ['/bin/sh', '-c', 'while :; do sleep 12h & wait $${!}; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g "daemon off;"']
 
-  certbot:
-    image: certbot/certbot:v4.2.0
+  # Gets and renews the Let's Encrypt certificates (wildcard + bare domain) through the Parspack DNS API.
+  caddy:
+    image: ${CADDY_IMAGE:-zouerami-caddy:local}
+    build: ./caddy
     restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-amir-zouerami.dev}
+      PARSPACK_API_TOKEN: ${PARSPACK_API_TOKEN}
+      ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
     volumes:
-      - certs:/etc/letsencrypt
-      - certbot_www:/var/www/certbot
-    entrypoint: ['/bin/sh', '-c', 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done']
+      - caddy_data:/data
+      - caddy_config:/config
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    healthcheck:
+      # healthy once both certificates exist
+      test: ['CMD-SHELL', 'ls /data/caddy/certificates/*/$$SERVER_NAME/$$SERVER_NAME.crt /data/caddy/certificates/*/wildcard_.$$SERVER_NAME/wildcard_.$$SERVER_NAME.crt >/dev/null 2>&1']
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    deploy: { resources: { limits: { memory: 256m } } }
 
 volumes:
   pb_data:
-  certs:
-  certbot_www:
+  caddy_data:
+  caddy_config:
   nginx_cache:
