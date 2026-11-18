@@ -389,7 +389,11 @@ export default function MarkdownEditor({
           type="button"
           title="Undo (Ctrl+Z)"
           aria-label="Undo"
-          onClick={() => view.current && (undo(view.current), view.current.focus())}
+          onClick={() => {
+            if (!view.current) return;
+            undo(view.current);
+            view.current.focus();
+          }}
         >
           ↶
         </button>
@@ -397,7 +401,11 @@ export default function MarkdownEditor({
           type="button"
           title="Redo (Ctrl+Shift+Z)"
           aria-label="Redo"
-          onClick={() => view.current && (redo(view.current), view.current.focus())}
+          onClick={() => {
+            if (!view.current) return;
+            redo(view.current);
+            view.current.focus();
+          }}
         >
           ↷
         </button>

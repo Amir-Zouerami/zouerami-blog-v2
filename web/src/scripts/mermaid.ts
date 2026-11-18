@@ -283,7 +283,7 @@ export function watchMermaid(): void {
     if (e.key !== 'Escape') return;
     const full = document.querySelector<HTMLElement>('.mermaid-block.is-full');
     full
-      ?.querySelector<HTMLButtonElement>('.mm-btn[aria-label="' + labels().exitFullscreen + '"]')
+      ?.querySelector<HTMLButtonElement>(`.mm-btn[aria-label="${labels().exitFullscreen}"]`)
       ?.click();
   });
 }

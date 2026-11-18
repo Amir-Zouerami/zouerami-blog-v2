@@ -247,7 +247,10 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
       else running = false;
     });
     io.observe(el);
-    const vis = () => (document.hidden ? (running = false) : wake());
+    const vis = () => {
+      if (document.hidden) running = false;
+      else wake();
+    };
     document.addEventListener('visibilitychange', vis);
 
     return () => {
@@ -266,7 +269,7 @@ export default function Lanyard({ photo, name, role, id, hint, site }: Props) {
   return (
     <div className="lanyard" ref={box} aria-hidden="true">
       <i className="lanyard-strap-static" />
-      <svg className="lanyard-svg">
+      <svg className="lanyard-svg" role="presentation" focusable="false">
         <path ref={mid} id="lanyard-mid" fill="none" stroke="none" />
         <path ref={band} className="lanyard-band" />
         <path ref={stitchL} className="lanyard-stitch" fill="none" />
