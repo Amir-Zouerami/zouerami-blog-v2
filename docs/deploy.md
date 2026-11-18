@@ -38,12 +38,7 @@ Edit `.env` (all required in production):
 Build images locally or in CI (`.github/workflows/release.yml` pushes `ghcr.io/<owner>/zouerami-{web,pocketbase}`); set `WEB_IMAGE` / `POCKETBASE_IMAGE` in `.env` to pull them instead of building on the VPS.
 
 ## 4. First start and TLS
-```sh
-docker compose -f compose.prod.yaml up -d pocketbase web
-SERVER_NAME=amir-zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh   # after DNS resolves
-docker compose -f compose.prod.yaml up -d
-```
-Certificates renew automatically (the `certbot` container checks twice a day; nginx reloads every 12 h).
+Certificates are handled by the `caddy` container (wildcard `*.amir-zouerami.dev` + `amir-zouerami.dev`, DNS-01 through the Parspack API); nginx only reads them from a shared read-only volume and reloads every 12 h. Everything about issuing, renewing, forcing a renewal and troubleshooting is in `docs/cert-auto-renewal.md`. `compose.prod.yaml up -d` starts caddy first; nginx waits until caddy is healthy (both certificates exist).
 
 ## 5. First content
 Write in the back office at `https://amir-zouerami.dev/admin`: first sign up on the site, verify your email, then `docker compose -f compose.prod.yaml exec web bun run make-admin …` is not available in the runtime image, so promote yourself from the PocketBase dashboard instead (users → your row → role = admin) via the tunnel below.
@@ -69,7 +64,7 @@ One-time setup:
 1. Make a deploy key on your machine: `ssh-keygen -t ed25519 -f deploy_key -N "" -C github-deploy`
 2. On the server as root: `DEPLOY_PUBKEY="<contents of deploy_key.pub>" sh bootstrap-server.sh` (copy `deploy/bootstrap-server.sh` there first). Then create `/srv/zouerami/.env` from `.env.example` (§3), `chmod 600`, owned by `deploy`.
 3. GitHub → repo → Settings → Secrets and variables → Actions → add secrets `DEPLOY_SSH_KEY` (contents of `deploy_key`, the private half) and `DEPLOY_KNOWN_HOSTS` (output of `ssh-keyscan -t ed25519 193.151.146.197`, checked against the fingerprint your host shows). Optional variables: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (defaults: `193.151.146.197`, `deploy`, `/srv/zouerami`). Create an environment named `production` (Settings → Environments); add yourself as a required reviewer if you want a click-to-approve gate.
-4. First certificate, once DNS resolves: on the server `cd /srv/zouerami && SERVER_NAME=amir-zouerami.dev EMAIL=you@example.com sh deploy/init-letsencrypt.sh`. The first CI deploy then works as usual (nginx starts only after the certificate exists, so do step 4 before the first push to `main`).
+4. Certificates: nothing to do by hand. Put `PARSPACK_API_TOKEN` in `/srv/zouerami/.env` (see `docs/cert-auto-renewal.md`); the `caddy` container gets and renews them, and nginx starts once they exist.
 5. Delete the local `deploy_key` files when done.
 
 ## 8. Updating by hand and rollback

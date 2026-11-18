@@ -14,7 +14,7 @@ on the laptop and `/srv/zouerami` on the server (`193.151.146.197`, user `deploy
 | `caddy_data` volume | Docker volume `zouerami_caddy_data` on the server | Holds the certificates and private keys (and the ACME account). **Back this up or you re-issue everything.** |
 | `nginx` container | `compose.prod.yaml`, config `nginx/prod.conf` | Serves the site over HTTPS using the files Caddy wrote. Reads the volume read-only. Reloads itself every 12 hours to pick up renewed files. |
 
-The old `certbot` container and `deploy/init-letsencrypt.sh` are gone (the script file may still be in the repo: delete it, it no longer works).
+The old `certbot` container and `deploy/init-letsencrypt.sh` are gone.
 
 ## 2. Why wildcard needs DNS
 
