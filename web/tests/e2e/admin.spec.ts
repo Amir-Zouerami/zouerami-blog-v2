@@ -359,11 +359,16 @@ test.describe('back office UI', () => {
     await page.goto('/admin#/subscribers');
     await expect(page.getByRole('heading', { name: 'Subscribers' })).toBeVisible();
     await page.goto('/admin#/users');
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
+    // wait for the list itself: without it the pager does not exist yet and the loop below would stop at once
+    await expect(page.locator('tbody tr').first()).toBeVisible();
     // the user list is paged: the oldest account may be on a later page
-    for (let i = 0; i < 20 && !(await page.getByText('dev-admin@example.com').count()); i++) {
+    for (let i = 0; i < 40 && !(await page.getByText('dev-admin@example.com').count()); i++) {
       const next = page.getByRole('button', { name: 'Next →' });
       if (!(await next.isEnabled().catch(() => false))) break;
+      const first = await page.locator('tbody tr').first().innerText();
       await next.click();
+      await expect(page.locator('tbody tr').first()).not.toHaveText(first);
     }
     await expect(page.getByText('dev-admin@example.com')).toBeVisible();
     await page.goto('/admin#/projects/new');
