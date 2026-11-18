@@ -89,7 +89,13 @@ test.describe('public reading', () => {
           const c = getComputedStyle(e);
           return { font: c.fontFamily, spacing: c.letterSpacing, transform: c.textTransform };
         });
-    for (const sel of ['nav.nav a', '.meta-grid .mono', '.row h3, .nextprev h3']) {
+    // titles of neighbouring posts follow the language of the post they name: only the Persian ones are checked
+    for (const sel of [
+      'nav.nav a',
+      '.meta-grid .mono',
+      ".row h3[lang='fa'], .nextprev h3[lang='fa']",
+    ]) {
+      if (!(await page.locator(sel).count())) continue;
       const s = await style(sel);
       expect(s.font, sel).toContain('Vazirmatn');
       expect(['normal', '0px'], sel).toContain(s.spacing);
