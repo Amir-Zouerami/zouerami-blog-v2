@@ -74,14 +74,17 @@ services:
       SERVER_NAME: ${SERVER_NAME:-amir-zouerami.dev}
       PARSPACK_API_TOKEN: ${PARSPACK_API_TOKEN}
       ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
+      ACME_CA_DIR: ${ACME_CA_DIR:-acme-v02.api.letsencrypt.org-directory}
     volumes:
       - caddy_data:/data
       - caddy_config:/config
     cap_drop: [ALL]
+    # the official caddy binary carries this file capability: without it in the set the container cannot start ("exec: operation not permitted")
+    cap_add: [NET_BIND_SERVICE]
     security_opt: ['no-new-privileges:true']
     healthcheck:
-      # healthy once both certificates exist
-      test: ['CMD-SHELL', 'ls /data/caddy/certificates/*/$$SERVER_NAME/$$SERVER_NAME.crt /data/caddy/certificates/*/wildcard_.$$SERVER_NAME/wildcard_.$$SERVER_NAME.crt >/dev/null 2>&1']
+      # healthy once both certificates exist for the CA in use (production unless ACME_CA/ACME_CA_DIR say staging)
+      test: ['CMD-SHELL', 'D=/data/caddy/certificates/$$ACME_CA_DIR; ls $$D/$$SERVER_NAME/$$SERVER_NAME.crt $$D/wildcard_.$$SERVER_NAME/wildcard_.$$SERVER_NAME.crt >/dev/null 2>&1']
       interval: 15s
       timeout: 5s
       retries: 40

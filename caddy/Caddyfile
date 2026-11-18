@@ -15,9 +15,15 @@
 
 *.{$SERVER_NAME}, {$SERVER_NAME} {
 	tls {
-		# Parspack's name servers are several machines that sync with a delay: wait before asking Let's Encrypt to check
-		propagation_delay 45s
-		propagation_timeout 5m
+		# Parspack rejects a TXT record without an explicit TTL ("The selected ttl is invalid"); 60 s is one of its allowed values
+		dns_ttl 60s
+		# Parspack's name servers are many machines that pick up a change one by one (measured: new values up to ~90 s, sometimes
+		# much longer, and stale answers for deleted records for 10+ minutes). 180 s was not enough in production: wait 8 minutes
+		# before asking Let's Encrypt to check. Renewals are rare, so the wait costs nothing.
+		propagation_delay 480s
+		# -1 = do not query the authoritative name servers ourselves first: the VPS (inside Iran) cannot reach Parspack's
+		# name servers on port 53 (timeouts), although Let's Encrypt can. The fixed delay above replaces that check.
+		propagation_timeout -1
 	}
 	respond "certificate manager" 404
 }

@@ -79,7 +79,7 @@ docker compose -f compose.prod.yaml exec caddy sh -c 'for f in /data/caddy/certi
 Caddy renews on its own. To force it (for example after changing the token), remove the stored certificate and restart Caddy:
 ```sh
 docker compose -f compose.prod.yaml stop nginx caddy
-docker run --rm -v zouerami_caddy_data:/data alpine sh -c 'rm -rf /data/caddy/certificates'
+docker run --rm -v zouerami_caddy_data:/data alpine sh -c 'rm -rf /data/caddy/certificates'   # (delete the directory of the CA in use; the staging one is separate)
 docker compose -f compose.prod.yaml up -d caddy      # re-issues both certificates (takes about 2 minutes)
 docker compose -f compose.prod.yaml up -d nginx
 ```
@@ -121,9 +121,14 @@ Check the Caddyfile before shipping it:
 ```sh
 docker run --rm -e SERVER_NAME=amir-zouerami.dev -e PARSPACK_API_TOKEN=x zouerami-caddy:local caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
-Settings you may want to change in `caddy/Caddyfile`:
-- `propagation_delay 45s`: how long Caddy waits after creating the TXT record before asking Let's Encrypt to check. Parspack's name servers are several machines that sync with a delay; raise it if validation fails with "no TXT record found".
-- `propagation_timeout 5m`: how long Caddy keeps checking before giving up.
+Settings in `caddy/Caddyfile` (each one exists because of something we hit on 2026-11-18):
+- `dns_ttl 60s`: Parspack rejects a TXT record without an explicit TTL ("The selected ttl is invalid"). 60 s is one of its allowed values.
+- `propagation_delay 480s`: how long Caddy waits after creating the TXT record before asking Let's Encrypt to check.
+  Parspack's DNS is many machines that pick up a change one by one. We measured: a new value reaches them in up to ~90 s but sometimes much later, and a deleted value can still be served by some of them for 10+ minutes. 60 s and 180 s both failed in production; 480 s worked on the first attempt.
+- `propagation_timeout -1`: do not query Parspack's name servers ourselves before asking Let's Encrypt. The VPS (inside Iran) cannot reach them on port 53 (timeouts), although Let's Encrypt can, so that check would always fail.
+- `cap_add: [NET_BIND_SERVICE]` in `compose.prod.yaml`: the official caddy binary carries that file capability; with `cap_drop: ALL` alone the container dies with `exec /usr/bin/caddy: operation not permitted`.
+
+**A single attempt can fail and that is normal.** Both certificates use the same record name (`_acme-challenge`), and Parspack's servers sometimes show Let's Encrypt stale values. Caddy retries by itself (after about a minute, then slower). In staging the bare-domain certificate worked at the first attempt and the wildcard at the third. During a renewal there are 30 days of margin. Let's Encrypt allows 5 failed validations per hour per name; if you ever hit "too many failed authorizations", wait an hour.
 
 ## 10. If something breaks
 
@@ -132,7 +137,10 @@ Settings you may want to change in `caddy/Caddyfile`:
 | `caddy` never becomes healthy, nginx does not start | certificates not issued | `docker compose -f compose.prod.yaml logs caddy`, then the rows below |
 | log: `Token has not access to this action` | token lacks a scope (usually "list services") | create a new Parspack token with all five scopes, update `.env`, `up -d caddy` |
 | log: `IP Blocked` / 403 from my.parspack.com | Parspack blocked the server's IP | open a Parspack ticket; test from the server with `curl -H "Authorization: Bearer $PARSPACK_API_TOKEN" https://my.parspack.com/cdnapi/external/api/v1/zones` |
-| log: `no TXT record found` / challenge failed | name servers still syncing | raise `propagation_delay` in `caddy/Caddyfile`, rebuild, deploy |
+| log: `Incorrect TXT record ... found at _acme-challenge` | Parspack's DNS served stale values to Let's Encrypt | normal, Caddy retries by itself; if it never succeeds raise `propagation_delay` in `caddy/Caddyfile`, rebuild, deploy |
+| log: `The selected ttl is invalid` | the TXT record was sent without an allowed TTL | keep `dns_ttl 60s` in `caddy/Caddyfile` |
+| container restarts with `exec /usr/bin/caddy: operation not permitted` | capabilities dropped | keep `cap_add: [NET_BIND_SERVICE]` for the caddy service |
+| log: `dial tcp ...:53: i/o timeout` while checking propagation | the VPS cannot reach Parspack's name servers | keep `propagation_timeout -1` |
 | log: `too many certificates already issued` | Let's Encrypt weekly limit | wait, or use staging (section 7) |
 | browser shows an expired certificate | renewal failing for weeks | check the caddy logs, fix the cause, force a renewal (section 6), `nginx -s reload` |
 | `cannot load certificate ... No such file` in nginx | `ACME_CA_DIR` does not match the CA that issued | remove `ACME_CA`/`ACME_CA_DIR` or set both for staging, as in section 7 |
@@ -144,3 +152,11 @@ The certificates themselves can always be re-issued, but the ACME account and ke
 docker run --rm -v zouerami_caddy_data:/data -v "$PWD":/backup alpine tar czf /backup/caddy-data.tgz -C /data .
 ```
 Keep that file private (it contains private keys).
+
+## 12. History and current state (2026-11-19)
+
+- Both production certificates were issued on 2026-11-19 00:33 and 00:34 (Iran time) by Let's Encrypt (issuers `YE1`/`YE2`): `CN=amir-zouerami.dev` and `CN=*.amir-zouerami.dev`. Valid until **2027-02-16**. Caddy renews about 30 days before that, around mid-January 2027.
+- Staging was proven first (Let's Encrypt staging, separate storage directory `acme-staging-v02.api.letsencrypt.org-directory`, still in the volume and harmless).
+- nginx was tested against the real certificates (`nginx -t`). nginx itself is not running yet: it starts with the first deploy (`caddy` is healthy, which is nginx's start condition).
+- Do not use the DNS resolvers `185.51.200.1` / `178.22.122.101` on the server: they look like Shecan but rewrite answers for Let's Encrypt and ghcr.io to proxy addresses, which broke the first production attempt. They were removed from `/etc/dns-rotator/dns-candidates.txt`; the test list now pins `ghcr.io` and `github.com` to GitHub's address range (`expect=140.82.112.0/20`) so a rewriting resolver is rejected.
+- The server's root directory permissions were broken by a rollback of the DNS tool's installer (it set `/` to mode 700, locking out the `deploy` user) and fixed with `chmod 755 /`. The installer's restore step on the server was patched to avoid this (`/opt/dns-tools/scripts/install.sh`, original saved as `install.sh.orig`).
