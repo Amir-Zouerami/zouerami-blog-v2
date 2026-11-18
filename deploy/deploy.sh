@@ -8,6 +8,8 @@ set -eu
 cd "$(dirname "$0")/.."
 [ -f .env ] || { echo ".env is missing on the server (see docs/deploy.md)"; exit 1; }
 COMPOSE="docker compose -f compose.prod.yaml"
+SITE_HOST=$(grep "^SERVER_NAME=" .env | head -1 | cut -d= -f2-)
+SITE_HOST=${SITE_HOST:-amir-zouerami.dev}
 
 setenv() { # setenv KEY VALUE  (idempotent edit of .env)
   if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi
@@ -31,7 +33,7 @@ $COMPOSE up -d --remove-orphans
 healthy() {
   for _ in $(seq 1 40); do
     if $COMPOSE exec -T pocketbase wget -q --spider http://127.0.0.1:8090/api/health 2>/dev/null \
-      && $COMPOSE exec -T nginx wget -q --spider --no-check-certificate https://127.0.0.1/ 2>/dev/null; then
+      && $COMPOSE exec -T nginx wget -q --spider --no-check-certificate --header "Host: $SITE_HOST" https://127.0.0.1/ 2>/dev/null; then
       return 0
     fi
     sleep 3
