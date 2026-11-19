@@ -16,9 +16,9 @@ laptop and the Android phone.
 | Service | `systemctl status wg-quick@wg0` (starts at boot, before Docker: `/etc/systemd/system/docker.service.d/after-wireguard.conf`) |
 | Client files | `/media/amir/Development/Projects/Personal/zouerami-blog-v2/secrets/vpn/` on the laptop (`laptop.conf`, `phone.conf`, `phone-qr.png`) |
 
-**Split tunnel:** the client configs route only `10.8.0.0/24` **and `193.151.146.197/32`** through the VPN. Everything else on your devices goes the normal way.
-The server's own public address is included on purpose: nginx lets `https://mail.amir-zouerami.dev` through only to requests that come from the VPN network,
-and with this route a VPN client's request to the server's public address arrives at the server from `10.8.0.x`.
+**Split tunnel:** the client configs route only `10.8.0.0/24` through the VPN. Everything else on your devices goes the normal way.
+Do **not** add the server's public address (`193.151.146.197/32`) to `AllowedIPs` on a Linux laptop: it is also the tunnel's endpoint, so the tunnel's own packets loop back into it and even SSH to the server stops working.
+nginx lets `https://mail.amir-zouerami.dev` through only to requests that come from the VPN network (`10.8.0.x`). With the tunnel up, reach it through the private address: `https://10.8.0.1/` answers too, so map the name to it once on the laptop (`echo '10.8.0.1 mail.amir-zouerami.dev' | sudo tee -a /etc/hosts`) and open `https://mail.amir-zouerami.dev/admin/`. Remove that line if you ever need the name to resolve to the public address again.
 
 ## 2. What is reachable through the VPN
 
@@ -62,7 +62,7 @@ Address = 10.8.0.4/32
 [Peer]
 PublicKey = YXiDf1E8/igSrW5+v9c/v3/EFLqGnWgju5TL3FqL7gA=
 Endpoint = 193.151.146.197:51820
-AllowedIPs = 10.8.0.0/24, 193.151.146.197/32
+AllowedIPs = 10.8.0.0/24
 PersistentKeepalive = 25
 ```
 The server's public key is also in `/etc/wireguard/server.pub`.
@@ -76,8 +76,8 @@ Delete its `[Peer]` block from `/etc/wireguard/wg0.conf`, then `wg syncconf wg0 
 | Symptom | Likely cause | What to do |
 |---|---|---|
 | no handshake in `wg show` on the server | UDP 51820 filtered on the way (some mobile networks/ISPs block WireGuard) | try another network; as a fallback use an SSH tunnel: `ssh -L 8090:127.0.0.1:8090 root@193.151.146.197` and open `http://127.0.0.1:8090/_/` |
-| handshake works, page does not load | the tunnel is up but `AllowedIPs` lacks `10.8.0.0/24` or the server address | compare with the client config in section 4 |
-| `https://mail.amir-zouerami.dev` answers 403 | the request did not come through the tunnel | check the client config contains `193.151.146.197/32`; reconnect |
+| handshake works, page does not load | the tunnel is up but `AllowedIPs` lacks `10.8.0.0/24` | compare with the client config in section 4 |
+| `https://mail.amir-zouerami.dev` answers 403 | the request did not come through the tunnel | the name still resolves to the public address: add the `/etc/hosts` line above (laptop); on the phone the public address in `AllowedIPs` works (Android keeps the tunnel's own packets out of it) |
 | after a server reboot the PocketBase dashboard is unreachable | Docker started before `wg0` existed | `systemctl status wg-quick@wg0`, then `docker compose -f compose.prod.yaml up -d pocketbase` in `/srv/zouerami` |
 
 ## 7. Security notes
