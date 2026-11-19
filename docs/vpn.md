@@ -14,7 +14,7 @@ laptop and the Android phone.
 | Port | **UDP 51820** (open in `ufw`) |
 | Server config | `/etc/wireguard/wg0.conf` (mode 600; server private key in `/etc/wireguard/server.key`) |
 | Service | `systemctl status wg-quick@wg0` (starts at boot, before Docker: `/etc/systemd/system/docker.service.d/after-wireguard.conf`) |
-| Client files | `~/Downloads/amir-zouerami-vpn/` on the laptop (`laptop.conf`, `phone.conf`, `phone-qr.png`) |
+| Client files | `/media/amir/Development/Projects/Personal/zouerami-blog-v2/secrets/vpn/` on the laptop (`laptop.conf`, `phone.conf`, `phone-qr.png`) |
 
 **Split tunnel:** the client configs route only `10.8.0.0/24` **and `193.151.146.197/32`** through the VPN. Everything else on your devices goes the normal way.
 The server's own public address is included on purpose: nginx lets `https://mail.amir-zouerami.dev` through only to requests that come from the VPN network,
@@ -33,7 +33,7 @@ PocketBase publishes `10.8.0.1:8090` through `compose.prod.yaml` (`ports:` of th
 ## 3. Using it
 
 **Android:** install the WireGuard app, `+` -> "Scan from QR code" -> `phone-qr.png` (or import `phone.conf`), switch the tunnel on.
-**Laptop (Linux):** `sudo wg-quick up ~/Downloads/amir-zouerami-vpn/laptop.conf` / `sudo wg-quick down ...`. Or import into NetworkManager:
+**Laptop (Linux):** `sudo wg-quick up /media/amir/Development/Projects/Personal/zouerami-blog-v2/secrets/vpn/laptop.conf` / `sudo wg-quick down ...`. Or import into NetworkManager:
 `nmcli connection import type wireguard file laptop.conf`.
 The client files hold private keys: keep them private, delete the QR and `phone.conf` after importing.
 
