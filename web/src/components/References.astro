@@ -1,0 +1,115 @@
+---
+/**
+ * The "References" box under a post. The text of the box is English on every page (the chrome of the site's mono labels);
+ * what the author wrote inside a source (title, note, figure label) keeps its own language and direction.
+ */
+import { formatDate } from '../i18n';
+import { cover, seedOf } from '../lib/cover';
+import { type Reference, textLang } from '../lib/references';
+
+interface Props {
+  references: Reference[];
+  /** Number shown before the heading, continuing the post's /01 /02 … sections. */
+  index: number;
+}
+const { references, index } = Astro.props;
+
+const LABEL: Record<Reference['type'], string> = {
+  benchmark: 'Benchmark',
+  paper: 'Paper',
+  code: 'Code',
+  docs: 'Docs',
+  video: 'Talk',
+  article: 'Article',
+  post: 'On this blog',
+  link: 'Link',
+};
+const ICON: Record<Reference['type'], string> = {
+  benchmark: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 14V8M6 14V3M10 14V6M14 14V9"/></svg>',
+  paper: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1.8h5.5L13 5.3v8.9H4z"/><path d="M9.5 1.8v3.5H13M6 8.5h5M6 11h5"/></svg>',
+  code: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4 2 8l3.5 4M10.5 4 14 8l-3.5 4"/></svg>',
+  docs: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.2c2-.9 4-.7 6 .6 2-1.3 4-1.5 6-.6v9.3c-2-.9-4-.7-6 .6-2-1.3-4-1.5-6-.6z"/><path d="M8 3.8v9.3"/></svg>',
+  video: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.2 2.8v10.4L13.4 8z"/></svg>',
+  article: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3h11M2.5 6.5h11M2.5 10h7M2.5 13.5h5"/></svg>',
+  post: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l1-3.5L11.5 2 14 4.5 5.5 13z"/><path d="M9.8 3.8l2.4 2.4"/></svg>',
+  link: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.8 9.2a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8"/><path d="M9.2 6.8a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.8-.8"/></svg>',
+};
+const ICON_JUMP = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4h7M2.5 8h5M2.5 12h3"/><path d="M13.5 13.5 9.5 9.5M9.5 13V9.5H13"/></svg>';
+const ICON_COPY = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="2"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></svg>';
+
+const hue = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 0);
+const types = [...new Set(references.map((r) => r.type))];
+const citations = references.reduce((n, r) => n + r.cites.length, 0);
+const posts = references.filter((r) => r.type === 'post').length;
+const num = String(index).padStart(2, '0');
+---
+{references.length > 0 && (
+  <div class="ref-wrap">
+    <section class="ref-box" id="references" aria-labelledby="ref-h" data-refs dir="ltr">
+      <div class="ref-in">
+        <div class="ref-head">
+          <div>
+            <span class="ref-idx">/{num}</span>
+            <h2 id="ref-h">References, <em>cited</em></h2>
+          </div>
+          <div class="ref-stats">
+            <div><b>{references.length}</b>{references.length === 1 ? 'source' : 'sources'}</div>
+            <div><b>{citations}</b>{citations === 1 ? 'citation' : 'citations'}</div>
+            {posts > 0 && <div><b>{posts}</b>{posts === 1 ? 'post of mine' : 'posts of mine'}</div>}
+          </div>
+        </div>
+
+        <div class="ref-map" data-map hidden><span class="ref-line"></span><div class="ref-win" data-win></div></div>
+        <div class="ref-mapcap" hidden data-mapcap><span>Start of the article</span><span>End</span></div>
+
+        {types.length > 1 && (
+          <div class="ref-filters" data-filters hidden>
+            <button type="button" class="ref-chip" data-filter="all" aria-pressed="true">All <i>{references.length}</i></button>
+            {types.map((t) => (
+              <button type="button" class={`ref-chip t-${t}`} data-filter={t} aria-pressed="false">{LABEL[t]} <i>{references.filter((r) => r.type === t).length}</i></button>
+            ))}
+          </div>
+        )}
+
+        <div class="ref-grid">
+          {references.map((r) => {
+            const by = [r.by, r.post ? formatDate(r.post.date, 'en') : ''].filter(Boolean).join(' · ');
+            return (
+              <article class={`ref-tile t-${r.type}`} id={`ref-${r.n}`} data-ref={r.key} data-type={r.type}>
+                <span class="ref-num" aria-hidden="true">{r.n}</span>
+                {r.post && (
+                  <div class="ref-cover" aria-hidden="true" set:html={r.post.cover ? `<img src="${r.post.cover}?thumb=640x0" alt="" loading="lazy" decoding="async">` : cover(seedOf(r.post.slug))}></div>
+                )}
+                <span class="ref-type"><Fragment set:html={ICON[r.type]} />{LABEL[r.type]}</span>
+                <h3 class="ref-title" lang={textLang(r.title)} dir="auto">{r.title}</h3>
+                <div class="ref-dom">
+                  <span class="ref-badge" style={`--h:${hue(r.domain || 'x')}`} aria-hidden="true">{(r.domain || '/')[0]?.toUpperCase()}</span>
+                  <span>{r.domain}{r.path}</span>
+                </div>
+                {r.fig && (
+                  <div class="ref-fig">
+                    <strong dir="ltr">{r.fig.value}</strong>
+                    {r.fig.label && <span lang={textLang(r.fig.label)} dir="auto">{r.fig.label}</span>}
+                  </div>
+                )}
+                {r.note && <p class="ref-note" lang={textLang(r.note)} dir="auto">{r.note}</p>}
+                {by && <div class="ref-by" lang={textLang(by)} dir="auto">{by}</div>}
+                <div class="ref-acts">
+                  <a class="ref-open" href={r.url} target="_blank" rel="noopener noreferrer">Open source ↗</a>
+                  <button type="button" class="ref-ib" data-act="jump" title="Show in the text" aria-label="Show in the text" hidden><Fragment set:html={ICON_JUMP} /></button>
+                  <button type="button" class="ref-ib" data-act="copy" title="Copy citation" aria-label="Copy citation" hidden><Fragment set:html={ICON_COPY} /></button>
+                </div>
+                <div class="ref-cited"><span>Cited in</span>{r.cites.map((c) => <button type="button" class="ref-dot" data-k={c.k} title={c.text} aria-label={`Show the passage: ${c.text}`}>{c.k + 1}</button>)}</div>
+              </article>
+            );
+          })}
+        </div>
+
+        <div class="ref-foot">
+          <span>Numbered in order of first citation.</span>
+          <button type="button" data-bib hidden>Copy all as BibTeX</button>
+        </div>
+      </div>
+    </section>
+  </div>
+)}

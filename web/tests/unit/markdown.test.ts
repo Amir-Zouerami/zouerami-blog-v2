@@ -70,7 +70,7 @@ describe('renderMarkdown', { timeout: 30000 }, () => {
   });
 
   it('handles empty input', async () => {
-    expect(await renderMarkdown('', opts)).toEqual({ html: '', headings: [] });
+    expect(await renderMarkdown('', opts)).toEqual({ html: '', headings: [], references: [] });
   });
 });
 

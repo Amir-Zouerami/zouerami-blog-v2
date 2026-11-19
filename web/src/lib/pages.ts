@@ -6,12 +6,14 @@
 import { createHash } from 'node:crypto';
 import type { Locale } from '../i18n';
 import { localePath, yearLabel } from '../i18n';
+import { getConfig } from './config';
 import { getLog } from './log';
 import { Lru } from './lru';
 import { readingMinutes, renderMarkdown } from './markdown';
 import { UpstreamError } from './pb';
 import { adjacent, getPost, imageUrl, listPosts } from './posts';
 import { getProject, listProjects } from './projects';
+import { postSlugs, type Reference, type ResolvedPost } from './references';
 import type { Post, PostSummary, Project, ProjectSummary } from './schemas';
 
 export type Loaded<T> = { kind: 'ok'; data: T } | { kind: 'notfound' } | { kind: 'unavailable' };
@@ -28,16 +30,55 @@ export async function load<T>(scope: string, fn: () => Promise<T | null>): Promi
   }
 }
 
-/** Rendered markdown keyed by post + content hash: Shiki highlighting is the expensive part of a post view. */
-const postBodies = new Lru<{ html: string; headings: { id: string; text: string }[] }>(100);
+/** What `[@post:slug]` becomes: the published post (title in the reader's language) with a link in the same chrome. */
+export function postResolver(all: PostSummary[], locale: Locale) {
+  const bySlug = new Map(all.map((p) => [p.slug, p]));
+  const host = new URL(getConfig().siteUrl).host;
+  return {
+    bySlug,
+    resolve: async (slug: string): Promise<ResolvedPost | null> => {
+      const p = bySlug.get(slug);
+      if (!p) return null;
+      const path = localePath(locale, `/blog/${slug}`);
+      return {
+        slug,
+        title: p.title,
+        url: path,
+        domain: host,
+        path,
+        date: p.date,
+        tags: p.tags,
+        cover: p.cover,
+      };
+    },
+  };
+}
 
-async function renderPostBody(post: Post) {
-  const key = createHash('sha1').update(`${post.id}\0${post.lang}\0${post.bodyMd}`).digest('hex');
+/** Rendered markdown keyed by post + content hash: Shiki highlighting is the expensive part of a post view. */
+const postBodies = new Lru<{
+  html: string;
+  headings: { id: string; text: string }[];
+  references: Reference[];
+}>(100);
+
+async function renderPostBody(post: Post, locale: Locale, all: PostSummary[]) {
+  const { bySlug, resolve } = postResolver(all, locale);
+  // posts cited with [@post:slug] are part of the output: when one is renamed the cached page must change too
+  const cited = postSlugs(post.bodyMd)
+    .map((s) => {
+      const p = bySlug.get(s);
+      return p ? `${s}:${p.title}:${p.date}:${p.cover ?? ''}` : s;
+    })
+    .join('|');
+  const key = createHash('sha1')
+    .update(`${post.id}\0${post.lang}\0${locale}\0${cited}\0${post.bodyMd}`)
+    .digest('hex');
   const hit = postBodies.get(key);
   if (hit) return hit;
   const fresh = await renderMarkdown(post.bodyMd, {
     resolveImage: (name) => imageUrl({ id: post.id }, name),
     lang: post.lang,
+    resolvePost: resolve,
   });
   postBodies.set(key, fresh);
   return fresh;
@@ -99,6 +140,7 @@ export interface PostPage {
   post: Post;
   html: string;
   headings: { id: string; text: string }[];
+  references: Reference[];
   minutes: number;
   previous: PostSummary | null;
   next: PostSummary | null;
@@ -116,11 +158,13 @@ export const loadPostPage = (
   load<PostPage>('post', async () => {
     const post = await getPost(slug, contentLang, undefined, { fallback: true, token });
     if (!post) return null;
-    const [all, body] = await Promise.all([listPosts({ lang: locale }), renderPostBody(post)]);
+    const all = await listPosts({ lang: locale });
+    const body = await renderPostBody(post, locale, all);
     return {
       post,
       html: body.html,
       headings: body.headings,
+      references: body.references,
       minutes: readingMinutes(post.bodyMd),
       ...adjacent(all, post.slug),
       alternates: Object.fromEntries(

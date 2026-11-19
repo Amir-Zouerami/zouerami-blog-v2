@@ -1,6 +1,7 @@
 ---
 import Comments from '../components/Comments';
 import PostActions from '../components/PostActions';
+import References from '../components/References.astro';
 import { dirOf, formatDate, formatNumber, LANG_NAMES, LOCALES, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { getConfig } from '../lib/config';
@@ -38,7 +39,7 @@ const jsonLd =
   post && !post.preview
     ? [
         personLd(site),
-        blogPostingLd({ site, slug: post.slug, title: post.title, description: post.summary || post.title, lang: post.lang, date: post.date, tags: post.tags, image: `/og/${post.lang}/${post.slug}.png`, path: canonicalPath }),
+        blogPostingLd({ site, slug: post.slug, title: post.title, description: post.summary || post.title, lang: post.lang, date: post.date, tags: post.tags, image: `/og/${post.lang}/${post.slug}.png`, path: canonicalPath, citations: data?.references.map((r) => ({ name: r.title, url: r.url })) }),
         breadcrumbLd(site, [
           { name: tr.nav.home, path: localePath(locale, '/') },
           { name: tr.nav.blog, path: localePath(locale, '/blog') },
@@ -99,10 +100,11 @@ const jsonLd =
         {post.preview && <p class="notice" role="note">{tr.post.preview}</p>}
         {post.fellBack && <p class="notice" role="note">{tr.post.onlyIn(tr.post.langNames[post.lang])}</p>}
         <div class="prose" lang={post.lang} dir={dirOf(post.lang)} set:html={data.html}></div>
-        {!post.preview && <Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} />}
       </article>
       <div></div>
     </div>
+    <References references={data.references} index={data.headings.length + 1} />
+    {!post.preview && <div class="post-comments"><Comments client:visible postId={post.id} loginHref={localePath(locale, '/login')} labels={{ ...tr.comments }} {locale} /></div>}
     <nav class="nextprev" aria-label="Posts">
       {data.previous ? <a href={localePath(locale, `/blog/${data.previous.slug}`)} rel="prev"><span class="mono muted">{tr.post.previous}</span><h3 dir={dirOf(data.previous.titleLang)} lang={data.previous.titleLang}>{data.previous.title}</h3></a> : <span></span>}
       {data.next ? <a href={localePath(locale, `/blog/${data.next.slug}`)} rel="next"><span class="mono muted">{tr.post.next}</span><h3 dir={dirOf(data.next.titleLang)} lang={data.next.titleLang}>{data.next.title}</h3></a> : <span></span>}
@@ -110,6 +112,7 @@ const jsonLd =
   </main>
   <script>
     import '../scripts/post';
+    import '../scripts/references';
   </script>
 </Base>
 )}

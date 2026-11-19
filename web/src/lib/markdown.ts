@@ -12,6 +12,7 @@ import { bundledLanguages, createHighlighter, type Highlighter } from 'shiki';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 import { faDigits } from '../i18n/format';
+import { postSlugs, type Reference, type ResolvedPost, remarkReferences } from './references';
 
 export interface Heading {
   id: string;
@@ -20,6 +21,8 @@ export interface Heading {
 export interface Rendered {
   html: string;
   headings: Heading[];
+  /** The sources cited with `[@key]`, numbered in order of first citation (see lib/references.ts). */
+  references: Reference[];
 }
 /** Callout boxes: `:::tip` … `:::` (optional custom title: `:::warning[Careful]`). */
 export const CALLOUTS = ['info', 'note', 'tip', 'success', 'warning', 'danger'] as const;
@@ -51,6 +54,8 @@ export interface RenderOptions {
   resolveImage: (filename: string) => string;
   /** Digits used for the `/01` heading numbers; Persian posts get Persian numerals. */
   numerals?: 'latin' | 'fa';
+  /** Looks up a published post for `[@post:slug]`; without it those markers stay as typed. */
+  resolvePost?: (slug: string) => Promise<ResolvedPost | null>;
 }
 
 const text = (node: Element): string =>
@@ -221,7 +226,12 @@ function rehypeSignal(options: RenderOptions, headings: Heading[]) {
 // Built once. `@shikijs/rehype` on its own spent ~10 s on its very first document (it prepares for every bundled
 // language), which made the first post after each start hang. So we create the highlighter ourselves with just the
 // languages in use and load others on demand, before a document is processed.
-type Data = { options: RenderOptions; headings: Heading[] };
+type Data = {
+  options: RenderOptions;
+  headings: Heading[];
+  resolved: Map<string, ResolvedPost>;
+  references: Reference[];
+};
 const THEMES = { light: 'github-light-default', dark: 'github-dark-default' } as const;
 const COMMON_LANGS = [
   'text',
@@ -252,6 +262,12 @@ function buildProcessor(highlighter: Highlighter) {
       .use(function callouts() {
         return (tree, file) =>
           remarkCallouts((file.data as Data).options.lang ?? 'en')(tree as never);
+      })
+      .use(function references() {
+        return (tree, file) => {
+          const d = file.data as Data;
+          remarkReferences(d.resolved, d.references)(tree as never);
+        };
       })
       .use(remarkRehype) // raw HTML in the source is dropped, never passed through
       .use(rehypeSlug)
@@ -301,7 +317,7 @@ export const warmMarkdownEngine = (): Promise<unknown> => engine();
 const FENCE = /^ {0,3}(?:`{3,}|~{3,})\s*([A-Za-z0-9_+#.-]+)/gm;
 
 export async function renderMarkdown(md: string, options: RenderOptions): Promise<Rendered> {
-  if (!md.trim()) return { html: '', headings: [] };
+  if (!md.trim()) return { html: '', headings: [], references: [] };
   const { highlighter, processor } = await engine();
   // load the grammars this document needs (unknown names fall back to plain text)
   const loaded = new Set(highlighter.getLoadedLanguages());
@@ -313,8 +329,26 @@ export async function renderMarkdown(md: string, options: RenderOptions): Promis
   if (wanted.size)
     await Promise.all([...wanted].map((l) => highlighter.loadLanguage(l as never).catch(() => {})));
   const headings: Heading[] = [];
-  const file = await processor.process({ value: md, data: { options, headings } });
-  return { html: String(file), headings };
+  const references: Reference[] = [];
+  const resolved = new Map<string, ResolvedPost>();
+  if (options.resolvePost) {
+    const resolve = options.resolvePost;
+    await Promise.all(
+      postSlugs(md).map(async (slug) => {
+        const post = await resolve(slug).catch(() => null);
+        if (post) resolved.set(`post:${slug}`, post);
+      }),
+    );
+  }
+  // Markdown only treats `[text][@key]` as a reference when a definition exists: give every resolved post one
+  // (definitions are never printed). Posts that could not be found get none and stay as typed.
+  const postDefs = [...resolved.keys()].map((key) => `[@${key}]: /blog/${key.slice(5)}`);
+  const source = postDefs.length ? `${md}\n\n${postDefs.join('\n')}\n` : md;
+  const file = await processor.process({
+    value: source,
+    data: { options, headings, resolved, references },
+  });
+  return { html: String(file), headings, references };
 }
 
 /** ~200 words per minute, never below one minute. */

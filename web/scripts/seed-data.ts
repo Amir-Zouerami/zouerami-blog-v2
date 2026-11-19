@@ -259,6 +259,47 @@ const genericFa = (title: string) => `${title}؛ موضوعی که کوچک به
 - یک ماه بعد دوباره نگاهش کن.
 `;
 
+const REFS_EN = `A short post to try the references: every number below is a link to a source, and the box under the text collects them.
+
+## Start from the tail, not the average
+
+Averages hide the pain. [The slowest one percent of requests decides how the whole service feels][@tail]. I read the p99 first.
+
+## The runtime matters less than you think
+
+A fresh benchmark shows [a 1.8× gap between the fastest and the slowest runtime][@bench], but the gap shrinks to noise once a database sits behind the handler [@bench]. Frameworks like [Fastify][@fastify] earn their speed from schema-compiled serialisation.
+
+## Your database is the real server
+
+[A pool of about twenty connections beat larger pools][@pool] on a four-core box. I wrote down how I run it in [my PocketBase notes][@post:hello-bilingual]. Move heavy CPU work out with [worker threads][@workers], and if you want the whole story in one sitting, [this talk][@talk] is the one. The tail argument [again][@tail] is why I measure percentiles there too.
+
+[@tail]: https://cacm.acm.org/research/the-tail-at-scale/ "The Tail at Scale | by: Dean & Barroso, 2013 | fig: p99 = not the mean, decides how a large system feels | note: Why rare slow requests dominate the experience when one page fans out to many services."
+[@bench]: https://example.com/bench/http-round-3 "HTTP server throughput, round 3 | by: Example benchmark suite, 2026 | fig: 1.8× = more requests per second, fastest vs slowest runtime | note: Hello-world route on four cores with a warm cache. See how the ranking changes once a database is behind the handler."
+[@fastify]: https://github.com/fastify/fastify "fastify/fastify | by: TypeScript, MIT licence | note: Schema-compiled JSON serialisation is where most of its speed comes from."
+[@pool]: https://example.com/bench/postgres-pool "Postgres connection pool sizing | by: Example benchmark suite, 2026 | fig: ~20 = connections beat bigger pools on a 4-core box | note: Past the sweet spot you only move the queue inside the database."
+[@workers]: https://nodejs.org/api/worker_threads.html "Node.js: Worker threads | by: Official documentation | note: Offload CPU-bound work so the event loop keeps answering requests."
+[@talk]: https://www.youtube.com/ "Performance is a feature (talk) | by: Conference talk, 42 min | note: The best forty minutes on measuring before optimising."
+`;
+
+const REFS_FA = `نوشتهٔ کوتاهی برای امتحان منابع: هر شماره به یک منبع وصل است و جعبهٔ زیر متن همه را جمع می‌کند.
+
+## از دُم شروع کن، نه از میانگین
+
+میانگین درد را پنهان می‌کند. [کندترین یک درصد درخواست‌ها حس کل سرویس را می‌سازد][@tail]. من اول p99 را می‌خوانم.
+
+## رانتایم کمتر از آنچه فکر می‌کنید مهم است
+
+یک بنچمارک تازه [فاصلهٔ ۱٫۸ برابری بین سریع‌ترین و کندترین رانتایم][@bench] را نشان می‌دهد، اما با آمدن دیتابیس پشت هندلر این فاصله به نویز می‌رسد.
+
+## دیتابیس سرور واقعی است
+
+[یک پول با حدود بیست کانکشن از پول‌های بزرگ‌تر بهتر بود][@pool]. نحوهٔ راه‌اندازی‌ام را در [یادداشت‌های PocketBase][@post:hello-bilingual] نوشته‌ام. و استدلال دُم [دوباره][@tail] دلیل می‌شود که آنجا هم صدک‌ها را اندازه بگیرم.
+
+[@tail]: https://cacm.acm.org/research/the-tail-at-scale/ "The Tail at Scale | by: Dean & Barroso, 2013 | fig: p99 = نه میانگین، حس یک سیستم بزرگ را تعیین می‌کند | note: چرا درخواست‌های کندِ نادر وقتی یک صفحه به چند سرویس باز می‌شود تجربهٔ کاربر را می‌سازند."
+[@bench]: https://example.com/bench/http-round-3 "HTTP server throughput, round 3 | by: Example benchmark suite, 2026 | fig: ۱٫۸× = درخواست بیشتر در ثانیه | note: مسیر hello-world روی چهار هسته با کش گرم. ببینید با آمدن دیتابیس پشت هندلر رتبه‌ها چطور عوض می‌شود."
+[@pool]: https://example.com/bench/postgres-pool "Postgres connection pool sizing | by: Example benchmark suite, 2026 | fig: ~۲۰ = کانکشن روی سرور ۴ هسته‌ای از پول‌های بزرگ‌تر بهتر بود | note: کانکشن روی سرور ۴ هسته‌ای از پول‌های بزرگ‌تر بهتر بود؛ بعد از نقطهٔ بهینه فقط صف را به داخل دیتابیس منتقل می‌کنید."
+`;
+
 export const posts: PostSeed[] = [
   {
     slug: 'hello-bilingual',
@@ -414,6 +455,28 @@ export const posts: PostSeed[] = [
         title: 'نمودار، تیتر و کد',
         summary: 'گشتی در ابزارهای نوشتن.',
         body_md: DEMO_FA,
+      },
+    ],
+  },
+  {
+    // a draft with a preview link: lets the references be tried without changing what the public lists show
+    slug: 'references-demo',
+    date: '2026-03-01 12:00:00.000Z',
+    status: 'draft',
+    tags: ['Notes'],
+    preview_token: 'dev-preview-token-0002',
+    tr: [
+      {
+        lang: 'en',
+        title: 'Trying the references',
+        summary: 'Numbered sources, a margin and a box.',
+        body_md: REFS_EN,
+      },
+      {
+        lang: 'fa',
+        title: 'امتحان منابع',
+        summary: 'منبع‌های شماره‌دار، حاشیه و جعبه.',
+        body_md: REFS_FA,
       },
     ],
   },
