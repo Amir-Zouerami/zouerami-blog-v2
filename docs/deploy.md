@@ -40,6 +40,8 @@ Build images locally or in CI (`.github/workflows/release.yml` pushes `ghcr.io/<
 ## 4. First start and TLS
 Certificates are handled by the `caddy` container (wildcard `*.amir-zouerami.dev` + `amir-zouerami.dev`, DNS-01 through the Parspack API); nginx only reads them from a shared read-only volume and reloads every 12 h. Everything about issuing, renewing, forcing a renewal and troubleshooting is in `docs/cert-auto-renewal.md`. `compose.prod.yaml up -d` starts caddy first; nginx waits until caddy is healthy (both certificates exist).
 
+Mail is our own server: `docs/mail-server.md` (Stalwart, accounts, DNS records, DKIM). The private services (PocketBase dashboard, mail admin) are reached through the VPN: `docs/vpn.md`.
+
 ## 5. First content
 Write in the back office at `https://amir-zouerami.dev/admin`: first sign up on the site, verify your email, then `docker compose -f compose.prod.yaml exec web bun run make-admin …` is not available in the runtime image, so promote yourself from the PocketBase dashboard instead (users → your row → role = admin) via the tunnel below.
 

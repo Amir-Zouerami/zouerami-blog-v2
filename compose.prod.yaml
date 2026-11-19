@@ -13,7 +13,8 @@ services:
     volumes:
       - pb_data:/pb_data
     ports:
-      - '127.0.0.1:8090:8090' # admin UI via SSH tunnel only
+      - '127.0.0.1:8090:8090' # admin UI via SSH tunnel
+      - '10.8.0.1:8090:8090' # admin UI through the VPN (WireGuard, docs/vpn.md): http://10.8.0.1:8090/_/
     security_opt: ['no-new-privileges:true']
     healthcheck:
       test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8090/api/health']
@@ -91,8 +92,83 @@ services:
       start_period: 30s
     deploy: { resources: { limits: { memory: 256m } } }
 
+  # Mail server (Stalwart): SMTP 25, SMTPS 465 and IMAPS 993 are public; the web admin / webmail / JMAP are reachable only
+  # through the VPN, via nginx on https://mail.<domain> (see nginx/prod.conf). Setup and operation: docs/mail-server.md
+  mail:
+    image: ${STALWART_IMAGE:-stalwartlabs/stalwart:v1.1.1}
+    init: true
+    restart: unless-stopped
+    environment:
+      # the URL people type for the web admin: Stalwart accepts sign-in only for this HTTPS address
+      STALWART_PUBLIC_URL: https://mail.${SERVER_NAME:-amir-zouerami.dev}
+    ports:
+      - '25:25'
+      - '465:465'
+      - '993:993'
+      - '127.0.0.1:8080:8080' # plain HTTP management/setup port: only on the server itself (ssh -L 8080:127.0.0.1:8080)
+    volumes:
+      - mail_etc:/etc/stalwart
+      - mail_data:/var/lib/stalwart
+      - mail_certs:/etc/stalwart/tls:ro
+    networks:
+      default:
+        # containers (PocketBase) reach the mail server under its public name, so its TLS certificate matches
+        aliases: ['mail.${SERVER_NAME:-amir-zouerami.dev}']
+    security_opt: ['no-new-privileges:true']
+    depends_on:
+      mail-certs: { condition: service_healthy }
+    deploy: { resources: { limits: { memory: 768m } } }
+
+  # Copies the wildcard certificate Caddy renews into a volume the (unprivileged) mail server can read, and tells the mail
+  # server to load it (it only checks certificates at start-up and on request). The login for that request is the file
+  # /srv/zouerami/mail-reload.auth (base64 of "admin@<domain>:<password>", mode 600; not in the repository).
+  mail-certs:
+    image: alpine:3.20
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-amir-zouerami.dev}
+      ACME_CA_DIR: ${ACME_CA_DIR:-acme-v02.api.letsencrypt.org-directory}
+    volumes:
+      - caddy_data:/src:ro
+      - mail_certs:/dst
+    secrets:
+      - mail_reload
+    command:
+      - sh
+      - -c
+      - |
+        D="/src/caddy/certificates/$${ACME_CA_DIR}/wildcard_.$${SERVER_NAME}/wildcard_.$${SERVER_NAME}"
+        while :; do
+          changed=0
+          for p in "crt fullchain.pem" "key privkey.pem"; do
+            set -- $$p
+            if [ -f "$$D.$$1" ] && ! cmp -s "$$D.$$1" "/dst/$$2"; then
+              cp "$$D.$$1" "/dst/$$2.new" && chown 2000:2000 "/dst/$$2.new" && chmod 640 "/dst/$$2.new" && mv "/dst/$$2.new" "/dst/$$2" && echo "updated $$2" && changed=1
+            fi
+          done
+          if [ "$$changed" = 1 ] && [ -s /run/secrets/mail_reload ]; then
+            wget -q -O /dev/null --header "Authorization: Basic $$(cat /run/secrets/mail_reload)" --header "Content-Type: application/json" \
+              --post-data '{"using":["urn:ietf:params:jmap:core","urn:stalwart:jmap"],"methodCalls":[["x:Action/set",{"create":{"a1":{"@type":"ReloadTlsCertificates"}}},"c1"]]}' \
+              http://mail:8080/jmap/ && echo "mail server told to reload certificates" || echo "could not tell the mail server to reload certificates"
+          fi
+          sleep 21600
+        done
+    healthcheck:
+      test: ['CMD-SHELL', 'test -s /dst/fullchain.pem && test -s /dst/privkey.pem']
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    deploy: { resources: { limits: { memory: 32m } } }
+
+secrets:
+  mail_reload:
+    file: ./mail-reload.auth
+
 volumes:
   pb_data:
   caddy_data:
   caddy_config:
   nginx_cache:
+  mail_etc:
+  mail_data:
+  mail_certs:
