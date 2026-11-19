@@ -1,0 +1,852 @@
+/*
+ * References: numbered citations in the prose, the margin cards, and the "References" box under a post.
+ * Uses the site's own tokens and fonts; the only addition is one accent colour per kind of source.
+ * Markup: lib/references.ts (markers), components/References.astro (box), scripts/references.ts (behaviour).
+ */
+:root {
+  --t-benchmark: #d4ff3a;
+  --t-paper: #7cc4ff;
+  --t-code: #ffb86b;
+  --t-post: #ecece6;
+  --t-docs: #b79cff;
+  --t-video: #ff7a90;
+  --t-article: #7ee0b5;
+  --t-link: #b3b3ab;
+}
+[data-theme="light"] {
+  --t-benchmark: #cf1f5a;
+  --t-paper: #1766b3;
+  --t-code: #b85c00;
+  --t-post: #0d0d0e;
+  --t-docs: #6a3fd1;
+  --t-video: #c4264a;
+  --t-article: #0b7a52;
+  --t-link: #55554f;
+}
+:where(.ref-claim, .ref-cite, .ref-card, .ref-tile, .ref-tick, .ref-pop-card) {
+  --tc: var(--acc);
+}
+:where(.ref-chip) {
+  --tc: var(--fg);
+}
+.t-benchmark {
+  --tc: var(--t-benchmark);
+}
+.t-paper {
+  --tc: var(--t-paper);
+}
+.t-code {
+  --tc: var(--t-code);
+}
+.t-post {
+  --tc: var(--t-post);
+}
+.t-docs {
+  --tc: var(--t-docs);
+}
+.t-video {
+  --tc: var(--t-video);
+}
+.t-article {
+  --tc: var(--t-article);
+}
+.t-link {
+  --tc: var(--t-link);
+}
+
+/* ---------------------------------------------------------------- in the text */
+.prose .ref-claim {
+  border-radius: 3px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--tc) 22%, transparent) 0 0.42em,
+    transparent 0.42em
+  );
+  transition:
+    background 0.25s,
+    box-shadow 0.25s;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.prose .ref-claim.on {
+  background: color-mix(in srgb, var(--tc) 40%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tc) 16%, transparent);
+}
+@keyframes ref-ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--tc) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 18px transparent;
+  }
+}
+.prose .ref-claim.ping {
+  animation: ref-ping 1s ease-out 2;
+}
+.prose a.ref-cite {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.7em;
+  height: 1.7em;
+  padding: 0 0.4em;
+  margin-inline: 0.22em 0.06em;
+  border: 1px solid color-mix(in srgb, var(--tc) 60%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--tc) 15%, var(--bg));
+  color: var(--tc);
+  font: 600 0.6em / 1 var(--mono);
+  letter-spacing: 0;
+  vertical-align: 0.55em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+.prose a.ref-cite::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: 12px;
+  background: conic-gradient(from 0deg, transparent, var(--tc), transparent 40%);
+  opacity: 0;
+  filter: blur(5px);
+  transition: opacity 0.25s;
+}
+.prose a.ref-cite:hover,
+.prose a.ref-cite:focus-visible,
+.prose a.ref-cite.on {
+  background: var(--tc);
+  color: var(--bg);
+  transform: translateY(-2px) scale(1.12);
+  outline: none;
+}
+.prose a.ref-cite:hover::before,
+.prose a.ref-cite.on::before {
+  opacity: 0.9;
+  animation: ref-spin 2.4s linear infinite;
+}
+@keyframes ref-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------- margin cards (wide screens) */
+main[data-post-slug] article {
+  position: relative;
+}
+.ref-rail {
+  position: absolute;
+  top: 0;
+  /* on the side of the text that has no table of contents: right in English, left in Persian */
+  left: calc(100% + 36px);
+  width: 240px;
+  height: 100%;
+  pointer-events: none;
+}
+html[dir="rtl"] .ref-rail {
+  left: auto;
+  right: calc(100% + 36px);
+}
+.ref-card {
+  position: absolute;
+  inset-inline: 0;
+  margin: 0;
+  padding: 10px 12px 11px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg2) 90%, transparent);
+  backdrop-filter: blur(6px);
+  opacity: 0.36;
+  pointer-events: auto;
+  cursor: pointer;
+  transition:
+    opacity 0.35s,
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.ref-card::before {
+  content: "";
+  position: absolute;
+  inset-block: 10px;
+  inset-inline-start: -1px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--tc);
+}
+.ref-card.ref-live,
+.ref-card.on {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--tc) 55%, var(--line2));
+  box-shadow: 0 10px 28px -14px color-mix(in srgb, var(--tc) 55%, transparent);
+}
+.ref-card .ref-type {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ref-card .ref-type b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.7em;
+  height: 1.7em;
+  border-radius: 6px;
+  background: var(--tc);
+  color: var(--bg);
+  font-weight: 700;
+}
+.ref-card h4 {
+  margin: 6px 0 3px;
+  font: 600 14.5px / 1.25 var(--sans);
+  letter-spacing: -0.01em;
+}
+.ref-card small {
+  display: block;
+  overflow: hidden;
+  font: 500 11px var(--mono);
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- popover (narrower screens) */
+.ref-pop {
+  position: absolute;
+  z-index: 80;
+  width: min(340px, calc(100vw - 24px));
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.98);
+  transition:
+    opacity 0.18s,
+    transform 0.18s,
+    visibility 0.18s;
+}
+.ref-pop.show {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.ref-pop-card {
+  position: relative;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--tc) 50%, var(--line2));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg2) 95%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 24px 60px -22px #000c;
+}
+.ref-pop-card::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  inset-inline-start: var(--ax, 28px);
+  width: 11px;
+  height: 11px;
+  background: var(--bg2);
+  border-top: 1px solid color-mix(in srgb, var(--tc) 50%, var(--line2));
+  border-inline-start: 1px solid color-mix(in srgb, var(--tc) 50%, var(--line2));
+  rotate: 45deg;
+}
+.ref-pop.up .ref-pop-card::after {
+  top: auto;
+  bottom: -6px;
+  rotate: 225deg;
+}
+.ref-pop .ref-title {
+  margin: 8px 0 6px;
+  font-size: 19px;
+}
+@media (max-width: 720px) {
+  .ref-pop {
+    position: fixed;
+    inset-inline: 12px;
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 62px);
+    top: auto !important;
+    left: 12px !important;
+    width: auto;
+    transform: translateY(24px);
+  }
+  .ref-pop-card::after {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- threads */
+.ref-threads {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.ref-threads path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+@keyframes ref-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- the box */
+/* labels in the site's mono style; defined here (not with the site's .mono class, which has Persian-page overrides) */
+.ref-idx,
+.ref-stats,
+.ref-mapcap,
+.ref-cited,
+.ref-foot {
+  font: 500 12px / 1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ref-wrap {
+  padding-inline: var(--pad);
+}
+.ref-box {
+  position: relative;
+  max-width: 1040px;
+  margin: 90px auto 0;
+  padding: 1px;
+  border-radius: 24px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--acc) 55%, var(--line2)),
+    var(--line2) 24%,
+    var(--line2)
+  );
+  direction: ltr;
+  text-align: left;
+}
+.ref-in {
+  padding: clamp(18px, 3vw, 34px);
+  border-radius: 23px;
+  background: var(--bg);
+}
+.ref-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.ref-idx {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--acc);
+}
+.ref-head h2 {
+  margin: 0;
+  font: var(--hw) clamp(32px, 4.6vw, 56px) / 0.98 var(--head);
+  letter-spacing: var(--hls);
+}
+.ref-head h2 em {
+  font: italic 400 1.04em var(--serif);
+  color: var(--acc);
+  letter-spacing: -0.02em;
+}
+.ref-stats {
+  display: flex;
+  gap: 22px;
+  color: var(--muted);
+}
+.ref-stats b {
+  display: block;
+  font: italic 400 30px / 1 var(--serif);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fg);
+}
+.ref-map {
+  position: relative;
+  height: 46px;
+  margin: 26px 0 8px;
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+}
+.ref-map[hidden] {
+  display: none;
+}
+.ref-map .ref-win {
+  position: absolute;
+  inset-block: 0;
+  background: color-mix(in srgb, var(--acc) 10%, transparent);
+  border-inline: 1px solid color-mix(in srgb, var(--acc) 42%, transparent);
+  transition: width 0.12s;
+}
+.ref-map .ref-line {
+  position: absolute;
+  inset-inline: 12px;
+  top: 62%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--line2) 0 4px, transparent 4px 8px);
+}
+.ref-tick {
+  position: absolute;
+  top: 62%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  padding: 0;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--tc);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.ref-tick:hover,
+.ref-tick.on {
+  z-index: 3;
+  transform: scale(1.55);
+}
+.ref-tick::after {
+  content: attr(data-n);
+  position: absolute;
+  top: -17px;
+  left: 50%;
+  translate: -50% 0;
+  font: 600 10px var(--mono);
+  color: var(--tc);
+}
+.ref-mapcap {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  color: var(--muted);
+}
+.ref-mapcap[hidden] {
+  display: none;
+}
+.ref-tip {
+  position: fixed;
+  z-index: 90;
+  max-width: 260px;
+  padding: 9px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--bg2);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  box-shadow: 0 14px 40px -14px #000a;
+}
+.ref-tip.show {
+  opacity: 1;
+}
+.ref-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.ref-filters[hidden] {
+  display: none;
+}
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: 500 12px var(--mono);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.ref-chip i {
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.ref-chip:hover {
+  border-color: var(--tc);
+  color: var(--tc);
+}
+.ref-chip[aria-pressed="true"] {
+  border-color: var(--tc);
+  background: var(--tc);
+  color: var(--bg);
+}
+.ref-chip[aria-pressed="true"] i {
+  color: inherit;
+  opacity: 0.7;
+}
+.ref-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 760px) {
+  .ref-grid {
+    grid-template-columns: 1fr;
+  }
+  .ref-stats {
+    display: none;
+  }
+}
+
+/* a source */
+.ref-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line2);
+  border-radius: 18px;
+  background: var(--bg2);
+  scroll-margin-top: 120px;
+  transition:
+    border-color 0.25s,
+    transform 0.25s,
+    opacity 0.3s;
+}
+.ref-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 0),
+    color-mix(in srgb, var(--tc) 14%, transparent),
+    transparent 62%
+  );
+  transition: opacity 0.3s;
+}
+.ref-tile:hover::before,
+.ref-tile.ref-live::before {
+  opacity: 1;
+}
+.ref-tile:hover,
+.ref-tile.hot {
+  border-color: color-mix(in srgb, var(--tc) 60%, var(--line2));
+  transform: translateY(-2px);
+}
+.ref-tile.ref-live {
+  border-color: color-mix(in srgb, var(--tc) 42%, var(--line2));
+}
+.ref-tile[hidden] {
+  display: none;
+}
+.ref-num {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 16px;
+  font: italic 400 40px / 1 var(--serif);
+  color: color-mix(in srgb, var(--tc) 32%, transparent);
+  pointer-events: none;
+  transition: color 0.3s;
+}
+.ref-tile:hover .ref-num,
+.ref-tile.ref-live .ref-num {
+  color: color-mix(in srgb, var(--tc) 60%, transparent);
+}
+.ref-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 10.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tc);
+}
+.ref-type svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.ref-title {
+  margin: 8px 0 6px;
+  max-width: 88%;
+  font: 600 21px / 1.18 var(--sans);
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+.ref-dom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font: 500 12px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.ref-dom span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ref-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(var(--h, 70) 78% 62%);
+  color: #000;
+  font: 700 10px var(--mono);
+}
+.ref-fig {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 12px 0 2px;
+}
+.ref-fig strong {
+  flex: none;
+  font: italic 400 36px / 1 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--tc);
+}
+.ref-fig span {
+  flex: 1;
+  min-width: 0;
+  font: 500 12px / 1.4 var(--mono);
+  color: var(--muted);
+}
+.ref-note {
+  margin: 10px 0 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--fg) 78%, transparent);
+  text-align: start;
+}
+.ref-by {
+  margin-top: 10px;
+  font: 500 12px var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+.ref-cover {
+  position: relative;
+  height: 70px;
+  margin: -2px -2px 12px;
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.ref-cover svg,
+.ref-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ref-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.ref-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--tc);
+  color: var(--bg);
+  font: 600 11.5px var(--mono);
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: filter 0.2s;
+}
+.ref-open:hover {
+  filter: brightness(1.12);
+}
+.ref-ib {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.ref-ib:hover {
+  border-color: var(--tc);
+  color: var(--tc);
+}
+.ref-ib svg {
+  width: 14px;
+  height: 14px;
+}
+.ref-cited {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line2);
+  color: var(--muted);
+}
+.ref-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--tc) 60%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tc);
+  font: 600 10px var(--mono);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.ref-dot:hover {
+  background: var(--tc);
+  color: var(--bg);
+  transform: scale(1.12);
+}
+
+/* the source you land on after clicking a marker: ring, glow and wash for about two seconds */
+@keyframes ref-flash {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--tc) 80%, transparent),
+      0 0 0 0 transparent;
+    background: color-mix(in srgb, var(--tc) 20%, var(--bg2));
+  }
+  22% {
+    box-shadow:
+      0 0 0 3px var(--tc),
+      0 0 34px 2px color-mix(in srgb, var(--tc) 45%, transparent);
+    background: color-mix(in srgb, var(--tc) 16%, var(--bg2));
+  }
+  70% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--tc) 60%, transparent),
+      0 0 18px 0 color-mix(in srgb, var(--tc) 25%, transparent);
+    background: color-mix(in srgb, var(--tc) 9%, var(--bg2));
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 0 0 transparent;
+    background: var(--bg2);
+  }
+}
+.ref-tile.flash {
+  border-color: var(--tc);
+  animation: ref-flash 2.2s ease-out 1;
+}
+.ref-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  color: var(--muted);
+}
+.ref-foot button {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--acc);
+  color: var(--on-acc);
+  font: 600 11.5px var(--mono);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.ref-foot button[hidden] {
+  display: none;
+}
+
+/* text written by the author in Persian: the site's Persian typography, full width, right to left */
+.ref-box [lang="fa"],
+.ref-pop [lang="fa"],
+.ref-card [lang="fa"] {
+  font-family: "Vazirmatn Variable", var(--sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ref-title[lang="fa"] {
+  font-weight: 700;
+  line-height: 1.55;
+  font-size: 20px;
+}
+.ref-note[lang="fa"] {
+  font-size: 15px;
+  line-height: 1.9;
+}
+.ref-fig span[lang="fa"] {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.ref-by[lang="fa"] {
+  line-height: 1.7;
+}
+.ref-card h4[lang="fa"] {
+  font-weight: 700;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prose .ref-claim.ping {
+    animation: none;
+    outline: 2px solid var(--tc);
+  }
+  .ref-tile.flash {
+    animation: none;
+    outline: 3px solid var(--tc);
+    outline-offset: 2px;
+  }
+  .prose a.ref-cite::before {
+    animation: none !important;
+  }
+}
+@media print {
+  .ref-rail,
+  .ref-pop,
+  .ref-threads,
+  .ref-map,
+  .ref-mapcap,
+  .ref-filters,
+  .ref-acts,
+  .ref-foot button {
+    display: none !important;
+  }
+}
+
+/* comments sit under the references box, in the same column as the text */
+.post-comments {
+  max-width: 700px;
+  margin: 56px auto 0;
+  padding-inline: var(--pad);
+}
+@media (min-width: 1001px) {
+  .post-comments {
+    max-width: calc(700px + 2 * var(--pad));
+  }
+}

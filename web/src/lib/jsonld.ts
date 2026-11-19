@@ -46,6 +46,8 @@ export interface PostLdInput {
   tags: string[];
   image: string;
   path: string;
+  /** Sources cited in the post: name and address (absolute or a site path). */
+  citations?: { name: string; url: string }[];
 }
 
 const iso = (d: string) => new Date(d.replace(' ', 'T')).toISOString();
@@ -65,6 +67,16 @@ export function blogPostingLd(i: PostLdInput) {
     mainEntityOfPage: absoluteUrl(i.site, i.path),
     author: { '@id': absoluteUrl(i.site, '/#person') },
     publisher: { '@id': absoluteUrl(i.site, '/#person') },
+    // the sources of the "References" box, so search engines see what the post builds on
+    ...(i.citations?.length
+      ? {
+          citation: i.citations.map((c) => ({
+            '@type': 'CreativeWork',
+            name: c.name,
+            url: absoluteUrl(i.site, c.url),
+          })),
+        }
+      : {}),
   };
 }
 
