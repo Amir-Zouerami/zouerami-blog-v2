@@ -203,6 +203,16 @@ test('comments UI: posting from the page works and cross-site writes are blocked
   await expect(page.locator('[data-account-name]')).toHaveText('Acct Tester');
   await expect(page.locator('[data-bookmarks] .row')).toHaveCount(1);
 
+  // signed in: the sign-in and sign-up pages send you to the account page
+  for (const [from, to] of [
+    ['/login', '/account'],
+    ['/register', '/account'],
+    ['/fa/login', '/fa/account'],
+  ] as const) {
+    await page.goto(from);
+    await expect(page).toHaveURL(new RegExp(`${to}$`));
+  }
+
   await page.goto('/blog/english-only');
   await page.locator('.nextprev').scrollIntoViewIfNeeded(); // the comments island hydrates when visible
   const box = page.locator('textarea.area');
