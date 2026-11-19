@@ -1,4 +1,8 @@
 ---
 import AuthView from '../../views/AuthView.astro';
+import { localePath } from '../../i18n';
+
+// already signed in: nothing to do here, go to the account page
+if (Astro.locals.user) return Astro.redirect(localePath('fa', '/account'));
 ---
 <AuthView locale="fa" mode="register" />
