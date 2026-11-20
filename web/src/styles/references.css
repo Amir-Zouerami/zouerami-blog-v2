@@ -841,12 +841,12 @@ html[dir="rtl"] .ref-rail {
 
 /* comments sit under the references box, in the same column as the text */
 .post-comments {
-  max-width: 700px;
+  max-width: 780px;
   margin: 56px auto 0;
   padding-inline: var(--pad);
 }
 @media (min-width: 1001px) {
   .post-comments {
-    max-width: calc(700px + 2 * var(--pad));
+    max-width: calc(780px + 2 * var(--pad));
   }
 }
