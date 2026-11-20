@@ -1,7 +1,7 @@
 import { redo, undo } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { Compartment, EditorSelection } from '@codemirror/state';
+import { Compartment, EditorSelection, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
 import { useEffect, useRef, useState } from 'react';
@@ -18,7 +18,6 @@ interface Props {
   /** Uploads files and returns the stored filenames (undefined = uploads unavailable). */
   onUpload?: (files: File[]) => Promise<string[]>;
   uploadHint?: string;
-  onSave?: () => void;
 }
 
 const theme = EditorView.theme({
@@ -44,12 +43,13 @@ export default function MarkdownEditor({
   postId,
   onUpload,
   uploadHint,
-  onSave,
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
-  const latest = useRef({ onChange, onUpload, onSave });
-  latest.current = { onChange, onUpload, onSave };
+  const latest = useRef({ onChange, onUpload });
+  latest.current = { onChange, onUpload };
+  /** Rebuilt every render; the editor's key handler (created once) calls it. */
+  const shortcut = useRef<(e: KeyboardEvent) => boolean>(() => false);
   const [html, setHtml] = useState('');
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewErr, setPreviewErr] = useState(false);
@@ -145,48 +145,38 @@ export default function MarkdownEditor({
             },
           },
         ]),
-        EditorView.domEventHandlers({
-          contextmenu(e) {
-            if (e.shiftKey) return false; // Shift+right-click: the browser's own menu (spell-check etc.)
-            e.preventDefault();
-            showMenu({ x: e.clientX, y: e.clientY, items: menuItems.current(), label: 'Editor' });
-            return true;
-          },
-          keydown(e) {
-            if (!(e.metaKey || e.ctrlKey) || e.altKey) return false;
-            // by physical key (e.code) so shortcuts work on any keyboard layout, e.g. Persian
-            if (e.code === 'KeyS') {
+        Prec.highest(
+          EditorView.domEventHandlers({
+            contextmenu(e) {
+              if (e.shiftKey) return false; // Shift+right-click: the browser's own menu (spell-check etc.)
               e.preventDefault();
-              latest.current.onSave?.();
+              showMenu({ x: e.clientX, y: e.clientY, items: menuItems.current(), label: 'Editor' });
               return true;
-            }
-            if (e.code === 'KeyZ' || e.code === 'KeyY') {
+            },
+            keydown(e) {
+              if (!(e.metaKey || e.ctrlKey)) return false;
+              return shortcut.current(e);
+            },
+            paste(e) {
+              const files = [...(e.clipboardData?.files ?? [])].filter((f) =>
+                f.type.startsWith('image/'),
+              );
+              if (!files.length) return false;
               e.preventDefault();
-              const v = view.current;
-              if (v) (e.code === 'KeyY' || e.shiftKey ? redo : undo)(v);
+              void uploadAndInsert(files);
               return true;
-            }
-            return false;
-          },
-          paste(e) {
-            const files = [...(e.clipboardData?.files ?? [])].filter((f) =>
-              f.type.startsWith('image/'),
-            );
-            if (!files.length) return false;
-            e.preventDefault();
-            void uploadAndInsert(files);
-            return true;
-          },
-          drop(e) {
-            const files = [...(e.dataTransfer?.files ?? [])].filter((f) =>
-              f.type.startsWith('image/'),
-            );
-            if (!files.length) return false;
-            e.preventDefault();
-            void uploadAndInsert(files);
-            return true;
-          },
-        }),
+            },
+            drop(e) {
+              const files = [...(e.dataTransfer?.files ?? [])].filter((f) =>
+                f.type.startsWith('image/'),
+              );
+              if (!files.length) return false;
+              e.preventDefault();
+              void uploadAndInsert(files);
+              return true;
+            },
+          }),
+        ),
       ],
     });
     view.current = v;
@@ -256,6 +246,130 @@ export default function MarkdownEditor({
     const line = v.state.doc.lineAt(v.state.selection.main.from);
     v.dispatch({ changes: { from: line.from, insert: prefix } });
     v.focus();
+  };
+
+  /** Wrap the selection in `before`/`after`, or take them off again when they are already there. */
+  const toggleWrap = (before: string, after = before, placeholder = '') => {
+    const v = view.current;
+    if (!v) return;
+    v.dispatch(
+      v.state.changeByRange((r) => {
+        const doc = v.state.doc;
+        const pre = doc.sliceString(Math.max(0, r.from - before.length), r.from);
+        const post = doc.sliceString(r.to, Math.min(doc.length, r.to + after.length));
+        const beyond = (at: number, n: number) => doc.sliceString(Math.max(0, at - n), at + n);
+        // `*` is also the start of `**`: only a lone one counts as italic
+        const lone =
+          before !== '*' ||
+          (!beyond(r.from, 1).startsWith('**') &&
+            !doc.sliceString(r.from - 2, r.from).startsWith('**'));
+        if (r.from > 0 && pre === before && post === after && lone && !r.empty) {
+          return {
+            changes: [
+              { from: r.from - before.length, to: r.from, insert: '' },
+              { from: r.to, to: r.to + after.length, insert: '' },
+            ],
+            range: EditorSelection.range(r.from - before.length, r.to - before.length),
+          };
+        }
+        const sel = doc.sliceString(r.from, r.to) || placeholder;
+        // the selection itself already carries the markers: take them off
+        if (
+          !r.empty &&
+          sel.length >= before.length + after.length &&
+          sel.startsWith(before) &&
+          sel.endsWith(after) &&
+          (before !== '*' || !sel.startsWith('**'))
+        ) {
+          const inner = sel.slice(before.length, sel.length - after.length);
+          return {
+            changes: { from: r.from, to: r.to, insert: inner },
+            range: EditorSelection.range(r.from, r.from + inner.length),
+          };
+        }
+        return {
+          changes: { from: r.from, to: r.to, insert: before + sel + after },
+          range: EditorSelection.range(r.from + before.length, r.from + before.length + sel.length),
+        };
+      }),
+    );
+    v.focus();
+  };
+  /** Add `prefix` to every selected line, or remove it when all of them already have it. `re` matches any prefix of the same kind. */
+  const toggleLines = (prefix: string, re: RegExp) => {
+    const v = view.current;
+    if (!v) return;
+    const { from, to } = v.state.selection.main;
+    const first = v.state.doc.lineAt(from).number;
+    const last = v.state.doc.lineAt(to).number;
+    const lines = [];
+    for (let n = first; n <= last; n++) lines.push(v.state.doc.line(n));
+    const all = lines.every((l) => re.test(l.text) || !l.text.trim());
+    v.dispatch({
+      changes: lines.map((l, i) => {
+        const m = re.exec(l.text);
+        if (all && m) return { from: l.from, to: l.from + m[0].length, insert: '' };
+        return {
+          from: l.from,
+          to: l.from + (m ? m[0].length : 0),
+          insert: all ? '' : prefix.replace('1.', `${i + 1}.`),
+        };
+      }),
+    });
+    v.focus();
+  };
+  const heading = (level: number) => {
+    const v = view.current;
+    if (!v) return;
+    const line = v.state.doc.lineAt(v.state.selection.main.from);
+    const m = /^(#{1,6})\s+/.exec(line.text);
+    const same = m?.[1]?.length === level;
+    v.dispatch({
+      changes: {
+        from: line.from,
+        to: line.from + (m ? m[0].length : 0),
+        insert: same ? '' : `${'#'.repeat(level)} `,
+      },
+    });
+    v.focus();
+  };
+  const BULLET = /^\s*[-*+]\s+/;
+  const ORDERED = /^\s*\d+[.)]\s+/;
+  const QUOTE = /^\s*>\s?/;
+  /** Ctrl/Cmd shortcuts by physical key, so they work on any keyboard layout (Persian too). */
+  shortcut.current = (e) => {
+    const run = (f: () => void) => {
+      e.preventDefault();
+      f();
+      return true;
+    };
+    if (e.code === 'KeyZ' || e.code === 'KeyY') {
+      return run(() => {
+        const v = view.current;
+        if (v) (e.code === 'KeyY' || e.shiftKey ? redo : undo)(v);
+      });
+    }
+    if (e.altKey) {
+      if (e.shiftKey) return false;
+      if (e.code === 'Digit1') return run(() => heading(1));
+      if (e.code === 'Digit2') return run(() => heading(2));
+      if (e.code === 'Digit3') return run(() => heading(3));
+      if (e.code === 'Digit4') return run(() => heading(4));
+      if (e.code === 'KeyC') return run(() => wrap('\n```\n', '\n```\n', 'code'));
+      return false;
+    }
+    if (e.shiftKey) {
+      if (e.code === 'Digit8') return run(() => toggleLines('- ', BULLET));
+      if (e.code === 'Digit7') return run(() => toggleLines('1. ', ORDERED));
+      if (e.code === 'Digit9') return run(() => toggleLines('> ', QUOTE));
+      if (e.code === 'KeyX') return run(() => toggleWrap('~~', '~~', 'text'));
+      return false;
+    }
+    if (e.code === 'KeyB') return run(() => toggleWrap('**', '**', 'bold'));
+    if (e.code === 'KeyI') return run(() => toggleWrap('*', '*', 'italic'));
+    if (e.code === 'KeyE') return run(() => toggleWrap('`', '`', 'code'));
+    if (e.code === 'KeyK') return run(() => wrap('[', '](https://)', 'text'));
+    return false;
   };
 
   const selectionText = () => {
@@ -334,15 +448,15 @@ export default function MarkdownEditor({
             id: 'bold',
             label: 'Bold',
             icon: icons.bold,
-            shortcut: '**',
-            onSelect: () => wrap('**', '**', 'bold'),
+            shortcut: 'Ctrl+B',
+            onSelect: () => toggleWrap('**', '**', 'bold'),
           },
           {
             id: 'italic',
             label: 'Italic',
             icon: icons.italic,
-            shortcut: '*',
-            onSelect: () => wrap('*', '*', 'italic'),
+            shortcut: 'Ctrl+I',
+            onSelect: () => toggleWrap('*', '*', 'italic'),
           },
           {
             id: 'code',
@@ -447,25 +561,41 @@ export default function MarkdownEditor({
         >
           ▣
         </button>
-        <button type="button" title="Heading (## )" onClick={() => linePrefix('## ')}>
+        <button type="button" title="Heading (Ctrl+Alt+2)" onClick={() => heading(2)}>
           H2
         </button>
-        <button type="button" title="Bold" onClick={() => wrap('**', '**', 'bold')}>
+        <button type="button" title="Bold (Ctrl+B)" onClick={() => toggleWrap('**', '**', 'bold')}>
           <b>B</b>
         </button>
-        <button type="button" title="Italic" onClick={() => wrap('*', '*', 'italic')}>
+        <button
+          type="button"
+          title="Italic (Ctrl+I)"
+          onClick={() => toggleWrap('*', '*', 'italic')}
+        >
           <i>I</i>
         </button>
-        <button type="button" title="Inline code" onClick={() => wrap('`', '`', 'code')}>
+        <button
+          type="button"
+          title="Inline code (Ctrl+E)"
+          onClick={() => toggleWrap('`', '`', 'code')}
+        >
           {'<>'}
         </button>
-        <button type="button" title="Link" onClick={() => wrap('[', '](https://)', 'text')}>
+        <button
+          type="button"
+          title="Link (Ctrl+K)"
+          onClick={() => wrap('[', '](https://)', 'text')}
+        >
           Link
         </button>
-        <button type="button" title="Quote" onClick={() => linePrefix('> ')}>
+        <button type="button" title="Quote (Ctrl+Shift+9)" onClick={() => toggleLines('> ', QUOTE)}>
           ❝
         </button>
-        <button type="button" title="List" onClick={() => linePrefix('- ')}>
+        <button
+          type="button"
+          title="Bulleted list (Ctrl+Shift+8)"
+          onClick={() => toggleLines('- ', BULLET)}
+        >
           • List
         </button>
         <button
@@ -489,7 +619,7 @@ export default function MarkdownEditor({
           Image
         </button>
         <span className="grow" />
-        <span className="mono muted">{words} words</span>
+        <span className="mono muted adm-words">{words} words</span>
         <button
           type="button"
           className={showPreview ? 'on' : ''}

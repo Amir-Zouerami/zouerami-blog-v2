@@ -87,6 +87,14 @@ test.describe('post page', () => {
       .evaluate((i: HTMLImageElement) => i.naturalWidth > 0);
     expect(loaded).toBe(true);
   });
+  test('the tags of a post link to the blog list filtered by that tag', async ({ page }) => {
+    await page.goto('/blog/hello-bilingual');
+    const tag = page.locator('.post-head a.tagp-link').first();
+    const name = ((await tag.textContent()) ?? '').trim();
+    await tag.click();
+    await expect(page).toHaveURL(new RegExp(`/blog\\?tag=${encodeURIComponent(name)}`));
+    await expect(page.locator('.ftab.on')).toContainText(name);
+  });
   test('a visible language control links to the other language and crosses out a missing one', async ({
     page,
   }) => {

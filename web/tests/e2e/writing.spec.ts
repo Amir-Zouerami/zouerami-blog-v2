@@ -471,4 +471,65 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(page.locator('.adm-editor.zen')).toHaveCount(0);
     await expect(preview).toBeVisible(); // the choice made in zen sticks
   });
+
+  test('markdown shortcuts work in the editor and Ctrl+S saves from any field', async ({
+    page,
+  }) => {
+    const p = await su.collection('posts').create({
+      slug: `e2e-keys-${stamp}`,
+      date: '2030-04-04 00:00:00.000Z',
+      status: 'draft',
+      tags: ['alpha'],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Keys', summary: '', body_md: '' });
+    await page.goto(`/admin#/posts/${p.id}`);
+    const ed = page.locator('.cm-content');
+    await ed.click();
+    await page.keyboard.press('Control+b');
+    await page.keyboard.type('strong');
+    await expect(ed).toContainText('**strong**');
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Control+b'); // toggles it off again
+    await expect(ed).not.toContainText('**');
+    await page.keyboard.press('Control+i');
+    await expect(ed).toContainText('*strong*');
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Control+Shift+8');
+    await expect(ed).toContainText('- ');
+    await page.keyboard.press('Control+Alt+2');
+    await expect(ed).toContainText('## ');
+    // Ctrl+S from the title field (not the editor) saves
+    await page.locator('.adm-title').click();
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('.adm-toast.ok', { hasText: /^Saved$/ })).toBeVisible();
+    // and from the page body, with nothing focused
+    await page.locator('.adm-title').fill('Keys two');
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.keyboard.press('Control+s');
+    await expect
+      .poll(
+        async () =>
+          (await su.collection('post_translations').getFirstListItem(`post="${p.id}"`)).title,
+      )
+      .toBe('Keys two');
+    const rec = await su.collection('post_translations').getFirstListItem(`post="${p.id}"`);
+    expect(rec.body_md).toContain('## ');
+  });
+
+  test('existing tags are clickable chips that fill the tags field', async ({ page }) => {
+    await page.goto('/admin#/posts/new');
+    const chip = page.locator('.adm-tagpick button').first();
+    await expect(chip).toBeVisible();
+    const name = (await chip.textContent()) ?? '';
+    await chip.click();
+    await expect(
+      page.locator('.adm-tagpick').locator('xpath=preceding-sibling::input'),
+    ).toHaveValue(new RegExp(name));
+    await chip.click();
+    await expect(
+      page.locator('.adm-tagpick').locator('xpath=preceding-sibling::input'),
+    ).not.toHaveValue(new RegExp(name));
+  });
 });

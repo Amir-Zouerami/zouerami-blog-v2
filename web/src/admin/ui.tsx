@@ -1,4 +1,12 @@
-import { createContext, type ReactNode, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Button } from '../ui/Button';
 
 type Toast = { id: number; text: string; kind: 'ok' | 'err' };
@@ -80,3 +88,18 @@ export const fmtDate = (s: string) =>
         timeStyle: 'short',
       })
     : '';
+
+/** Ctrl/Cmd+S saves from anywhere on the page (any field, or none) instead of opening the browser's "save page" dialog. */
+export function useSaveShortcut(save: () => void) {
+  const latest = useRef(save);
+  latest.current = save;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.code !== 'KeyS') return;
+      e.preventDefault();
+      if (!e.repeat) latest.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+}
