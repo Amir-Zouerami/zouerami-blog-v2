@@ -55,6 +55,37 @@ export default function MarkdownEditor({
   const [previewErr, setPreviewErr] = useState(false);
   const [words, setWords] = useState(0);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit'); // narrow screens
+  // the preview pane is optional (remembered), and "zen" lays the editor over the whole screen
+  const [showPreview, setShowPreview] = useState(() => {
+    try {
+      return localStorage.getItem('adm-preview') !== '0';
+    } catch {
+      return true;
+    }
+  });
+  const [zen, setZen] = useState(false);
+  const togglePreview = () =>
+    setShowPreview((on) => {
+      try {
+        localStorage.setItem('adm-preview', on ? '0' : '1');
+      } catch {
+        /* the choice just isn't remembered */
+      }
+      return !on;
+    });
+  useEffect(() => {
+    if (!zen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) setZen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    view.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [zen]);
   const dirComp = useRef(new Compartment());
   /** The last document the editor itself reported, so the sync effect can tell an outside change from our own typing. */
   const emitted = useRef(value);
@@ -383,7 +414,7 @@ export default function MarkdownEditor({
   };
 
   return (
-    <div className="adm-editor">
+    <div className={`adm-editor${zen ? ' zen' : ''}`}>
       <div className="adm-toolbar" role="toolbar" aria-label="Formatting">
         <button
           type="button"
@@ -459,7 +490,23 @@ export default function MarkdownEditor({
         </button>
         <span className="grow" />
         <span className="mono muted">{words} words</span>
-        <span className="adm-tabs-narrow">
+        <button
+          type="button"
+          className={showPreview ? 'on' : ''}
+          aria-pressed={showPreview}
+          title={showPreview ? 'Hide the preview' : 'Show the preview'}
+          onClick={togglePreview}
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          title="Full screen writing (Esc to leave)"
+          onClick={() => setZen(true)}
+        >
+          Zen
+        </button>
+        <span className="adm-tabs-narrow" hidden={!showPreview}>
           <button
             type="button"
             className={tab === 'edit' ? 'on' : ''}
@@ -476,9 +523,19 @@ export default function MarkdownEditor({
           </button>
         </span>
       </div>
-      <div className={`adm-split show-${tab}`}>
+      {zen && (
+        <div className="adm-zen-bar">
+          <button type="button" aria-pressed={showPreview} onClick={togglePreview}>
+            {showPreview ? 'Hide preview' : 'Show preview'}
+          </button>
+          <button type="button" onClick={() => setZen(false)}>
+            Exit zen
+          </button>
+        </div>
+      )}
+      <div className={`adm-split show-${tab}${showPreview ? '' : ' no-preview'}`}>
         <div className="adm-pane write" ref={host} />
-        <div className="adm-pane preview">
+        <div className="adm-pane preview" hidden={!showPreview}>
           {previewErr && <p className="mono muted">Preview unavailable.</p>}
           {/* HTML comes from our own renderer, which drops raw HTML from the source */}
           <div

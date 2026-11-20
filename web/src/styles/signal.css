@@ -1981,3 +1981,35 @@ html[lang='fa'] .now-line .it { font-family: "Vazirmatn Variable", sans-serif; f
 .post-head h1[dir="rtl"] { font-size: clamp(36px, 7vw, 64px); }
 /* bot-trap field: invisible to people and screen readers, tempting to bots */
 .hp { position: absolute !important; left: -9999px !important; top: auto; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+
+/* ---- slim themed scrollbars (tables, code, back-office panes, the page) ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
+}
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--line2);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--acc);
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
