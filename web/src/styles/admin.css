@@ -259,6 +259,7 @@ a.adm-card:hover {
 .adm-pane.preview[hidden] {
   display: none;
 }
+.adm-words { margin-inline: 0 18px; }
 .adm-tabs-narrow[hidden] { display: none !important; }
 .adm-toolbar button.on {
   background: var(--acc);
@@ -286,7 +287,7 @@ a.adm-card:hover {
   height: auto;
 }
 .adm-editor.zen .adm-split.no-preview .adm-pane.write .cm-editor {
-  max-width: 900px;
+  max-width: 1180px;
   margin-inline: auto;
 }
 .adm-zen-bar {
@@ -458,3 +459,27 @@ fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
 .cv-slots { display: grid; gap: 18px; max-width: 760px; }
 .cv-slot { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--bg2); }
 .cv-slot h2 { font: 600 18px var(--sans); margin: 0; }
+
+.adm-tagpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.adm-tagpick button {
+  padding: 2px 10px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  font: 500 12px var(--mono);
+  color: var(--muted);
+  cursor: pointer;
+}
+.adm-tagpick button:hover {
+  color: var(--fg);
+  border-color: var(--acc);
+}
+.adm-tagpick button.on {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--on-acc);
+}

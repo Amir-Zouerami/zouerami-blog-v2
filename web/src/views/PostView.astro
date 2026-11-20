@@ -74,7 +74,7 @@ const jsonLd =
   </div>
   <main id="main" data-post-slug={post.slug} data-track={post.preview ? undefined : 'view'}>
     <header class="post-head pad">
-      <div style="margin-bottom:26px">{post.tags.map((tg) => <span class="tagp">{tg}</span>)} </div>
+      <div style="margin-bottom:26px">{post.tags.map((tg) => <a class="tagp tagp-link" href={`${localePath(locale, '/blog')}?tag=${encodeURIComponent(tg)}`}>{tg}</a>)} </div>
       <h1 dir={dirOf(post.lang)} lang={post.lang}>{post.title}</h1>
       <div class="meta-grid meta-3">
         <div><span class="mono muted">{tr.post.published}</span><p><time datetime={new Date(post.date.replace(' ', 'T')).toISOString()}><bdi dir={locale === 'fa' ? 'rtl' : 'ltr'}>{formatDate(post.date, locale, true)}</bdi></time></p></div>

@@ -5,7 +5,7 @@ import { Select } from '../../ui/Select';
 import { errText, fileUrl, pb, type Rec, SLUG, slugify } from '../api';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
-import { Confirm, Field, useToast } from '../ui';
+import { Confirm, Field, useSaveShortcut, useToast } from '../ui';
 import { useDraft } from '../useDraft';
 
 interface Tr {
@@ -183,6 +183,7 @@ export default function ProjectEdit({ id }: { id: string | null }) {
       setSaving(false);
     }
   };
+  useSaveShortcut(() => void save());
 
   if (loading) return <p className="mono muted">Loading…</p>;
   const t = trs[lang];
@@ -353,7 +354,6 @@ export default function ProjectEdit({ id }: { id: string | null }) {
         onChange={(v) => setTr({ body_md: v })}
         dir={langDir(lang)}
         lang={lang}
-        onSave={() => void save()}
       />
       {rec && (
         <section className="adm-danger">

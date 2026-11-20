@@ -8,7 +8,7 @@ import { fromPocketBase, toPocketBase } from '../date';
 import ImageLibrary from '../ImageLibrary';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
-import { Confirm, Field, useToast } from '../ui';
+import { Confirm, Field, useSaveShortcut, useToast } from '../ui';
 import { useDraft } from '../useDraft';
 
 interface Tr {
@@ -244,6 +244,7 @@ export default function PostEdit({ id }: { id: string | null }) {
 
   const saveRef = useRef(save);
   saveRef.current = save;
+  useSaveShortcut(() => void saveRef.current());
 
   const upload = post
     ? async (files: File[]): Promise<string[]> => {
@@ -428,17 +429,29 @@ export default function PostEdit({ id }: { id: string | null }) {
           />
         </Field>
         <Field label="Tags (comma separated)">
-          <input
-            value={tags}
-            onChange={(e) => touch(setTags)(e.target.value)}
-            list="all-tags"
-            dir="ltr"
-          />
-          <datalist id="all-tags">
-            {allTags.map((x) => (
-              <option key={x} value={x} />
-            ))}
-          </datalist>
+          <input value={tags} onChange={(e) => touch(setTags)(e.target.value)} dir="ltr" />
+          {allTags.length > 0 && (
+            <div className="adm-tagpick">
+              {allTags.map((x) => {
+                const on = tagList.includes(x);
+                return (
+                  <button
+                    key={x}
+                    type="button"
+                    className={on ? 'on' : ''}
+                    aria-pressed={on}
+                    onClick={() =>
+                      touch(setTags)(
+                        (on ? tagList.filter((t) => t !== x) : [...tagList, x]).join(', '),
+                      )
+                    }
+                  >
+                    {x}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Field>
         <Field group label="Cover image (optional)">
           <FilePicker
@@ -532,7 +545,6 @@ export default function PostEdit({ id }: { id: string | null }) {
         postId={postId}
         onUpload={upload}
         uploadHint="Save the post once to enable image uploads"
-        onSave={() => void saveRef.current()}
       />
 
       <ImageLibrary

@@ -1939,6 +1939,14 @@ html[lang='fa'] .rpill-left { font-family: "Vazirmatn Variable", sans-serif; fon
   word-break: normal;
 }
 .prose th { font-weight: 600; white-space: nowrap; }
+/* a shadow on the side where the table continues: it fades as you reach that end */
+.prose table {
+  background:
+    linear-gradient(to right, var(--bg) 30%, transparent) left center / 44px 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 30%, transparent) right center / 44px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--fg) 34%, transparent), transparent) left center / 16px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--fg) 34%, transparent), transparent) right center / 16px 100% no-repeat scroll;
+}
 .prose img, .prose video, .prose iframe { max-width: 100%; height: auto; }
 @media (max-width: 1000px) {
   .art { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-block: 28px 0; }
@@ -2013,3 +2021,6 @@ html[lang='fa'] .now-line .it { font-family: "Vazirmatn Variable", sans-serif; f
     background: transparent;
   }
 }
+
+a.tagp-link { text-decoration: none; transition: color 0.15s, border-color 0.15s; }
+a.tagp-link:hover, a.tagp-link:focus-visible { color: var(--acc); border-color: var(--acc); }
