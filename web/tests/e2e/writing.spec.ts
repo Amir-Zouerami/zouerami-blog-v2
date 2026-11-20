@@ -448,4 +448,27 @@ test.describe('back office: nothing typed is lost', () => {
       timeout: 20000,
     });
   });
+
+  test('the preview can be switched off and back on, and zen mode takes over the screen', async ({
+    page,
+  }) => {
+    await page.goto('/admin#/posts/new');
+    const preview = page.locator('.adm-pane.preview');
+    await expect(preview).toBeVisible();
+    await page.getByRole('button', { name: 'Preview', exact: true }).first().click();
+    await expect(preview).toBeHidden();
+    await page.reload();
+    await expect(page.locator('.adm-pane.write')).toBeVisible();
+    await expect(preview).toBeHidden(); // remembered
+    await page.getByRole('button', { name: 'Zen' }).click();
+    const box = await page.locator('.adm-editor.zen').boundingBox();
+    expect(box?.width).toBe(page.viewportSize()?.width);
+    expect(box?.height).toBe(page.viewportSize()?.height);
+    await expect(page.locator('.adm-toolbar')).toBeHidden();
+    await page.getByRole('button', { name: 'Show preview' }).click();
+    await expect(preview).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.adm-editor.zen')).toHaveCount(0);
+    await expect(preview).toBeVisible(); // the choice made in zen sticks
+  });
 });
