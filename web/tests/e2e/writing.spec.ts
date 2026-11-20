@@ -349,7 +349,7 @@ test.describe('back office: nothing typed is lost', () => {
     // give it a title → saves, and the text is still there afterwards
     await page.locator('.adm-title').fill('عنوان');
     await page.getByRole('button', { name: /^Save/ }).click();
-    await expect(page.locator('.adm-toast.ok', { hasText: 'Saved' })).toBeVisible();
+    await expect(page.locator('.adm-toast.ok', { hasText: /^Saved$/ })).toBeVisible();
     await expect(page.locator('.cm-content')).toContainText('متنی که نباید گم شود');
     const post = await su.collection('posts').getFirstListItem(`slug = "${slug}"`);
     const rows = await su
@@ -371,7 +371,7 @@ test.describe('back office: nothing typed is lost', () => {
     await page.keyboard.type('line one\nline two\nline three');
     await page.keyboard.press('Control+Home');
     await page.getByRole('button', { name: /^Save/ }).click();
-    await expect(page.locator('.adm-toast.ok', { hasText: 'Saved' })).toBeVisible();
+    await expect(page.locator('.adm-toast.ok', { hasText: /^Saved$/ })).toBeVisible();
     await expect(page.getByRole('tab', { name: /فارسی/ })).toHaveAttribute('aria-selected', 'true');
     expect(page.url()).toMatch(/#\/posts\/[a-z0-9]{15}$/);
     // still the same editor: typing continues at the cursor (start of the document)
@@ -380,7 +380,7 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(page.locator('.cm-line').first()).toHaveText('Xline one');
     // second save, again in place
     await page.keyboard.press('Control+s');
-    await expect(page.locator('.adm-toast.ok', { hasText: 'Saved' }).last()).toBeVisible();
+    await expect(page.locator('.adm-toast.ok', { hasText: /^Saved$/ }).last()).toBeVisible();
     await expect(page.getByRole('tab', { name: /فارسی/ })).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -410,7 +410,7 @@ test.describe('back office: nothing typed is lost', () => {
     await banner.getByRole('button', { name: 'Restore it' }).click();
     await expect(page.locator('.cm-content')).toContainText('saved body plus unsaved words');
     await page.getByRole('button', { name: /^Save/ }).click();
-    await expect(page.locator('.adm-toast.ok', { hasText: 'Saved' })).toBeVisible();
+    await expect(page.locator('.adm-toast.ok', { hasText: /^Saved$/ })).toBeVisible();
     await page.reload();
     await expect(banner).toHaveCount(0); // saving cleared the backup
     await expect(page.locator('.cm-content')).toContainText('plus unsaved words');
