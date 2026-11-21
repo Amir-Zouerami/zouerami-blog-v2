@@ -29,6 +29,7 @@ export const POST = adminOnly(async ({ request }) => {
     lang: body.data.lang,
     resolveImage: (name) => (body.data.postId ? imageUrl({ id: body.data.postId }, name) : name),
     resolvePost: resolver,
+    sourceLines: true,
   });
   return ok({ html, headings, references });
 });

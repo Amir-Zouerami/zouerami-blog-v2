@@ -11,9 +11,10 @@ import {
   type ViewUpdate,
 } from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { icons, type MenuEntry, showMenu } from '../lib/context-menu';
 import { previewMarkdown } from './api';
+import { collectAnchors, lineForTop, topForLine } from './scrollSync';
 
 interface Props {
   value: string;
@@ -365,6 +366,88 @@ export default function MarkdownEditor({
       ctl.abort();
     };
   }, [value, postId, lang]);
+
+  // Scrolling either pane moves the other to the same place in the text (see scrollSync.ts).
+  const align = useRef<() => void>(() => {});
+  useEffect(() => {
+    const v = view.current;
+    const root = previewRef.current;
+    const pane = root?.parentElement;
+    if (!v || !root || !pane || !showPreview) {
+      align.current = () => {};
+      return;
+    }
+    const ed = v.scrollDOM;
+    const expect = { ed: -1, pv: -1 };
+    const visible = () => pane.clientHeight > 0 && ed.clientHeight > 0;
+    const maxOf = (el: HTMLElement) => Math.max(0, el.scrollHeight - el.clientHeight);
+    // moves a pane and remembers where it should land, so its own scroll event is not mistaken for the user's
+    const move = (el: HTMLElement, key: 'ed' | 'pv', top: number) => {
+      const before = el.scrollTop;
+      el.scrollTop = Math.max(0, Math.min(top, maxOf(el)));
+      if (el.scrollTop !== before) expect[key] = el.scrollTop;
+    };
+    const lines = () => v.state.doc.lines;
+    const editorToPreview = () => {
+      if (!visible()) return;
+      let target: number;
+      if (ed.scrollTop <= 1) target = 0;
+      else if (ed.scrollTop >= maxOf(ed) - 1) target = maxOf(pane);
+      else {
+        const block = v.lineBlockAtHeight(ed.scrollTop);
+        const n = v.state.doc.lineAt(block.from).number;
+        const L = n + Math.min(1, Math.max(0, (ed.scrollTop - block.top) / (block.height || 1)));
+        target = topForLine(collectAnchors(pane, root), L, lines() + 1, pane.scrollHeight);
+      }
+      move(pane, 'pv', target);
+    };
+    const previewToEditor = () => {
+      if (!visible()) return;
+      let target: number;
+      if (pane.scrollTop <= 1) target = 0;
+      else if (pane.scrollTop >= maxOf(pane) - 1) target = maxOf(ed);
+      else {
+        const L = lineForTop(
+          collectAnchors(pane, root),
+          pane.scrollTop,
+          lines() + 1,
+          pane.scrollHeight,
+        );
+        const n = Math.min(lines(), Math.max(1, Math.floor(L)));
+        const block = v.lineBlockAt(v.state.doc.line(n).from);
+        target = block.top + (L - n) * block.height;
+      }
+      move(ed, 'ed', target);
+    };
+    const onEd = () => {
+      if (expect.ed >= 0 && Math.abs(ed.scrollTop - expect.ed) < 2) {
+        expect.ed = -1;
+        return;
+      }
+      expect.ed = -1;
+      editorToPreview();
+    };
+    const onPv = () => {
+      if (expect.pv >= 0 && Math.abs(pane.scrollTop - expect.pv) < 2) {
+        expect.pv = -1;
+        return;
+      }
+      expect.pv = -1;
+      previewToEditor();
+    };
+    ed.addEventListener('scroll', onEd, { passive: true });
+    pane.addEventListener('scroll', onPv, { passive: true });
+    align.current = editorToPreview;
+    return () => {
+      ed.removeEventListener('scroll', onEd);
+      pane.removeEventListener('scroll', onPv);
+      align.current = () => {};
+    };
+  }, [showPreview]);
+  // a fresh render changes the preview's height: put it back beside the text
+  useLayoutEffect(() => {
+    if (html) align.current();
+  }, [html]);
 
   const wrap = (before: string, after = before, placeholder = '') => {
     const v = view.current;

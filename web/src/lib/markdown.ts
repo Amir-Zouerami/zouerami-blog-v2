@@ -56,6 +56,8 @@ export interface RenderOptions {
   resolveImage: (filename: string) => string;
   /** Digits used for the `/01` heading numbers; Persian posts get Persian numerals. */
   numerals?: 'latin' | 'fa';
+  /** Marks blocks with `data-line` (their line in the source) so the editor preview can scroll in step with the text. */
+  sourceLines?: boolean;
   /** Looks up a published post for `[@post:slug]`; without it those markers stay as typed. */
   resolvePost?: (slug: string) => Promise<ResolvedPost | null>;
 }
@@ -90,18 +92,24 @@ function rehypeTerm() {
         // Diagrams are rendered in the browser (scripts/mermaid.ts). The source stays as plain text so the page still
         // reads without JavaScript, and Shiki ignores it (it only touches <pre><code>).
         const src = code ? text(code) : '';
-        parent.children[index] = h('div', { className: ['mermaid-block'], 'data-mermaid': '' }, [
-          h('pre', { className: ['mermaid-src'] }, [{ type: 'text', value: src }]),
-        ]);
+        parent.children[index] = h(
+          'div',
+          { className: ['mermaid-block'], 'data-mermaid': '', dataLine: node.properties?.dataLine },
+          [h('pre', { className: ['mermaid-src'] }, [{ type: 'text', value: src }])],
+        );
         return 'skip';
       }
-      parent.children[index] = h('div', { className: ['term'] }, [
-        h('div', { className: ['tb'] }, [
-          h('span', {}, [{ type: 'text', value: lang }]),
-          h('button', { className: ['copy'], type: 'button' }, [{ type: 'text', value: 'copy' }]),
-        ]),
-        node,
-      ]);
+      parent.children[index] = h(
+        'div',
+        { className: ['term'], dataLine: node.properties?.dataLine },
+        [
+          h('div', { className: ['tb'] }, [
+            h('span', {}, [{ type: 'text', value: lang }]),
+            h('button', { className: ['copy'], type: 'button' }, [{ type: 'text', value: 'copy' }]),
+          ]),
+          node,
+        ],
+      );
       return 'skip';
     });
   };
@@ -175,6 +183,37 @@ function remarkCallouts(lang: 'en' | 'fa') {
   };
 }
 
+const LINE_TAGS = new Set([
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'pre',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'table',
+  'tr',
+  'figure',
+  'aside',
+  'hr',
+]);
+
+/** Adds `data-line` (the line in the text the author typed) to blocks; only used for the editor preview. */
+function rehypeSourceLines(lineMap: number[]) {
+  return (tree: Root) => {
+    visit(tree, 'element', (node: Element) => {
+      const line = node.position?.start.line;
+      if (line && LINE_TAGS.has(node.tagName))
+        node.properties.dataLine = String(lineMap[line - 1] ?? line);
+    });
+  };
+}
+
 const SAFE_HREF = /^(https?:|mailto:|tel:|\/|#|\.{1,2}\/|[^:]*$)/i;
 
 /** Signal-specific structure: numbered h2, figures, safe links, terminal-style code blocks. */
@@ -233,6 +272,8 @@ type Data = {
   headings: Heading[];
   resolved: Map<string, ResolvedPost>;
   references: Reference[];
+  /** the source line (1-based) behind each line the parser saw, after `$$` lines were split */
+  lineMap: number[];
 };
 const KATEX: KatexOptions = { strict: 'ignore', output: 'htmlAndMathml' };
 const THEMES = { light: 'github-light-default', dark: 'github-dark-default' } as const;
@@ -274,6 +315,12 @@ function buildProcessor(highlighter: Highlighter) {
         };
       })
       .use(remarkRehype) // raw HTML in the source is dropped, never passed through
+      .use(function sourceLines() {
+        return (tree: Root, file) => {
+          const d = file.data as Data;
+          if (d.options.sourceLines) rehypeSourceLines(d.lineMap)(tree);
+        };
+      })
       .use(rehypeSlug)
       // formulas are typeset on the server (no client JavaScript); a broken formula shows its source, never an error
       .use(rehypeKatex, KATEX)
@@ -320,24 +367,37 @@ function engine() {
 /** Starts creating the highlighter now (call at boot); resolves when markdown can be rendered without a cold start. */
 export const warmMarkdownEngine = (): Promise<unknown> => engine();
 
-/** `$$ … $$` alone on one line means a display formula (remark-math would make it inline): put the markers on their own lines. */
-export function displayMath(md: string): string {
+/**
+ * `$$ … $$` alone on one line means a display formula (remark-math would make it inline): put the markers on
+ * their own lines. `lines[i]` is the line of the original text that output line i+1 came from.
+ */
+function expandDisplayMath(md: string): { text: string; lines: number[] } {
   let fence = '';
-  return md
-    .split('\n')
-    .map((line) => {
-      const f = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-      if (f) {
-        if (!fence) fence = f;
-        else if (f[0] === fence[0] && f.length >= fence.length) fence = '';
-        return line;
+  const out: string[] = [];
+  const lines: number[] = [];
+  const src = md.split('\n');
+  for (let i = 0; i < src.length; i++) {
+    const line = src[i] ?? '';
+    const emit = (...ls: string[]) => {
+      for (const l of ls) {
+        out.push(l);
+        lines.push(i + 1);
       }
-      if (fence) return line;
-      const m = /^( {0,3})\$\$(?!\$)(.+?)\$\$\s*$/.exec(line);
-      return m ? `${m[1]}$$\n${m[2]?.trim()}\n${m[1]}$$` : line;
-    })
-    .join('\n');
+    };
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+    if (f) {
+      if (!fence) fence = f;
+      else if (f[0] === fence[0] && f.length >= fence.length) fence = '';
+      emit(line);
+      continue;
+    }
+    const m = fence ? null : /^( {0,3})\$\$(?!\$)(.+?)\$\$\s*$/.exec(line);
+    if (m) emit(`${m[1]}$$`, m[2]?.trim() ?? '', `${m[1]}$$`);
+    else emit(line);
+  }
+  return { text: out.join('\n'), lines };
 }
+export const displayMath = (md: string): string => expandDisplayMath(md).text;
 
 const FENCE = /^ {0,3}(?:`{3,}|~{3,})\s*([A-Za-z0-9_+#.-]+)/gm;
 
@@ -368,11 +428,11 @@ export async function renderMarkdown(md: string, options: RenderOptions): Promis
   // Markdown only treats `[text][@key]` as a reference when a definition exists: give every resolved post one
   // (definitions are never printed). Posts that could not be found get none and stay as typed.
   const postDefs = [...resolved.keys()].map((key) => `[@${key}]: /blog/${key.slice(5)}`);
-  const body = displayMath(md);
+  const { text: body, lines: lineMap } = expandDisplayMath(md);
   const source = postDefs.length ? `${body}\n\n${postDefs.join('\n')}\n` : body;
   const file = await processor.process({
     value: source,
-    data: { options, headings, resolved, references },
+    data: { options, headings, resolved, references, lineMap },
   });
   return { html: String(file), headings, references };
 }

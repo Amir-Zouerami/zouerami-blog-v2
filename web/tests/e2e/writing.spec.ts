@@ -537,6 +537,87 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(page.locator('.cm-cursor').first()).toHaveCSS('border-left-width', '2px');
   });
 
+  test('the preview scrolls with the editor and the editor with the preview', async ({ page }) => {
+    const parts: string[] = [];
+    for (let n = 1; n <= 40; n++) {
+      parts.push(`## Section ${n}\n\nParagraph ${n} ${'lorem ipsum dolor sit amet '.repeat(12)}\n`);
+      if (n % 7 === 0) parts.push('```ts\n' + 'const x = 1;\n'.repeat(15) + '```\n');
+      if (n % 5 === 0) parts.push('- one\n- two\n- three\n');
+    }
+    const md = parts.join('\n');
+    const p = await su.collection('posts').create({
+      slug: `e2e-sync-${stamp}`,
+      date: '2030-07-07 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Sync', summary: '', body_md: md });
+    await page.goto(`/admin#/posts/${p.id}`);
+    await expect(page.locator('.adm-pane.preview .prose h2').first()).toBeVisible();
+    // the first source line the preview shows at its top
+    const previewLine = () =>
+      page.evaluate(() => {
+        const pane = document.querySelector('.adm-pane.preview') as HTMLElement;
+        const top = pane.getBoundingClientRect().top;
+        let best = 0;
+        for (const el of pane.querySelectorAll<HTMLElement>('[data-line]')) {
+          if (el.getBoundingClientRect().top <= top + 40) best = Number(el.dataset.line);
+        }
+        return best;
+      });
+    // 1) scroll the editor to a few places: the preview follows to the same line (within a few lines)
+    for (const at of [0.25, 0.5, 0.8]) {
+      await page.locator('.cm-scroller').evaluate((e, f) => {
+        e.scrollTop = (e.scrollHeight - e.clientHeight) * f;
+      }, at);
+      await page.waitForTimeout(250);
+      const edTop = await page.evaluate(() => {
+        const sc = document.querySelector('.cm-scroller') as HTMLElement;
+        const r = sc.getBoundingClientRect();
+        let best = 0;
+        for (const g of document.querySelectorAll<HTMLElement>(
+          '.cm-lineNumbers .cm-gutterElement',
+        )) {
+          if (g.getBoundingClientRect().top <= r.top + 8 && /^\d+$/.test(g.textContent ?? ''))
+            best = Number(g.textContent);
+        }
+        return best;
+      });
+      const pvTop = await previewLine();
+      expect(edTop).toBeGreaterThan(10);
+      expect(Math.abs(pvTop - edTop)).toBeLessThanOrEqual(6);
+      // no ping-pong: both panes stay where they landed
+      const pos = () =>
+        page.evaluate(() => [
+          document.querySelector('.cm-scroller')?.scrollTop,
+          document.querySelector('.adm-pane.preview')?.scrollTop,
+        ]);
+      const before = await pos();
+      await page.waitForTimeout(500);
+      expect(await pos()).toEqual(before);
+    }
+    // 2) scroll the preview back to the top: the editor follows
+    await page.locator('.adm-pane.preview').evaluate((e) => {
+      e.scrollTop = 0;
+    });
+    await expect
+      .poll(async () => page.locator('.cm-scroller').evaluate((e) => e.scrollTop))
+      .toBeLessThan(5);
+    // 3) the end of one is the end of the other
+    await page.locator('.cm-scroller').evaluate((e) => {
+      e.scrollTop = e.scrollHeight;
+    });
+    await expect
+      .poll(async () =>
+        page
+          .locator('.adm-pane.preview')
+          .evaluate((e) => e.scrollHeight - e.clientHeight - e.scrollTop),
+      )
+      .toBeLessThan(4);
+  });
+
   test('markdown shortcuts work in the editor and Ctrl+S saves from any field', async ({
     page,
   }) => {
