@@ -872,19 +872,34 @@ html[dir='rtl'] .marq div { animation-name: marq-rtl; }
   text-transform: uppercase;
   opacity: 0.8;
 }
+/* the cover: a wide, rounded frame (not full bleed). 2:1 on desktop, 16:9 on phones. */
 .post-cover {
-  height: min(58vh, 520px);
-  overflow: hidden;
-  border-block: 1px solid var(--line);
+  max-width: calc(1280px + 2 * var(--pad));
+  margin-inline: auto;
+  margin-block: 8px 0;
 }
-.post-cover svg {
+.post-cover-frame {
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid var(--line2);
+  background: var(--bg2);
+  box-shadow: 0 30px 60px -34px rgba(0, 0, 0, 0.55);
+}
+.post-cover-frame img,
+.post-cover-frame svg {
+  display: block;
   width: 100%;
   height: 100%;
-  transform: scale(1.1);
+  object-fit: cover;
   transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.post-cover:hover svg {
-  transform: scale(1.02);
+.post-cover-frame:hover img,
+.post-cover-frame:hover svg {
+  transform: scale(1.025);
+}
+@media (max-width: 760px) {
+  .post-cover-frame { aspect-ratio: 16 / 9; }
 }
 .art {
   display: grid;
