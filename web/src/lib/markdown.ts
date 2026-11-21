@@ -2,10 +2,12 @@ import rehypeShikiFromHighlighter from '@shikijs/rehype/core';
 import type { Element, Root } from 'hast';
 import { toString as mdText } from 'mdast-util-to-string';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import rehypeKatex, { type Options as KatexOptions } from 'rehype-katex';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
 import remarkDirective from 'remark-directive';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import { bundledLanguages, createHighlighter, type Highlighter } from 'shiki';
@@ -232,6 +234,7 @@ type Data = {
   resolved: Map<string, ResolvedPost>;
   references: Reference[];
 };
+const KATEX: KatexOptions = { strict: 'ignore', output: 'htmlAndMathml' };
 const THEMES = { light: 'github-light-default', dark: 'github-dark-default' } as const;
 const COMMON_LANGS = [
   'text',
@@ -258,6 +261,7 @@ function buildProcessor(highlighter: Highlighter) {
     unified()
       .use(remarkParse)
       .use(remarkGfm)
+      .use(remarkMath)
       .use(remarkDirective)
       .use(function callouts() {
         return (tree, file) =>
@@ -271,6 +275,8 @@ function buildProcessor(highlighter: Highlighter) {
       })
       .use(remarkRehype) // raw HTML in the source is dropped, never passed through
       .use(rehypeSlug)
+      // formulas are typeset on the server (no client JavaScript); a broken formula shows its source, never an error
+      .use(rehypeKatex, KATEX)
       .use(rehypeTerm)
       .use(rehypeShikiFromHighlighter, highlighter, {
         themes: THEMES,
@@ -314,6 +320,25 @@ function engine() {
 /** Starts creating the highlighter now (call at boot); resolves when markdown can be rendered without a cold start. */
 export const warmMarkdownEngine = (): Promise<unknown> => engine();
 
+/** `$$ … $$` alone on one line means a display formula (remark-math would make it inline): put the markers on their own lines. */
+export function displayMath(md: string): string {
+  let fence = '';
+  return md
+    .split('\n')
+    .map((line) => {
+      const f = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+      if (f) {
+        if (!fence) fence = f;
+        else if (f[0] === fence[0] && f.length >= fence.length) fence = '';
+        return line;
+      }
+      if (fence) return line;
+      const m = /^( {0,3})\$\$(?!\$)(.+?)\$\$\s*$/.exec(line);
+      return m ? `${m[1]}$$\n${m[2]?.trim()}\n${m[1]}$$` : line;
+    })
+    .join('\n');
+}
+
 const FENCE = /^ {0,3}(?:`{3,}|~{3,})\s*([A-Za-z0-9_+#.-]+)/gm;
 
 export async function renderMarkdown(md: string, options: RenderOptions): Promise<Rendered> {
@@ -343,7 +368,8 @@ export async function renderMarkdown(md: string, options: RenderOptions): Promis
   // Markdown only treats `[text][@key]` as a reference when a definition exists: give every resolved post one
   // (definitions are never printed). Posts that could not be found get none and stay as typed.
   const postDefs = [...resolved.keys()].map((key) => `[@${key}]: /blog/${key.slice(5)}`);
-  const source = postDefs.length ? `${md}\n\n${postDefs.join('\n')}\n` : md;
+  const body = displayMath(md);
+  const source = postDefs.length ? `${body}\n\n${postDefs.join('\n')}\n` : body;
   const file = await processor.process({
     value: source,
     data: { options, headings, resolved, references },

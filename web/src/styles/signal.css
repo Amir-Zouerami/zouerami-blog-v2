@@ -2024,3 +2024,13 @@ html[lang='fa'] .now-line .it { font-family: "Vazirmatn Variable", sans-serif; f
 
 a.tagp-link { text-decoration: none; transition: color 0.15s, border-color 0.15s; }
 a.tagp-link:hover, a.tagp-link:focus-visible { color: var(--acc); border-color: var(--acc); }
+
+/* formulas: long ones scroll sideways instead of widening the page */
+.prose .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  margin: 1.2em 0;
+}
+.prose .katex { font-size: 1.08em; }
+.prose .katex-display > .katex { white-space: nowrap; }

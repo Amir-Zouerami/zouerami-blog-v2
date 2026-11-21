@@ -4,3 +4,4 @@
 @import "./signal.css";
 @import "./ui.css";
 @import "./references.css";
+@import "katex/dist/katex.min.css";
