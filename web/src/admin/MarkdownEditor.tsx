@@ -1,6 +1,7 @@
 import { redo, undo } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
+import { search } from '@codemirror/search';
 import { Compartment, EditorSelection, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
@@ -33,6 +34,86 @@ const theme = EditorView.theme({
   },
   '.cm-cursor': { borderLeftColor: 'var(--acc)' },
   '.cm-scroller': { overflow: 'auto' },
+  // Ctrl+F panel, themed
+  '.cm-panels': { background: 'var(--bg)', color: 'var(--fg)', border: '0' },
+  '.cm-panels-top': { borderBottom: '1px solid var(--line2)' },
+  '.cm-search': {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '8px 8px',
+    padding: '10px 40px 10px 12px',
+    font: '500 13px var(--sans)',
+  },
+  '.cm-search br': { display: 'none' },
+  '.cm-search .cm-textfield': {
+    width: 'auto',
+    flex: '1 1 160px',
+    minWidth: '120px',
+    maxWidth: '280px',
+    margin: '0',
+    padding: '6px 10px',
+    font: '400 14px var(--sans)',
+    background: 'var(--bg2)',
+    color: 'var(--fg)',
+    border: '1px solid var(--line2)',
+    borderRadius: '8px',
+  },
+  '.cm-search .cm-textfield:focus': { outline: '2px solid var(--acc)', outlineOffset: '-1px' },
+  '.cm-search .cm-button': {
+    backgroundImage: 'none',
+    background: 'var(--bg2)',
+    color: 'var(--fg)',
+    border: '1px solid var(--line2)',
+    borderRadius: '8px',
+    padding: '5px 12px',
+    margin: '0',
+    font: '500 13px var(--sans)',
+    cursor: 'pointer',
+  },
+  '.cm-search .cm-button:hover': { borderColor: 'var(--acc)', color: 'var(--acc)' },
+  '.cm-search label': {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    margin: '0',
+    color: 'var(--muted)',
+    font: '500 13px var(--sans)',
+    fontSize: '13px !important',
+    textTransform: 'none',
+    letterSpacing: 'normal',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  },
+  '.cm-search input[type=checkbox]': {
+    width: '15px',
+    height: '15px',
+    padding: '0',
+    margin: '0',
+    accentColor: 'var(--acc)',
+  },
+  '.cm-search button[name=close]': {
+    position: 'absolute',
+    top: '8px',
+    right: '10px',
+    background: 'transparent',
+    border: '0',
+    color: 'var(--muted)',
+    fontSize: '18px',
+    lineHeight: '1',
+    cursor: 'pointer',
+  },
+  '.cm-search button[name=close]:hover': { color: 'var(--acc)' },
+  '.cm-searchMatch': {
+    background: 'color-mix(in srgb, var(--acc) 28%, transparent)',
+    outline: '1px solid color-mix(in srgb, var(--acc) 55%, transparent)',
+    borderRadius: '2px',
+  },
+  '.cm-searchMatch.cm-searchMatch-selected': {
+    background: 'var(--acc)',
+    color: 'var(--on-acc)',
+  },
+  '.cm-selectionMatch': { background: 'color-mix(in srgb, var(--acc) 16%, transparent)' },
 });
 
 export default function MarkdownEditor({
@@ -117,6 +198,7 @@ export default function MarkdownEditor({
       parent: host.current,
       extensions: [
         basicSetup,
+        search({ top: true }),
         markdown({ codeLanguages: languages }),
         theme,
         EditorView.lineWrapping,
