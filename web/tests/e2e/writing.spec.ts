@@ -503,7 +503,7 @@ test.describe('back office: nothing typed is lost', () => {
     expect(panel.width).toBeLessThanOrEqual(box.width);
   });
 
-  test('Persian editor: each line takes its own direction and the caret is easy to see', async ({
+  test('Persian editor: every line is right-to-left, even one that starts in English', async ({
     page,
   }) => {
     const p = await su.collection('posts').create({
@@ -517,18 +517,18 @@ test.describe('back office: nothing typed is lost', () => {
       lang: 'fa',
       title: 'تست',
       summary: '',
-      body_md: 'این یک متن فارسی است\n\nSELECT 1;\n',
+      body_md: 'این یک متن فارسی است\n\nnode یعنی یه چیزی\n',
     });
     await page.goto(`/admin#/posts/${p.id}`);
     await page.locator('.cm-content').click();
-    const line = (n: number) => page.locator('.cm-line').nth(n);
-    await expect(line(0)).toHaveCSS('unicode-bidi', 'plaintext');
-    const fa = (await line(0).boundingBox())!;
-    const en = (await line(2).locator('span, :scope').first().boundingBox())!;
     const host = (await page.locator('.cm-content').boundingBox())!;
-    // the Persian line hugs the right edge, the English one the left
-    expect(fa.x + fa.width).toBeGreaterThan(host.x + host.width - 4);
-    expect(en.x).toBeLessThan(host.x + 80);
+    for (const n of [0, 2]) {
+      const line = page.locator('.cm-line').nth(n);
+      await expect(line).not.toHaveCSS('unicode-bidi', 'plaintext');
+      await expect(line).toHaveCSS('direction', 'rtl');
+      const box = (await line.boundingBox())!;
+      expect(box.x + box.width).toBeGreaterThan(host.x + host.width - 4);
+    }
     await expect(page.locator('.cm-cursor').first()).toHaveCSS('border-left-width', '2px');
   });
 

@@ -29,7 +29,6 @@ const theme = EditorView.theme({
     padding: '16px 0',
     caretColor: 'var(--acc)',
   },
-  '.cm-line': { unicodeBidi: 'plaintext', textAlign: 'start' },
   '.cm-content[lang=fa]': { lineHeight: '1.95', fontSize: '17px' },
   '.cm-gutters': { background: 'var(--bg2)', color: 'var(--muted)', border: '0' },
   '.cm-activeLine, .cm-activeLineGutter': {
@@ -214,8 +213,6 @@ export default function MarkdownEditor({
         markdown({ codeLanguages: languages }),
         theme,
         EditorView.lineWrapping,
-        // every line takes the direction of its first letter: Persian prose is RTL, code and English lines stay LTR
-        EditorView.perLineTextDirection.of(true),
         dirComp.current.of(EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' })),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) {
