@@ -132,4 +132,22 @@ describe('highlighter start-up', { timeout: 30000 }, () => {
     const odd = await renderMarkdown('```notalanguage\nx\n```', o);
     expect(odd.html).toContain('<pre');
   });
+
+  it('typesets LaTeX formulas on the server: $$ on one line is a display formula, $ is inline', async () => {
+    const { html } = await renderMarkdown(
+      '$$\\text{CTID} = (\\text{Block Number: 4 bytes}, \\text{Offset Number: 2 bytes})$$\n\nIs $x^2$ inline.',
+      opts,
+    );
+    expect(html).toContain('katex-display');
+    expect(html).toContain('class="katex"');
+    expect(html).toContain('Block Number: 4 bytes');
+    expect(html).not.toContain('$$');
+  });
+
+  it('leaves dollars in code alone and shows broken formulas as text instead of failing', async () => {
+    const code = await renderMarkdown('```\n$$a$$\n```\n\n`$x$`', opts);
+    expect(code.html).not.toContain('katex');
+    const bad = await renderMarkdown('$$\\frac{1}{$$', opts);
+    expect(bad.html).toContain('<');
+  });
 });
