@@ -472,6 +472,37 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(preview).toBeVisible(); // the choice made in zen sticks
   });
 
+  test('Ctrl+F opens a themed search panel that highlights every match', async ({ page }) => {
+    const p = await su.collection('posts').create({
+      slug: `e2e-find-${stamp}`,
+      date: '2030-05-05 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su.collection('post_translations').create({
+      post: p.id,
+      lang: 'en',
+      title: 'Find',
+      summary: '',
+      body_md: 'one teh two teh three',
+    });
+    await page.goto(`/admin#/posts/${p.id}`);
+    await page.locator('.cm-content').click();
+    await expect(page.locator('.cm-content')).toHaveAttribute('spellcheck', 'true');
+    await page.keyboard.press('Control+f');
+    await page.keyboard.type('teh');
+    await expect(page.locator('.cm-searchMatch')).toHaveCount(2);
+    const panel = (await page.locator('.cm-search').boundingBox())!;
+    const box = (await page.locator('.cm-editor').boundingBox())!;
+    for (const sel of ['input[name=case]', 'input[name=re]', 'input[name=word]']) {
+      const b = (await page.locator(`.cm-search ${sel}`).boundingBox())!;
+      expect(b.x).toBeGreaterThanOrEqual(box.x);
+      expect(b.x + b.width).toBeLessThanOrEqual(box.x + box.width);
+      expect(b.width).toBeLessThan(30);
+    }
+    expect(panel.width).toBeLessThanOrEqual(box.width);
+  });
+
   test('markdown shortcuts work in the editor and Ctrl+S saves from any field', async ({
     page,
   }) => {
