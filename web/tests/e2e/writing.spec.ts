@@ -517,7 +517,7 @@ test.describe('back office: nothing typed is lost', () => {
       lang: 'fa',
       title: 'تست',
       summary: '',
-      body_md: 'این یک متن فارسی است\n\nnode یعنی یه چیزی\n',
+      body_md: 'این یک متن فارسی است\n\nnode یعنی یه چیزی\n\n```sql\nSELECT 1;\n```\n',
     });
     await page.goto(`/admin#/posts/${p.id}`);
     await page.locator('.cm-content').click();
@@ -529,6 +529,11 @@ test.describe('back office: nothing typed is lost', () => {
       const box = (await line.boundingBox())!;
       expect(box.x + box.width).toBeGreaterThan(host.x + host.width - 4);
     }
+    // fenced code stays left-to-right
+    for (const n of [4, 5, 6])
+      await expect(page.locator('.cm-line').nth(n)).toHaveCSS('direction', 'ltr');
+    const code = (await page.locator('.cm-line').nth(5).boundingBox())!;
+    expect(code.x).toBeLessThan(host.x + 80);
     await expect(page.locator('.cm-cursor').first()).toHaveCSS('border-left-width', '2px');
   });
 

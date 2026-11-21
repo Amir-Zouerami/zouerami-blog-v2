@@ -3,7 +3,13 @@ import { markdown } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { search } from '@codemirror/search';
 import { Compartment, EditorSelection, Prec } from '@codemirror/state';
-import { keymap } from '@codemirror/view';
+import {
+  Decoration,
+  type DecorationSet,
+  keymap,
+  ViewPlugin,
+  type ViewUpdate,
+} from '@codemirror/view';
 import { basicSetup, EditorView } from 'codemirror';
 import { useEffect, useRef, useState } from 'react';
 import { icons, type MenuEntry, showMenu } from '../lib/context-menu';
@@ -20,6 +26,44 @@ interface Props {
   onUpload?: (files: File[]) => Promise<string[]>;
   uploadHint?: string;
 }
+
+/** Lines of fenced code (fences included) are always left-to-right, even in a right-to-left post. */
+const codeLtr = Decoration.line({ attributes: { dir: 'ltr' } });
+function codeLines(view: EditorView): DecorationSet {
+  const out: ReturnType<typeof codeLtr.range>[] = [];
+  const doc = view.state.doc;
+  let fence = '';
+  for (let n = 1; n <= doc.lines; n++) {
+    const line = doc.line(n);
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line.text)?.[1];
+    if (!fence && f) {
+      fence = f;
+      out.push(codeLtr.range(line.from));
+    } else if (fence) {
+      out.push(codeLtr.range(line.from));
+      if (
+        f &&
+        f[0] === fence[0] &&
+        f.length >= fence.length &&
+        !line.text.slice(f.length + 1).trim()
+      )
+        fence = '';
+    }
+  }
+  return Decoration.set(out);
+}
+const codeDirection = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = codeLines(view);
+    }
+    update(u: ViewUpdate) {
+      if (u.docChanged) this.decorations = codeLines(u.view);
+    }
+  },
+  { decorations: (v) => v.decorations },
+);
 
 const theme = EditorView.theme({
   '&': { height: '100%', background: 'var(--bg2)', color: 'var(--fg)', fontSize: '16px' },
@@ -213,6 +257,7 @@ export default function MarkdownEditor({
         markdown({ codeLanguages: languages }),
         theme,
         EditorView.lineWrapping,
+        codeDirection,
         dirComp.current.of(EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' })),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) {
