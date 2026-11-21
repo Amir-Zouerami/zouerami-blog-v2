@@ -120,7 +120,7 @@ export default function MarkdownEditor({
         markdown({ codeLanguages: languages }),
         theme,
         EditorView.lineWrapping,
-        dirComp.current.of(EditorView.contentAttributes.of({ dir, lang })),
+        dirComp.current.of(EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' })),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) {
             const text = u.state.doc.toString();
@@ -195,7 +195,9 @@ export default function MarkdownEditor({
 
   useEffect(() => {
     view.current?.dispatch({
-      effects: dirComp.current.reconfigure(EditorView.contentAttributes.of({ dir, lang })),
+      effects: dirComp.current.reconfigure(
+        EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' }),
+      ),
     });
   }, [dir, lang]);
 

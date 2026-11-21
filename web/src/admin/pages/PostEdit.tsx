@@ -519,6 +519,7 @@ export default function PostEdit({ id }: { id: string | null }) {
             dir={langDir(lang)}
             lang={lang}
             placeholder={lang === 'fa' ? 'عنوان' : 'Title'}
+            spellCheck={true}
           />
         </Field>
         <Field
@@ -532,6 +533,7 @@ export default function PostEdit({ id }: { id: string | null }) {
             onChange={(e) => setTr(lang, { summary: e.target.value })}
             dir={langDir(lang)}
             lang={lang}
+            spellCheck={true}
           />
         </Field>
       </div>
