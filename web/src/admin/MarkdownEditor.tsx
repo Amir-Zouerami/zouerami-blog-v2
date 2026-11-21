@@ -23,7 +23,14 @@ interface Props {
 
 const theme = EditorView.theme({
   '&': { height: '100%', background: 'var(--bg2)', color: 'var(--fg)', fontSize: '16px' },
-  '.cm-content': { fontFamily: 'var(--code)', padding: '16px 0', caretColor: 'var(--acc)' },
+  // JetBrains Mono has no Persian letters: name a Persian font so they don't fall back to a random system face
+  '.cm-content': {
+    fontFamily: 'var(--code), "Vazirmatn Variable", ui-monospace, monospace',
+    padding: '16px 0',
+    caretColor: 'var(--acc)',
+  },
+  '.cm-line': { unicodeBidi: 'plaintext', textAlign: 'start' },
+  '.cm-content[lang=fa]': { lineHeight: '1.95', fontSize: '17px' },
   '.cm-gutters': { background: 'var(--bg2)', color: 'var(--muted)', border: '0' },
   '.cm-activeLine, .cm-activeLineGutter': {
     background: 'color-mix(in srgb, var(--acc) 7%, transparent)',
@@ -32,7 +39,12 @@ const theme = EditorView.theme({
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
     background: 'color-mix(in srgb, var(--acc) 30%, transparent) !important',
   },
-  '.cm-cursor': { borderLeftColor: 'var(--acc)' },
+  // a thicker caret with a glow, so it can be found inside mixed Persian/English text
+  '.cm-cursor, .cm-dropCursor': {
+    borderLeftColor: 'var(--acc)',
+    borderLeftWidth: '2px',
+    boxShadow: '0 0 6px var(--acc)',
+  },
   '.cm-scroller': { overflow: 'auto' },
   // Ctrl+F panel, themed
   '.cm-panels': { background: 'var(--bg)', color: 'var(--fg)', border: '0' },
@@ -202,6 +214,8 @@ export default function MarkdownEditor({
         markdown({ codeLanguages: languages }),
         theme,
         EditorView.lineWrapping,
+        // every line takes the direction of its first letter: Persian prose is RTL, code and English lines stay LTR
+        EditorView.perLineTextDirection.of(true),
         dirComp.current.of(EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' })),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) {
