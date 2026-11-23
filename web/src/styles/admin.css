@@ -260,13 +260,9 @@ a.adm-card:hover {
   display: none;
 }
 .adm-words { margin-inline: 0 18px; }
-.adm-tabs-narrow[hidden] { display: none !important; }
 .adm-toolbar button.on {
   background: var(--acc);
   color: var(--on-acc);
-}
-.adm-tabs-narrow {
-  display: none;
 }
 /* zen: the editor over the whole screen, nothing else */
 .adm-editor.zen {
@@ -409,19 +405,8 @@ a.adm-card:hover {
   .adm-split {
     grid-template-columns: 1fr;
   }
-  .adm-tabs-narrow {
-    display: inline-flex;
-    gap: 4px;
-  }
   .adm-split.no-preview .preview { display: none; }
-  .adm-split.show-edit .preview,
-  .adm-split.show-preview .write {
-    display: none;
-  }
-  .adm-tabs-narrow button.on {
-    background: var(--acc);
-    color: var(--on-acc);
-  }
+  .adm-split.only-preview .write { display: none; }
 }
 fieldset.adm-field { border: 0; padding: 0; margin: 0; min-width: 0; } fieldset.adm-field legend { padding: 0; margin-bottom: 6px; }
 
@@ -473,6 +458,22 @@ fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
   font: 500 12px var(--mono);
   color: var(--muted);
   cursor: pointer;
+}
+.adm-tagpick.open {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.adm-tagmore {
+  margin-top: 6px;
+  font: 500 12px var(--mono);
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.adm-tagmore:hover {
+  color: var(--acc);
 }
 .adm-tagpick button:hover {
   color: var(--fg);

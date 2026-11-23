@@ -618,6 +618,80 @@ test.describe('back office: nothing typed is lost', () => {
       .toBeLessThan(4);
   });
 
+  test('on a phone, Preview swaps the editor for the preview and back (one button, honest state)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    const p = await su.collection('posts').create({
+      slug: `e2e-mobile-${stamp}`,
+      date: '2030-08-08 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Phone', summary: '', body_md: '## Hello\n\ntext' });
+    await page.goto(`/admin#/posts/${p.id}`);
+    const btn = page.getByRole('button', { name: 'Preview', exact: true });
+    const write = page.locator('.adm-pane.write');
+    const preview = page.locator('.adm-pane.preview');
+    await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    await expect(write).toBeVisible();
+    await expect(preview).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Write', exact: true })).toHaveCount(0);
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+    await expect(preview).toBeVisible();
+    await expect(write).toBeHidden();
+    await expect(preview.locator('h2')).toContainText('Hello');
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    await expect(write).toBeVisible();
+    await expect(preview).toBeHidden();
+  });
+
+  test('a long list of existing tags stays compact, opens into a scroll box and filters as you type', async ({
+    page,
+  }) => {
+    const names = Array.from({ length: 30 }, (_, n) => `zt${stamp}-${String(n).padStart(2, '0')}`);
+    const p = await su.collection('posts').create({
+      slug: `e2e-tags-${stamp}`,
+      date: '2030-09-09 00:00:00.000Z',
+      status: 'draft',
+      tags: names.slice(0, 3),
+    });
+    await su.collection('posts').create({
+      slug: `e2e-tags2-${stamp}`,
+      date: '2030-09-10 00:00:00.000Z',
+      status: 'draft',
+      tags: names.slice(3),
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Tags', summary: '', body_md: 'x' });
+    await page.goto(`/admin#/posts/${p.id}`);
+    const chips = page.locator('.adm-tagpick button');
+    await expect(chips.first()).toBeVisible();
+    // a long list does not run down the page: a dozen chips, the chosen ones first
+    await expect(chips).toHaveCount(12);
+    await expect(chips.first()).toHaveAttribute('aria-pressed', 'true');
+    const closed = (await page.locator('.adm-tagpick').boundingBox())!;
+    expect(closed.height).toBeLessThan(200);
+    await page.getByRole('button', { name: /Show all \d+ tags/ }).click();
+    const open = (await page.locator('.adm-tagpick').boundingBox())!;
+    expect(open.height).toBeLessThanOrEqual(160);
+    expect(
+      await page.locator('.adm-tagpick').evaluate((e) => e.scrollHeight > e.clientHeight),
+    ).toBe(true);
+    await page.getByRole('button', { name: 'Show fewer' }).click();
+    // typing a new word narrows the ones not chosen yet (the chosen one stays)
+    await page.getByLabel('Tags (comma separated)').fill(`${names[0]}, -2`);
+    await expect(chips.first()).toHaveText(names[0] as string);
+    await expect(chips.nth(1)).toContainText('-2');
+    await expect(chips.filter({ hasText: 'Design' })).toHaveCount(0);
+    for (const t of (await chips.allTextContents()).slice(1)) expect(t).toContain('-2');
+  });
+
   test('markdown shortcuts work in the editor and Ctrl+S saves from any field', async ({
     page,
   }) => {
@@ -670,12 +744,9 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(chip).toBeVisible();
     const name = (await chip.textContent()) ?? '';
     await chip.click();
-    await expect(
-      page.locator('.adm-tagpick').locator('xpath=preceding-sibling::input'),
-    ).toHaveValue(new RegExp(name));
-    await chip.click();
-    await expect(
-      page.locator('.adm-tagpick').locator('xpath=preceding-sibling::input'),
-    ).not.toHaveValue(new RegExp(name));
+    const field = page.getByLabel('Tags (comma separated)');
+    await expect(field).toHaveValue(new RegExp(name));
+    await page.locator('.adm-tagpick button', { hasText: new RegExp(`^${name}$`) }).click();
+    await expect(field).not.toHaveValue(new RegExp(name));
   });
 });

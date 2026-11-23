@@ -8,6 +8,7 @@ import { fromPocketBase, toPocketBase } from '../date';
 import ImageLibrary from '../ImageLibrary';
 import LangTabs, { type Lang, langDir } from '../LangTabs';
 import MarkdownEditor from '../MarkdownEditor';
+import TagPicker from '../TagPicker';
 import { Confirm, Field, useSaveShortcut, useToast } from '../ui';
 import { useDraft } from '../useDraft';
 
@@ -138,6 +139,9 @@ export default function PostEdit({ id }: { id: string | null }) {
       setDirty(true);
     };
 
+  // the word after the last comma narrows the tag chips, unless it is already a complete existing tag
+  const lastWord = tags.slice(tags.lastIndexOf(',') + 1).trim();
+  const typedTag = allTags.includes(lastWord) ? '' : lastWord;
   const tagList = tags
     .split(',')
     .map((t) => t.trim())
@@ -430,28 +434,16 @@ export default function PostEdit({ id }: { id: string | null }) {
         </Field>
         <Field label="Tags (comma separated)">
           <input value={tags} onChange={(e) => touch(setTags)(e.target.value)} dir="ltr" />
-          {allTags.length > 0 && (
-            <div className="adm-tagpick">
-              {allTags.map((x) => {
-                const on = tagList.includes(x);
-                return (
-                  <button
-                    key={x}
-                    type="button"
-                    className={on ? 'on' : ''}
-                    aria-pressed={on}
-                    onClick={() =>
-                      touch(setTags)(
-                        (on ? tagList.filter((t) => t !== x) : [...tagList, x]).join(', '),
-                      )
-                    }
-                  >
-                    {x}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <TagPicker
+            all={allTags}
+            selected={tagList}
+            typing={typedTag}
+            onToggle={(x) =>
+              touch(setTags)(
+                (tagList.includes(x) ? tagList.filter((t) => t !== x) : [...tagList, x]).join(', '),
+              )
+            }
+          />
         </Field>
         <Field group label="Cover image (optional)">
           <FilePicker

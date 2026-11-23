@@ -98,3 +98,15 @@ test.describe('search engines', () => {
     await expect(page.locator('time[datetime]')).toHaveCount(1);
   });
 });
+
+test('fonts are real files, never base64 text inside the CSS (the CSP only allows font-src self)', async ({
+  request,
+}) => {
+  const html = await (await request.get('/')).text();
+  const sheets = [...html.matchAll(/href="([^"]+\.css)"/g)].map((m) => m[1] as string);
+  expect(sheets.length).toBeGreaterThan(0);
+  for (const href of sheets) {
+    const css = await (await request.get(href)).text();
+    expect(css).not.toContain('data:font');
+  }
+});

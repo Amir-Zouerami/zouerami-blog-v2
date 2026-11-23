@@ -191,7 +191,6 @@ export default function MarkdownEditor({
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewErr, setPreviewErr] = useState(false);
   const [words, setWords] = useState(0);
-  const [tab, setTab] = useState<'edit' | 'preview'>('edit'); // narrow screens
   // the preview pane is optional (remembered), and "zen" lays the editor over the whole screen
   const [showPreview, setShowPreview] = useState(() => {
     try {
@@ -201,7 +200,20 @@ export default function MarkdownEditor({
     }
   });
   const [zen, setZen] = useState(false);
-  const togglePreview = () =>
+  // On a narrow screen there is room for one pane: "Preview" swaps the editor for the preview (not remembered,
+  // you always come back to writing). On a wide screen it shows or hides the second pane (remembered).
+  const [narrow, setNarrow] = useState(
+    () => typeof matchMedia === 'function' && matchMedia('(max-width: 900px)').matches,
+  );
+  useEffect(() => {
+    const mq = matchMedia('(max-width: 900px)');
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  const [mobilePreview, setMobilePreview] = useState(false);
+  const previewOn = narrow ? mobilePreview : showPreview;
+  const toggleWide = () =>
     setShowPreview((on) => {
       try {
         localStorage.setItem('adm-preview', on ? '0' : '1');
@@ -210,6 +222,7 @@ export default function MarkdownEditor({
       }
       return !on;
     });
+  const togglePreview = () => (narrow ? setMobilePreview((on) => !on) : toggleWide());
   useEffect(() => {
     if (!zen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -373,7 +386,7 @@ export default function MarkdownEditor({
     const v = view.current;
     const root = previewRef.current;
     const pane = root?.parentElement;
-    if (!v || !root || !pane || !showPreview) {
+    if (!v || !root || !pane || !previewOn) {
       align.current = () => {};
       return;
     }
@@ -443,7 +456,7 @@ export default function MarkdownEditor({
       pane.removeEventListener('scroll', onPv);
       align.current = () => {};
     };
-  }, [showPreview]);
+  }, [previewOn]);
   // a fresh render changes the preview's height: put it back beside the text
   useLayoutEffect(() => {
     if (html) align.current();
@@ -845,9 +858,9 @@ export default function MarkdownEditor({
         <span className="mono muted adm-words">{words} words</span>
         <button
           type="button"
-          className={showPreview ? 'on' : ''}
-          aria-pressed={showPreview}
-          title={showPreview ? 'Hide the preview' : 'Show the preview'}
+          className={previewOn ? 'on' : ''}
+          aria-pressed={previewOn}
+          title={previewOn ? (narrow ? 'Back to writing' : 'Hide the preview') : 'Show the preview'}
           onClick={togglePreview}
         >
           Preview
@@ -859,36 +872,22 @@ export default function MarkdownEditor({
         >
           Zen
         </button>
-        <span className="adm-tabs-narrow" hidden={!showPreview}>
-          <button
-            type="button"
-            className={tab === 'edit' ? 'on' : ''}
-            onClick={() => setTab('edit')}
-          >
-            Write
-          </button>
-          <button
-            type="button"
-            className={tab === 'preview' ? 'on' : ''}
-            onClick={() => setTab('preview')}
-          >
-            Preview
-          </button>
-        </span>
       </div>
       {zen && (
         <div className="adm-zen-bar">
-          <button type="button" aria-pressed={showPreview} onClick={togglePreview}>
-            {showPreview ? 'Hide preview' : 'Show preview'}
+          <button type="button" aria-pressed={previewOn} onClick={togglePreview}>
+            {previewOn ? (narrow ? 'Back to writing' : 'Hide preview') : 'Show preview'}
           </button>
           <button type="button" onClick={() => setZen(false)}>
             Exit zen
           </button>
         </div>
       )}
-      <div className={`adm-split show-${tab}${showPreview ? '' : ' no-preview'}`}>
+      <div
+        className={`adm-split${previewOn ? '' : ' no-preview'}${narrow && previewOn ? ' only-preview' : ''}`}
+      >
         <div className="adm-pane write" ref={host} />
-        <div className="adm-pane preview" hidden={!showPreview}>
+        <div className="adm-pane preview" hidden={!previewOn}>
           {previewErr && <p className="mono muted">Preview unavailable.</p>}
           {/* HTML comes from our own renderer, which drops raw HTML from the source */}
           <div
