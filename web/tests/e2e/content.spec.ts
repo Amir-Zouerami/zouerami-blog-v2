@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib';
 import { expect, test } from '@playwright/test';
 import PocketBase from 'pocketbase';
 
@@ -272,5 +273,77 @@ test.describe('language switching', () => {
     await expect(page.locator('#langhint')).toBeVisible();
     await page.locator('[data-lang-dismiss]').click();
     await expect(page.locator('#langhint')).toBeHidden();
+  });
+});
+
+/** A tiny valid PNG (a flat colour), built here so the test needs no fixture file. */
+function solidPng(w: number, h: number): Buffer {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (b: Buffer) => {
+    let c = 0xffffffff;
+    for (const x of b) c = (crcTable[(c ^ x) & 0xff] as number) ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Buffer) => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, 'ascii');
+    const tail = Buffer.alloc(4);
+    tail.writeUInt32BE(crc(Buffer.concat([head.subarray(4), data])), 0);
+    return Buffer.concat([head, data, tail]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8);
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(w * 3, 0x80)]);
+  const raw = Buffer.concat(Array.from({ length: h }, () => row));
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+test.describe('social preview image', () => {
+  test('a post with a cover shares the cover, cropped to 1200x630; without one it is the generated card', async ({
+    request,
+  }) => {
+    const slug = `e2e-ogcover-${Date.now()}`;
+    const fd = new FormData();
+    fd.append('slug', slug);
+    fd.append('date', '2026-01-16 00:00:00.000Z');
+    fd.append('status', 'published');
+    fd.append('tags', '[]');
+    fd.append(
+      'cover',
+      new Blob([new Uint8Array(solidPng(1000, 300))], { type: 'image/png' }),
+      'cover.png',
+    );
+    const p = await su.collection('posts').create(fd);
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Cover card', summary: 's', body_md: 'Body' });
+    try {
+      const page = await request.get(`/blog/${slug}`);
+      expect(await page.text()).toContain(`/og/en/${slug}.png`);
+      const og = await request.get(`/og/en/${slug}.png`);
+      expect(og.status()).toBe(200);
+      const body = await og.body();
+      // PNG header: width and height are bytes 16..24
+      expect(og.headers()['content-type']).toContain('image/png');
+      expect([body.readUInt32BE(16), body.readUInt32BE(20)]).toEqual([1200, 630]);
+      // the generated card (no cover) is also 1200x630, but a different image
+      const plain = await request.get(`/og/en/${EN_ONLY}.png`);
+      expect(plain.status()).toBe(200);
+      expect((await plain.body()).equals(body)).toBe(false);
+    } finally {
+      await su.collection('posts').delete(p.id);
+    }
   });
 });

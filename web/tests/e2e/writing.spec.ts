@@ -576,14 +576,14 @@ test.describe('back office: nothing typed is lost', () => {
       const edTop = await page.evaluate(() => {
         const sc = document.querySelector('.cm-scroller') as HTMLElement;
         const r = sc.getBoundingClientRect();
-        let best = 0;
+        // the first numbered line that is still (partly) on screen
         for (const g of document.querySelectorAll<HTMLElement>(
           '.cm-lineNumbers .cm-gutterElement',
         )) {
-          if (g.getBoundingClientRect().top <= r.top + 8 && /^\d+$/.test(g.textContent ?? ''))
-            best = Number(g.textContent);
+          if (g.getBoundingClientRect().bottom > r.top + 2 && /^\d+$/.test(g.textContent ?? ''))
+            return Number(g.textContent);
         }
-        return best;
+        return 0;
       });
       const pvTop = await previewLine();
       expect(edTop).toBeGreaterThan(10);
@@ -648,6 +648,55 @@ test.describe('back office: nothing typed is lost', () => {
     await expect(btn).toHaveAttribute('aria-pressed', 'false');
     await expect(write).toBeVisible();
     await expect(preview).toBeHidden();
+  });
+
+  test('on a phone, switching to the preview and back keeps your place in the text', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    // every other line is a paragraph that starts with its own line number
+    const md = Array.from({ length: 240 }, (_, i) =>
+      i % 2 === 0 ? `${i + 1}: ${'lorem ipsum dolor sit amet '.repeat(8)}` : '',
+    ).join('\n');
+    const p = await su.collection('posts').create({
+      slug: `e2e-carry-${stamp}`,
+      date: '2030-08-09 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Carry', summary: '', body_md: md });
+    await page.goto(`/admin#/posts/${p.id}`);
+    // the number at the start of the first line that is (partly) on screen
+    const topLine = () =>
+      page.evaluate(() => {
+        const r = (document.querySelector('.cm-scroller') as HTMLElement).getBoundingClientRect();
+        for (const l of document.querySelectorAll<HTMLElement>('.cm-line')) {
+          const m = /^(\d+): /.exec(l.textContent ?? '');
+          if (m && l.getBoundingClientRect().bottom > r.top + 2) return Number(m[1]);
+        }
+        return 0;
+      });
+    await expect(page.locator('.cm-line').first()).toContainText('1: lorem');
+    await page.locator('.adm-toolbar').scrollIntoViewIfNeeded(); // CodeMirror only draws what is on screen
+    await expect
+      .poll(async () => {
+        await page.locator('.cm-scroller').evaluate((e) => {
+          e.scrollTop = e.scrollHeight * 0.4;
+        });
+        return topLine();
+      })
+      .toBeGreaterThan(40);
+    const before = await topLine();
+    const btn = page.getByRole('button', { name: 'Preview', exact: true });
+    await btn.click();
+    // the preview opens near the same place, not at the top
+    await expect
+      .poll(() => page.locator('.adm-pane.preview').evaluate((e) => e.scrollTop))
+      .toBeGreaterThan(500);
+    await btn.click();
+    await expect.poll(async () => Math.abs((await topLine()) - before)).toBeLessThanOrEqual(6);
   });
 
   test('a long list of existing tags stays compact, opens into a scroll box and filters as you type', async ({

@@ -66,6 +66,20 @@ const codeDirection = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 );
 
+/**
+ * The (fractional) line at the top of the editor, read from what is drawn: CodeMirror's height estimates for lines
+ * it has not measured yet can be far off, the screen cannot.
+ */
+function editorTopLine(v: EditorView): number {
+  const box = v.scrollDOM.getBoundingClientRect();
+  const pos = v.posAtCoords({ x: box.left + box.width / 2, y: box.top + 2 }, false);
+  const line = v.state.doc.lineAt(pos);
+  const at = v.coordsAtPos(line.from);
+  const h = v.lineBlockAt(line.from).height || 1;
+  const frac = at ? Math.min(1, Math.max(0, (box.top - at.top) / h)) : 0;
+  return line.number + frac;
+}
+
 const theme = EditorView.theme({
   '&': { height: '100%', background: 'var(--bg2)', color: 'var(--fg)', fontSize: '16px' },
   // JetBrains Mono has no Persian letters: name a Persian font so they don't fall back to a random system face
@@ -222,7 +236,63 @@ export default function MarkdownEditor({
       }
       return !on;
     });
-  const togglePreview = () => (narrow ? setMobilePreview((on) => !on) : toggleWide());
+  // A hidden pane forgets where it was scrolled, so on a phone the place in the text travels with the switch.
+  const carry = useRef<number | null>(null);
+  const settle = useRef<(() => void) | null>(null);
+  const topLine = (): number | null => {
+    const v = view.current;
+    const root = previewRef.current;
+    const pane = root?.parentElement;
+    if (!v || !root || !pane) return null;
+    if (previewOn) {
+      return lineForTop(
+        collectAnchors(pane, root),
+        pane.scrollTop,
+        v.state.doc.lines + 1,
+        pane.scrollHeight,
+      );
+    }
+    return editorTopLine(v);
+  };
+  const togglePreview = () => {
+    if (!narrow) return toggleWide();
+    carry.current = topLine();
+    setMobilePreview((on) => !on);
+  };
+  useLayoutEffect(() => {
+    const L = carry.current;
+    carry.current = null;
+    const v = view.current;
+    const root = previewRef.current;
+    const pane = root?.parentElement;
+    if (!narrow || L == null || !v || !root || !pane) return;
+    const place = () => {
+      if (mobilePreview) {
+        pane.scrollTop = topForLine(
+          collectAnchors(pane, root),
+          L,
+          v.state.doc.lines + 1,
+          pane.scrollHeight,
+        );
+      } else {
+        // CodeMirror's own scroll request: right even while it is still re-measuring its lines
+        const n = Math.min(v.state.doc.lines, Math.max(1, Math.floor(L)));
+        v.dispatch({
+          effects: EditorView.scrollIntoView(v.state.doc.line(n).from, { y: 'start', yMargin: 0 }),
+        });
+      }
+    };
+    place();
+    // the editor measures itself when it comes back into view: place it again once it has
+    requestAnimationFrame(() => requestAnimationFrame(place));
+    if (mobilePreview) {
+      // the preview may still be rendering: put it in place again when its content arrives
+      settle.current = place;
+      setTimeout(() => {
+        if (settle.current === place) settle.current = null;
+      }, 3000);
+    }
+  }, [mobilePreview, narrow]);
   useEffect(() => {
     if (!zen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -359,6 +429,7 @@ export default function MarkdownEditor({
     const t = setTimeout(() => {
       // counted with the preview (debounced), not on every keystroke
       setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
+      if (!previewOn) return; // nothing to show (a phone writing): rendered when the preview is opened
       previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'en')
         .then((r) => {
           setHtml(r.html);
@@ -378,7 +449,7 @@ export default function MarkdownEditor({
       clearTimeout(t);
       ctl.abort();
     };
-  }, [value, postId, lang]);
+  }, [value, postId, lang, previewOn]);
 
   // Scrolling either pane moves the other to the same place in the text (see scrollSync.ts).
   const align = useRef<() => void>(() => {});
@@ -407,9 +478,7 @@ export default function MarkdownEditor({
       if (ed.scrollTop <= 1) target = 0;
       else if (ed.scrollTop >= maxOf(ed) - 1) target = maxOf(pane);
       else {
-        const block = v.lineBlockAtHeight(ed.scrollTop);
-        const n = v.state.doc.lineAt(block.from).number;
-        const L = n + Math.min(1, Math.max(0, (ed.scrollTop - block.top) / (block.height || 1)));
+        const L = editorTopLine(v);
         target = topForLine(collectAnchors(pane, root), L, lines() + 1, pane.scrollHeight);
       }
       move(pane, 'pv', target);
@@ -459,7 +528,11 @@ export default function MarkdownEditor({
   }, [previewOn]);
   // a fresh render changes the preview's height: put it back beside the text
   useLayoutEffect(() => {
-    if (html) align.current();
+    if (!html) return;
+    if (settle.current) {
+      settle.current();
+      settle.current = null;
+    } else align.current();
   }, [html]);
 
   const wrap = (before: string, after = before, placeholder = '') => {
