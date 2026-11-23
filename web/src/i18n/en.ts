@@ -7,9 +7,9 @@ export const en = {
   switchLang: 'فارسی',
   switchLangLabel: 'Read this page in Persian',
   home: {
-    title: 'Amir Zouerami — developer, writer, tinkerer',
+    title: 'Amir Zouerami — senior backend engineer',
     description:
-      'Amir Zouerami: developer, writer and tinkerer. Notes on the web, design and Persian typography.',
+      'Amir Zouerami, senior backend engineer. I design and build distributed systems, and write about backend architecture, databases and DevOps.',
     available: 'Available for work',
     roles: 'Developer / Writer / Tinkerer',
     card: { role: 'Backend Engineer', id: 'ID 0001', hint: 'drag me ↘' },
@@ -55,7 +55,7 @@ export const en = {
     featured: 'Featured',
     recent: 'Recent',
     title: 'Writing',
-    description: 'Notes on the web, design, DevOps and Persian typography.',
+    description: 'Notes on backend architecture, databases and DevOps.',
     crumb: 'Index / Writing',
     searchPlaceholder: 'Search posts…',
     all: 'All',

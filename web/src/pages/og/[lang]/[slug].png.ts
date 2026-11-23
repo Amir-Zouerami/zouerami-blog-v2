@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ params }) => {
       renderOg({
         title: lang.data === 'fa' ? 'امیر زوارمی' : 'Amir Zouerami',
         lang: lang.data,
-        meta: lang.data === 'fa' ? 'توسعه‌دهنده و نویسنده' : 'Developer, writer, tinkerer',
+        meta: lang.data === 'fa' ? 'مهندس ارشد بک‌اند' : 'Senior backend engineer',
       }),
     );
   }

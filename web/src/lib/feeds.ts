@@ -22,8 +22,8 @@ export function rssXml(
     locale === 'fa' ? 'zouerami — نوشته‌های امیر زوارمی' : 'zouerami — writing by Amir Zouerami';
   const desc =
     locale === 'fa'
-      ? 'یادداشت‌هایی درباره وب، طراحی و تایپوگرافی فارسی.'
-      : 'Notes on the web, design and Persian typography.';
+      ? 'یادداشت‌هایی درباره معماری بک‌اند، پایگاه‌داده و دواپس.'
+      : 'Notes on backend architecture, databases and DevOps.';
   const items = posts
     .map((p) => {
       const url = absoluteUrl(site, localePath(locale, `/blog/${p.slug}`));
