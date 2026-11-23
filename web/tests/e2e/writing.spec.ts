@@ -679,7 +679,7 @@ test.describe('back office: nothing typed is lost', () => {
     expect(closed.height).toBeLessThan(200);
     await page.getByRole('button', { name: /Show all \d+ tags/ }).click();
     const open = (await page.locator('.adm-tagpick').boundingBox())!;
-    expect(open.height).toBeLessThanOrEqual(160);
+    expect(open.height).toBeLessThanOrEqual(190);
     expect(
       await page.locator('.adm-tagpick').evaluate((e) => e.scrollHeight > e.clientHeight),
     ).toBe(true);

@@ -11,7 +11,7 @@ export const en = {
     description:
       'Amir Zouerami, senior backend engineer. I design and build distributed systems, and write about backend architecture, databases and DevOps.',
     available: 'Available for work',
-    roles: 'Developer / Writer / Tinkerer',
+    roles: 'Backend / Architect / Tinkerer',
     card: { role: 'Backend Engineer', id: 'ID 0001', hint: 'drag me ↘' },
     currently: 'Currently',
     currentlyText: 'Rebuilding this site, in public.',
