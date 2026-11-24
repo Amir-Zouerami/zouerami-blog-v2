@@ -92,6 +92,21 @@ services:
       start_period: 30s
     deploy: { resources: { limits: { memory: 256m } } }
 
+  # Our own image registry, on this server only (127.0.0.1:5000, reached from outside through an SSH tunnel). Deploys push
+  # the freshly built images here and the stack pulls them from here, so a deploy never has to download anything from
+  # GitHub's servers. Both GitHub Actions and the local script (deploy/deploy-local.sh) push into it.
+  registry:
+    image: registry:2
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:5000:5000'
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true' # deploy/registry-prune.sh removes old tags
+    volumes:
+      - registry_data:/var/lib/registry
+    security_opt: ['no-new-privileges:true']
+    deploy: { resources: { limits: { memory: 256m } } }
+
   # Mail server (Stalwart): SMTP 25, SMTPS 465 and IMAPS 993 are public; the web admin / webmail / JMAP are reachable only
   # through the VPN, via nginx on https://mail.<domain> (see nginx/prod.conf). Setup and operation: docs/mail-server.md
   mail:
@@ -172,3 +187,4 @@ volumes:
   mail_etc:
   mail_data:
   mail_certs:
+  registry_data:
