@@ -27,6 +27,10 @@ describe('sitemap', () => {
     ],
     [{ slug: 'lumen' } as ProjectSummary],
   );
+  it('declares the standard sitemap namespace (Google rejects any other)', () => {
+    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"');
+    expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
+  });
   it('lists both languages for bilingual posts with hreflang pairs and x-default', () => {
     expect(xml).toContain('<loc>https://amir-zouerami.dev/blog/both</loc>');
     expect(xml).toContain('<loc>https://amir-zouerami.dev/fa/blog/both</loc>');
