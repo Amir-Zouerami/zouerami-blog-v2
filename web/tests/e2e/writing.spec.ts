@@ -741,6 +741,48 @@ test.describe('back office: nothing typed is lost', () => {
     for (const t of (await chips.allTextContents()).slice(1)) expect(t).toContain('-2');
   });
 
+  test('the editor text can be made bigger and smaller, also in zen mode, and it is remembered', async ({
+    page,
+  }) => {
+    const p = await su.collection('posts').create({
+      slug: `e2e-font-${stamp}`,
+      date: '2030-11-11 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'en', title: 'Font', summary: '', body_md: 'Some text' });
+    await page.goto(`/admin#/posts/${p.id}`);
+    await page.evaluate(() => localStorage.removeItem('adm-fontsize'));
+    await page.reload();
+    const size = () =>
+      page.locator('.cm-content').evaluate((e) => Number.parseFloat(getComputedStyle(e).fontSize));
+    await expect.poll(size).toBe(16);
+    await page.getByRole('button', { name: 'Larger text' }).click();
+    await page.getByRole('button', { name: 'Larger text' }).click();
+    await expect.poll(size).toBe(20);
+    await page.getByRole('button', { name: 'Smaller text' }).click();
+    await expect.poll(size).toBe(18);
+    // remembered
+    await page.reload();
+    await expect.poll(size).toBe(18);
+    // zen mode has the same buttons
+    await page.getByRole('button', { name: 'Zen', exact: true }).click();
+    await expect(page.locator('.adm-toolbar')).toBeHidden();
+    await page.locator('.adm-zen-bar').getByRole('button', { name: 'Larger text' }).click();
+    await expect.poll(size).toBe(20);
+    await page.locator('.adm-zen-bar').getByRole('button', { name: 'Smaller text' }).click();
+    await page.locator('.adm-zen-bar').getByRole('button', { name: 'Smaller text' }).click();
+    await page.locator('.adm-zen-bar').getByRole('button', { name: 'Smaller text' }).click();
+    await page.locator('.adm-zen-bar').getByRole('button', { name: 'Smaller text' }).click();
+    await expect.poll(size).toBe(12);
+    await expect(
+      page.locator('.adm-zen-bar').getByRole('button', { name: 'Smaller text' }),
+    ).toBeDisabled();
+    await page.evaluate(() => localStorage.removeItem('adm-fontsize'));
+  });
+
   test('markdown shortcuts work in the editor and Ctrl+S saves from any field', async ({
     page,
   }) => {

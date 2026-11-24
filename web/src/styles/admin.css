@@ -260,6 +260,9 @@ a.adm-card:hover {
   display: none;
 }
 .adm-words { margin-inline: 0 18px; }
+.adm-fs { display: inline-flex; gap: 4px; }
+.adm-fs button:disabled { opacity: 0.35; cursor: default; }
+.adm-fs + button { margin-inline-start: 6px; }
 .adm-toolbar button.on {
   background: var(--acc);
   color: var(--on-acc);

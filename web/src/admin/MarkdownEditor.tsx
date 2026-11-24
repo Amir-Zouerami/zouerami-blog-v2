@@ -80,15 +80,29 @@ function editorTopLine(v: EditorView): number {
   return line.number + frac;
 }
 
+/** Editor text sizes, in px (the − and + buttons step through them); the choice is remembered. */
+const FONT_SIZES = [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40];
+const DEFAULT_SIZE = 16;
+
+const direction = (dir: 'ltr' | 'rtl', lang: string) => [
+  EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' }),
+  EditorView.editorAttributes.of({ dir }),
+];
+
 const theme = EditorView.theme({
-  '&': { height: '100%', background: 'var(--bg2)', color: 'var(--fg)', fontSize: '16px' },
+  '&': {
+    height: '100%',
+    background: 'var(--bg2)',
+    color: 'var(--fg)',
+    fontSize: 'var(--ed-size, 16px)',
+  },
   // JetBrains Mono has no Persian letters: name a Persian font so they don't fall back to a random system face
   '.cm-content': {
     fontFamily: 'var(--code), "Vazirmatn Variable", ui-monospace, monospace',
     padding: '16px 0',
     caretColor: 'var(--acc)',
   },
-  '.cm-content[lang=fa]': { lineHeight: '1.95', fontSize: '17px' },
+  '.cm-content[lang=fa]': { lineHeight: '1.95', fontSize: 'calc(var(--ed-size, 16px) + 1px)' },
   '.cm-gutters': { background: 'var(--bg2)', color: 'var(--muted)', border: '0' },
   '.cm-activeLine, .cm-activeLineGutter': {
     background: 'color-mix(in srgb, var(--acc) 7%, transparent)',
@@ -104,6 +118,10 @@ const theme = EditorView.theme({
     boxShadow: '0 0 6px var(--acc)',
   },
   '.cm-scroller': { overflow: 'auto' },
+  // CodeMirror places the caret from the scroller's right edge in right-to-left text, assuming the scroll bar is on
+  // the left. It only is when the scroller itself is right-to-left: otherwise the caret is a bar's width (about one
+  // letter) off whenever the text is long enough to scroll.
+  '&[dir=rtl] .cm-scroller': { direction: 'rtl' },
   // Ctrl+F panel, themed
   '.cm-panels': { background: 'var(--bg)', color: 'var(--fg)', border: '0' },
   '.cm-panels-top': { borderBottom: '1px solid var(--line2)' },
@@ -214,6 +232,32 @@ export default function MarkdownEditor({
     }
   });
   const [zen, setZen] = useState(false);
+  const [fontSize, setFontSize] = useState(() => {
+    try {
+      const n = Number(localStorage.getItem('adm-fontsize'));
+      return FONT_SIZES.includes(n) ? n : DEFAULT_SIZE;
+    } catch {
+      return DEFAULT_SIZE;
+    }
+  });
+  const stepFont = (by: 1 | -1) =>
+    setFontSize((cur) => {
+      const next =
+        FONT_SIZES[Math.min(FONT_SIZES.length - 1, Math.max(0, FONT_SIZES.indexOf(cur) + by))];
+      const size = next ?? DEFAULT_SIZE;
+      try {
+        localStorage.setItem('adm-fontsize', String(size));
+      } catch {
+        /* the choice just isn't remembered */
+      }
+      return size;
+    });
+  // CodeMirror re-measures its lines when the text size changes, then the preview is put back beside the text
+  useEffect(() => {
+    view.current?.requestMeasure();
+    const t = setTimeout(() => align.current(), 80);
+    return () => clearTimeout(t);
+  }, [fontSize]);
   // On a narrow screen there is room for one pane: "Preview" swaps the editor for the preview (not remembered,
   // you always come back to writing). On a wide screen it shows or hides the second pane (remembered).
   const [narrow, setNarrow] = useState(
@@ -342,7 +386,7 @@ export default function MarkdownEditor({
         theme,
         EditorView.lineWrapping,
         codeDirection,
-        dirComp.current.of(EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' })),
+        dirComp.current.of(direction(dir, lang)),
         EditorView.updateListener.of((u) => {
           if (u.docChanged) {
             const text = u.state.doc.toString();
@@ -417,9 +461,7 @@ export default function MarkdownEditor({
 
   useEffect(() => {
     view.current?.dispatch({
-      effects: dirComp.current.reconfigure(
-        EditorView.contentAttributes.of({ dir, lang, spellcheck: 'true' }),
-      ),
+      effects: dirComp.current.reconfigure(direction(dir, lang)),
     });
   }, [dir, lang]);
 
@@ -837,7 +879,10 @@ export default function MarkdownEditor({
   };
 
   return (
-    <div className={`adm-editor${zen ? ' zen' : ''}`}>
+    <div
+      className={`adm-editor${zen ? ' zen' : ''}`}
+      style={{ '--ed-size': `${fontSize}px` } as React.CSSProperties}
+    >
       <div className="adm-toolbar" role="toolbar" aria-label="Formatting">
         <button
           type="button"
@@ -929,6 +974,26 @@ export default function MarkdownEditor({
         </button>
         <span className="grow" />
         <span className="mono muted adm-words">{words} words</span>
+        <span className="adm-fs">
+          <button
+            type="button"
+            aria-label="Smaller text"
+            title="Smaller text"
+            disabled={fontSize <= (FONT_SIZES[0] ?? 12)}
+            onClick={() => stepFont(-1)}
+          >
+            A−
+          </button>
+          <button
+            type="button"
+            aria-label="Larger text"
+            title={`Larger text (now ${fontSize}px)`}
+            disabled={fontSize >= (FONT_SIZES[FONT_SIZES.length - 1] ?? 40)}
+            onClick={() => stepFont(1)}
+          >
+            A+
+          </button>
+        </span>
         <button
           type="button"
           className={previewOn ? 'on' : ''}
@@ -948,6 +1013,26 @@ export default function MarkdownEditor({
       </div>
       {zen && (
         <div className="adm-zen-bar">
+          <span className="adm-fs">
+            <button
+              type="button"
+              aria-label="Smaller text"
+              title="Smaller text"
+              disabled={fontSize <= (FONT_SIZES[0] ?? 12)}
+              onClick={() => stepFont(-1)}
+            >
+              A−
+            </button>
+            <button
+              type="button"
+              aria-label="Larger text"
+              title={`Larger text (now ${fontSize}px)`}
+              disabled={fontSize >= (FONT_SIZES[FONT_SIZES.length - 1] ?? 40)}
+              onClick={() => stepFont(1)}
+            >
+              A+
+            </button>
+          </span>
           <button type="button" aria-pressed={previewOn} onClick={togglePreview}>
             {previewOn ? (narrow ? 'Back to writing' : 'Hide preview') : 'Show preview'}
           </button>
