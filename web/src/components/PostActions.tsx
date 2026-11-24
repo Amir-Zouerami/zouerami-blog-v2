@@ -110,13 +110,33 @@ async function burst() {
   const origin = r
     ? { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight }
     : { y: 0.7 };
-  for (const { delay, ...wave } of burstPlan(origin)) setTimeout(() => void confetti(wave), delay);
+  // Our own canvas, drawn on the page itself. The library's default is a Web Worker made from a blob: URL, which the
+  // site's Content-Security-Policy (no `worker-src`) forbids, so on the real site nothing would be drawn at all.
+  const canvas = document.createElement('canvas');
+  Object.assign(canvas.style, {
+    position: 'fixed',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    zIndex: '700',
+  });
+  document.body.append(canvas);
+  const fire = confetti.create(canvas, {
+    resize: true,
+    useWorker: false,
+    disableForReducedMotion: true,
+  });
+  for (const { delay, ...wave } of burstPlan(origin)) setTimeout(() => void fire(wave), delay);
+  const done = () => {
+    document.removeEventListener('visibilitychange', stop);
+    fire.reset();
+    canvas.remove();
+  };
   // browsers pause animation frames in a background tab, which would freeze the pieces mid-air: drop them instead
   const stop = () => {
-    if (!document.hidden) return;
-    confetti.reset();
-    document.removeEventListener('visibilitychange', stop);
+    if (document.hidden) done();
   };
   document.addEventListener('visibilitychange', stop);
-  setTimeout(() => document.removeEventListener('visibilitychange', stop), 6000);
+  setTimeout(done, 7000);
 }

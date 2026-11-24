@@ -306,6 +306,20 @@ test.describe('likes and comments UI', () => {
   });
 
   test('liking fires a big, multi-coloured confetti burst', async ({ page }) => {
+    // the test stack sends no Content-Security-Policy, the real site does: use the real one
+    const csp =
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src https://challenges.cloudflare.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'self'";
+    await page.route('**/blog/diagrams-demo', async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({
+        response: res,
+        headers: { ...res.headers(), 'content-security-policy': csp },
+      });
+    });
+    const blocked: string[] = [];
+    page.on('console', (m) => {
+      if (/Content Security Policy/i.test(m.text())) blocked.push(m.text());
+    });
     await open(page);
     await page.waitForResponse((r) => r.url().includes('/api/interactions/'));
     const like = page.locator('[data-like]');
@@ -320,6 +334,23 @@ test.describe('likes and comments UI', () => {
     expect(await canvas.evaluate((c) => Number(getComputedStyle(c).zIndex))).toBeGreaterThanOrEqual(
       700,
     );
+    // pieces are really drawn on a canvas we can read. (A canvas handed to a worker cannot be read; that is the
+    // library's default, and the site's Content-Security-Policy blocks the blob: worker it needs: nothing shows.)
+    await expect
+      .poll(
+        () =>
+          canvas.evaluate((c: HTMLCanvasElement) => {
+            const ctx = c.getContext('2d');
+            if (!ctx) return -1;
+            const data = ctx.getImageData(0, 0, c.width, c.height).data;
+            let painted = 0;
+            for (let i = 3; i < data.length; i += 4) if ((data[i] ?? 0) > 0) painted++;
+            return painted;
+          }),
+        { timeout: 5000 },
+      )
+      .toBeGreaterThan(500);
+    expect(blocked).toEqual([]);
     await like.click(); // leave it unliked
   });
 });
