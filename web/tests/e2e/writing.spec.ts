@@ -741,6 +741,29 @@ test.describe('back office: nothing typed is lost', () => {
     for (const t of (await chips.allTextContents()).slice(1)) expect(t).toContain('-2');
   });
 
+  test('editor ligatures are off, so `##` is drawn in place in Persian headings', async ({
+    page,
+  }) => {
+    const p = await su.collection('posts').create({
+      slug: `e2e-liga-${stamp}`,
+      date: '2030-12-12 00:00:00.000Z',
+      status: 'draft',
+      tags: [],
+    });
+    await su
+      .collection('post_translations')
+      .create({ post: p.id, lang: 'fa', title: 'تست', summary: '', body_md: '## چرا شکل' });
+    await page.goto(`/admin#/posts/${p.id}`);
+    const line = page.locator('.cm-line').first();
+    await expect(line).toContainText('## چرا');
+    await expect(line).toHaveCSS('font-variant-ligatures', 'none');
+    // and the Persian text comes from the Persian font, not a monospace face that draws it detached
+    const family = await page
+      .locator('.cm-content')
+      .evaluate((e) => getComputedStyle(e).fontFamily);
+    expect(family.indexOf('Vazirmatn')).toBeLessThan(family.indexOf('monospace'));
+  });
+
   test('the editor text can be made bigger and smaller, also in zen mode, and it is remembered', async ({
     page,
   }) => {

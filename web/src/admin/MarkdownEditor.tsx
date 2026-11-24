@@ -98,7 +98,10 @@ const theme = EditorView.theme({
   },
   // JetBrains Mono has no Persian letters: name a Persian font so they don't fall back to a random system face
   '.cm-content': {
-    fontFamily: 'var(--code), "Vazirmatn Variable", ui-monospace, monospace',
+    // Vazirmatn must come BEFORE the generic monospace: that is where the system would otherwise find Persian
+    // letters, in a monospace face that draws them detached and wider than their cell, so they overlap the next one
+    fontFamily:
+      '"JetBrainsMono Nerd Font", "JetBrains Mono Variable", "Vazirmatn Variable", ui-monospace, monospace',
     padding: '16px 0',
     caretColor: 'var(--acc)',
   },
@@ -122,6 +125,11 @@ const theme = EditorView.theme({
   // the left. It only is when the scroller itself is right-to-left: otherwise the caret is a bar's width (about one
   // letter) off whenever the text is long enough to scroll.
   '&[dir=rtl] .cm-scroller': { direction: 'rtl' },
+  // JetBrains Mono turns `##`, `###` ... into ligatures; in right-to-left lines those glyphs are drawn off their place
+  '.cm-content, .cm-line': {
+    fontVariantLigatures: 'none',
+    fontFeatureSettings: '"liga" 0, "calt" 0',
+  },
   // Ctrl+F panel, themed
   '.cm-panels': { background: 'var(--bg)', color: 'var(--fg)', border: '0' },
   '.cm-panels-top': { borderBottom: '1px solid var(--line2)' },
