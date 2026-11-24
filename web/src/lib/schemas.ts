@@ -36,6 +36,8 @@ export const PostTranslationListSchema = PostTranslationRecordSchema.omit({ body
 export type PostTranslationListItem = z.infer<typeof PostTranslationListSchema>;
 
 export type PostSummary = {
+  /** The post's id (what the back office's layouts refer to). */
+  id: string;
   slug: string;
   /** Marked in the back office to appear in the blog page's featured collage. */
   featured: boolean;

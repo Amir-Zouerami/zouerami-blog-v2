@@ -12,14 +12,15 @@ import Unavailable from './Unavailable.astro';
 const { locale } = Astro.props as { locale: Locale };
 const tr = t(locale);
 const page = await loadBlogIndex(locale);
-const all = page.kind === 'ok' ? page.data : [];
+const all = page.kind === 'ok' ? page.data.posts : [];
 const tag = Astro.url.searchParams.get('tag') ?? 'all';
 const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 80);
 const list = filterPosts(all, { tag, q });
 const plain = tag === 'all' && !q;
 const PER_PAGE = 12;
 const pageNo = pageParam(Astro.url.searchParams.get('page'));
-const featured = plain && pageNo === 1 ? list.filter((p) => p.featured).slice(0, 5) : [];
+// the marked posts in the order chosen in the back office
+const featured = plain && pageNo === 1 && page.kind === 'ok' ? page.data.featured : [];
 const recent = featured.length ? list.filter((p) => !featured.includes(p)) : list;
 const paged = paginate(recent, pageNo, PER_PAGE);
 const groups = groupByYear(paged.items, locale);

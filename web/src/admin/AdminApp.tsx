@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import Comments from './pages/Comments';
 import Cv from './pages/Cv';
 import Dashboard from './pages/Dashboard';
+import Layout from './pages/Layout';
 import PostEdit from './pages/PostEdit';
 import PostsList from './pages/PostsList';
 import ProjectEdit from './pages/ProjectEdit';
@@ -25,6 +26,7 @@ function useHash() {
 const NAV: [string, string][] = [
   ['/', 'Dashboard'],
   ['/posts', 'Posts'],
+  ['/layout', 'Layout'],
   ['/projects', 'Projects'],
   ['/cv', 'CV'],
   ['/comments', 'Comments'],
@@ -70,6 +72,9 @@ export default function AdminApp() {
       break;
     case 'projects':
       view = id ? <ProjectEdit key={id} id={id === 'new' ? null : id} /> : <ProjectsList />;
+      break;
+    case 'layout':
+      view = <Layout />;
       break;
     case 'cv':
       view = <Cv />;

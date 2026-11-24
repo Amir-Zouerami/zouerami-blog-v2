@@ -6,6 +6,7 @@ import type { PostSummary, ProjectSummary } from '../../src/lib/schemas';
 
 const SITE = 'https://amir-zouerami.dev';
 const post = (o: Partial<PostSummary>): PostSummary => ({
+  id: 'aaaaaaaaaaaaaaa',
   featured: false,
   slug: 'a',
   date: '2026-11-02 12:00:00.000Z',

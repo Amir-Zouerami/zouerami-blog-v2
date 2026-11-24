@@ -1,3 +1,6 @@
+/** Most posts a tile layout is drawn for (the homepage and the blog page's featured collage). */
+export const LAYOUT_MAX = 5;
+
 export type TileVariant = 'hero' | 'big' | 'tall' | 'side' | 'half' | 'full' | 'third';
 
 /**

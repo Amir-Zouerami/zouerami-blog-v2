@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import type { Locale } from '../i18n';
 import { localePath, yearLabel } from '../i18n';
 import { getConfig } from './config';
+import { getLayout, LAYOUT_MAX, orderFeatured, pickInOrder } from './layouts';
 import { getLog } from './log';
 import { Lru } from './lru';
 import { readingMinutes, renderMarkdown } from './markdown';
@@ -92,11 +93,14 @@ export interface HomePage {
 }
 export const loadHome = (locale: Locale) =>
   load<HomePage>('home', async () => {
-    const [posts, projects] = await Promise.all([
-      listPosts({ limit: 5, lang: locale }),
+    const [all, projects, chosen] = await Promise.all([
+      listPosts({ lang: locale }),
       listProjects({ limit: 6, lang: locale }),
+      getLayout('home'),
     ]);
-    return { posts, projects };
+    // the posts picked in the back office, in that order; nothing picked (or none still published) = the newest five
+    const picked = pickInOrder(all, chosen);
+    return { posts: picked.length ? picked : all.slice(0, LAYOUT_MAX), projects };
   });
 
 export interface BlogFilter {
@@ -131,8 +135,16 @@ export function groupByYear(
   return groups;
 }
 
+export interface BlogIndex {
+  posts: PostSummary[];
+  /** The featured collage: marked posts in the order chosen in the back office (see orderFeatured). */
+  featured: PostSummary[];
+}
 export const loadBlogIndex = (locale: Locale) =>
-  load<PostSummary[]>('blog-index', async () => listPosts({ lang: locale }));
+  load<BlogIndex>('blog-index', async () => {
+    const [posts, order] = await Promise.all([listPosts({ lang: locale }), getLayout('featured')]);
+    return { posts, featured: orderFeatured(posts, order) };
+  });
 export const loadWorkIndex = (locale: Locale) =>
   load<ProjectSummary[]>('work-index', async () => listProjects({ lang: locale }));
 
