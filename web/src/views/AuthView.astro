@@ -37,7 +37,7 @@ const tp = mode in tokenPages ? tokenPages[mode as keyof typeof tokenPages] : nu
     <div style="padding-block:70px 20px"><span class="mono muted">{a.account}</span><h1 class="h-big" style="margin-top:14px">{title}</h1></div>
     {tp ? (
       <div data-token-page data-endpoint={tp.endpoint} data-ok={tp.ok} data-fail={tp.fail}>
-        <p class="auth-result" data-result role="status">{a.verifying}</p>
+        <p class="ui-loading"><span class="ui-spin" aria-hidden="true"></span><span class="auth-result" data-result role="status">{a.verifying}</span></p>
         <p style="margin-top:24px"><Button size="lg" href={localePath(locale, mode === 'verify' ? '/login' : '/')}>{mode === 'verify' ? a.signIn : tr.nav.home}</Button></p>
       </div>
     ) : (

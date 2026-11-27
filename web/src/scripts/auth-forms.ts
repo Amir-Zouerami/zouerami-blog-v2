@@ -1,3 +1,4 @@
+import { busy, lockFields } from '../lib/busy';
 import { api, describe } from '../lib/client-api';
 import { guardToken } from '../lib/guard-client';
 
@@ -20,8 +21,11 @@ async function submit(form: HTMLFormElement) {
   const token = new URLSearchParams(location.search).get('token');
   if (token && form.dataset.useToken !== undefined) data.token = token;
   const btn = form.querySelector<HTMLButtonElement>('button[type=submit]');
-  if (btn) btn.disabled = true;
+  if (btn?.dataset.busy !== undefined) return;
+  const done = busy(btn);
+  const unlock = lockFields(form);
   say(form, '', 'ok');
+  let leaving = false; // a page change follows: keep spinning until it happens
   try {
     if (form.dataset.guard !== undefined) {
       const guard = await guardToken().catch(() => null);
@@ -42,10 +46,12 @@ async function submit(form: HTMLFormElement) {
           next.startsWith('/') && !next.startsWith('//') && !next.includes('\\')
             ? next
             : form.dataset.home || '/';
+        leaving = true;
         location.assign(safe);
         return;
       }
       if (action === 'home') {
+        leaving = true;
         location.assign(form.dataset.home || '/');
         return;
       }
@@ -63,7 +69,10 @@ async function submit(form: HTMLFormElement) {
       );
     }
   } finally {
-    if (btn) btn.disabled = false;
+    if (!leaving) {
+      await done();
+      unlock();
+    }
   }
 }
 
@@ -81,18 +90,33 @@ if (!w.__authForms) {
     if (resend) {
       const form = resend.closest('form') as HTMLFormElement | null;
       const email = (form?.querySelector('input[name=email]') as HTMLInputElement | null)?.value;
-      if (form && email) {
+      if (form && email && resend.dataset.busy === undefined) {
         const msgs = JSON.parse(form.dataset.msgs ?? '{}') as Msgs;
-        void api('/api/auth/resend', { json: { email } }).then((res) =>
-          say(form, msgs.resent ?? res.message, 'ok'),
-        );
+        const done = busy(resend);
+        void api('/api/auth/resend', { json: { email } }).then(async (res) => {
+          await done();
+          say(
+            form,
+            res.ok ? (msgs.resent ?? res.message) : describe(res, msgs.generic ?? ''),
+            res.ok ? 'ok' : 'err',
+          );
+        });
       }
     }
     const out = t.closest<HTMLElement>('[data-signout]');
-    if (out)
+    if (out && out.dataset.busy === undefined) {
+      busy(out);
       void api('/api/auth/logout', { method: 'POST', body: '{}' }).then(() =>
         location.assign(out.dataset.home || '/'),
       );
+    }
+    // GitHub / Google: a full page load to another site, which can take a while
+    const sso = t.closest<HTMLElement>('.oauth a');
+    if (sso && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      const done = busy(sso);
+      // coming back with the Back button restores the page as it was left: stop spinning
+      addEventListener('pageshow', () => void done(), { once: true });
+    }
   });
 }
 
@@ -104,6 +128,7 @@ export function runTokenPage() {
   const out = root.querySelector<HTMLElement>('[data-result]');
   if (!out) return;
   const set = (text: string, kind: 'ok' | 'err') => {
+    root.querySelector('.ui-spin')?.remove();
     out.textContent = text;
     out.dataset.kind = kind;
   };

@@ -63,6 +63,7 @@ export default function Comments({
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [shown, setShown] = useState(3);
   const composerRef = useRef<HTMLFormElement>(null);
 
@@ -106,8 +107,8 @@ export default function Comments({
     const r = await api<{ pending: boolean }>('/api/comments', {
       json: { post: postId, body: text, parent: replyTo ?? undefined, guard, website },
     });
-    setBusy(false);
     if (!r.ok) {
+      setBusy(false);
       setError(describe(r, labels.failed));
       return;
     }
@@ -115,12 +116,18 @@ export default function Comments({
     setReplyTo(null);
     setNote(r.data?.pending ? labels.pendingNote : '');
     setShown(Number.MAX_SAFE_INTEGER); // make sure the comment just written is on screen
-    await load();
+    await load(); // still busy until the comment is on screen
+    setBusy(false);
   };
 
   const remove = async (id: string) => {
+    if (removing) return;
+    setRemoving(id);
+    setError('');
     const r = await api(`/api/comments?id=${id}`, { method: 'DELETE' });
     if (r.ok) await load();
+    else setError(describe(r, labels.failed));
+    setRemoving(null);
   };
 
   const roots = (items ?? []).filter((c) => !c.parent);
@@ -144,7 +151,13 @@ export default function Comments({
             </Button>
           )}
           {c.mine && (
-            <Button variant="link" onClick={() => remove(c.id)}>
+            <Button
+              variant="link"
+              onClick={() => remove(c.id)}
+              disabled={removing === c.id}
+              data-busy={removing === c.id ? '' : undefined}
+              aria-busy={removing === c.id}
+            >
               {labels.delete}
             </Button>
           )}
@@ -180,6 +193,7 @@ export default function Comments({
         rows={target ? 4 : 3}
         maxLength={2000}
         value={text}
+        readOnly={busy}
         onChange={(e) => setText(e.target.value)}
         placeholder={target ? `${labels.replyingTo} ${target.author}…` : labels.placeholder}
         aria-label={target ? `${labels.replyingTo} ${target.author}` : labels.placeholder}
@@ -193,7 +207,13 @@ export default function Comments({
         autoComplete="off"
         aria-hidden="true"
       />
-      <Button size="lg" type="submit" disabled={busy}>
+      <Button
+        size="lg"
+        type="submit"
+        disabled={busy}
+        data-busy={busy ? '' : undefined}
+        aria-busy={busy}
+      >
         {target ? labels.reply : labels.post}
       </Button>
       <p className="auth-result" role="alert" data-kind="err">
@@ -207,6 +227,11 @@ export default function Comments({
       <div id="comments-h" className="mono muted" style={{ marginBottom: 16 }}>
         {labels.title}
       </div>
+      {!items && !failed && (
+        <p className="ui-loading" role="status">
+          <span className="ui-spin" aria-hidden="true" />
+        </p>
+      )}
       {failed && <p className="mono muted">{labels.loadFailed}</p>}
       {items && roots.length === 0 && !failed && <p className="mono muted">{labels.none}</p>}
       {roots.slice(0, shown).map((c) => (

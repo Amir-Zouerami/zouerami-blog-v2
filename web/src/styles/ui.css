@@ -246,3 +246,107 @@ html[lang="fa"] .ui-btn {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+
+/* ---- working on it: a spinner for anything that is talking to the server (lib/busy.ts) ---- */
+@keyframes ui-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.ui-spin,
+button[data-busy]::after,
+a[data-busy]::after,
+form.search-in[data-busy] kbd::after {
+  content: "";
+  box-sizing: border-box;
+  width: 1.25em;
+  height: 1.25em;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  border-radius: 50%;
+  animation: ui-spin 0.7s linear infinite;
+}
+.ui-spin {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.25em;
+}
+/* on a button the spinner takes the label's place without changing the button's size
+   (the text is only made see-through, so `currentColor` still colours the spinner) */
+button[data-busy],
+a[data-busy] {
+  position: relative;
+  -webkit-text-fill-color: transparent;
+  pointer-events: none;
+  cursor: progress;
+}
+button[data-busy]:disabled {
+  opacity: 1;
+}
+button[data-busy] svg,
+a[data-busy] svg {
+  visibility: hidden;
+}
+button[data-busy]::after,
+a[data-busy]::after {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+form.search-in[data-busy] kbd {
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+form.search-in[data-busy] kbd::after {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+/* waiting for content, not for a click */
+.ui-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font: 500 13px var(--mono);
+  padding-block: 14px;
+}
+/* what came back slides in, so it is noticed */
+@keyframes ui-arrive {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+.sub input[readonly],
+.auth-form input[readonly],
+.auth-form textarea[readonly] {
+  opacity: 0.55;
+}
+.form-note:not(:empty),
+.auth-result[data-kind]:not(:empty) {
+  animation: ui-arrive 0.35s ease-out;
+}
+.form-note[data-kind="ok"]:not(:empty) {
+  color: var(--acc);
+}
+.form-note[data-kind="err"]:not(:empty) {
+  color: #ff6b6b;
+}
+.form-note[data-kind="ok"]:not(:empty)::before,
+.auth-result[data-kind="ok"]:not(:empty)::before {
+  content: "✓ ";
+}
+@media (prefers-reduced-motion: reduce) {
+  .form-note:not(:empty),
+  .auth-result:not(:empty) {
+    animation: none;
+  }
+  /* still turning, slowly: it is the only sign that something is happening */
+  .ui-spin,
+  button[data-busy]::after,
+  a[data-busy]::after,
+  form.search-in[data-busy] kbd::after {
+    animation-duration: 1.6s !important;
+  }
+}

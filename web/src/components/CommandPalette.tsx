@@ -24,6 +24,7 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
   const [sel, setSel] = useState(0);
   const [hits, setHits] = useState<Hit[]>([]);
   const [searchError, setSearchError] = useState(false);
+  const [searching, setSearching] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const prev = useRef<HTMLElement | null>(null);
   const dialog = useRef<HTMLDivElement>(null);
@@ -66,8 +67,10 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
     setSearchError(false);
     if (!open || q.trim().length < 2) {
       setHits([]);
+      setSearching(false);
       return;
     }
+    setSearching(true);
     const ctl = new AbortController();
     const t = setTimeout(async () => {
       try {
@@ -76,10 +79,12 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
         });
         if (!r.ok || !r.data) throw new Error(r.code);
         setHits(r.data.results);
+        setSearching(false);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
           setHits([]);
           setSearchError(true);
+          setSearching(false);
         }
       }
     }, 150);
@@ -170,7 +175,12 @@ export default function CommandPalette({ locale, labels }: { locale: Locale; lab
               <span className="muted">{labels.unavailable}</span>
             </li>
           )}
-          {!items.length && !searchError && (
+          {searching && (
+            <li role="status" className="pal-searching">
+              <span className="ui-spin" aria-hidden="true" />
+            </li>
+          )}
+          {!items.length && !searchError && !searching && (
             <li>
               <span className="muted">—</span>
             </li>

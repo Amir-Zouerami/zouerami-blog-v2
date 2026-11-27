@@ -78,5 +78,13 @@ const num = (n: number) => formatNumber(n, locale);
     ))}
     <Pagination page={paged.page} pages={paged.pages} {locale} href={pageHref} />
   </main>
+  <script>
+    // searching asks the server for a new list: say so until it arrives
+    document.addEventListener('submit', (e) => {
+      const form = (e.target as HTMLElement).closest<HTMLFormElement>('form.search-in');
+      if (form) form.dataset.busy = '';
+    });
+    addEventListener('pageshow', () => document.querySelector('form.search-in')?.removeAttribute('data-busy'));
+  </script>
 </Base>
 )}

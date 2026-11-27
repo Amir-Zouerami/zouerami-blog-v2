@@ -28,7 +28,7 @@ export default function PostActions({
   locale: 'en' | 'fa';
 }) {
   const [s, setS] = useState<State | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'like' | 'bookmark' | null>(null);
   const [note, setNote] = useState('');
 
   useEffect(() => {
@@ -48,9 +48,9 @@ export default function PostActions({
       return;
     }
     if (busy) return;
-    setBusy(true);
+    setBusy(kind);
     const r = await api<State>(`/api/interactions/${postId}`, { json: { kind } });
-    setBusy(false);
+    setBusy(null);
     if (r.status === 401) {
       location.assign(`${loginHref}?next=${encodeURIComponent(location.pathname)}`);
       return;
@@ -80,6 +80,8 @@ export default function PostActions({
         aria-pressed={!!s?.liked}
         onClick={() => toggle('like')}
         data-like
+        data-busy={busy === 'like' ? '' : undefined}
+        aria-busy={busy === 'like'}
       >
         {labels.like} {s ? fmt(s.likes) : ''}
       </button>
@@ -89,6 +91,8 @@ export default function PostActions({
         aria-pressed={!!s?.bookmarked}
         onClick={() => toggle('bookmark')}
         data-save
+        data-busy={busy === 'bookmark' ? '' : undefined}
+        aria-busy={busy === 'bookmark'}
       >
         {labels.save}
       </button>
