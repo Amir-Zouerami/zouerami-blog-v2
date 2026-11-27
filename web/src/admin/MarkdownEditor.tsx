@@ -487,12 +487,6 @@ export default function MarkdownEditor({
         .then((r) => {
           setHtml(r.html);
           setPreviewErr(false);
-          // diagrams render in the browser, exactly as on the public site
-          requestAnimationFrame(() => {
-            const root = previewRef.current;
-            if (root?.querySelector('.mermaid-block:not([data-done])'))
-              void import('../scripts/mermaid').then((m) => m.renderMermaidIn(root));
-          });
         })
         .catch((e) => {
           if ((e as Error).name !== 'AbortError') setPreviewErr(true);
@@ -503,6 +497,13 @@ export default function MarkdownEditor({
       ctl.abort();
     };
   }, [value, postId, lang, previewOn, collection]);
+
+  // diagrams render in the browser, exactly as on the public site: once the new HTML is really in the page
+  useEffect(() => {
+    const root = previewRef.current;
+    if (html && previewOn && root?.querySelector('.mermaid-block:not([data-done])'))
+      void import('../scripts/mermaid').then((m) => m.renderMermaidIn(root));
+  }, [html, previewOn]);
 
   // Scrolling either pane moves the other to the same place in the text (see scrollSync.ts).
   const align = useRef<() => void>(() => {});

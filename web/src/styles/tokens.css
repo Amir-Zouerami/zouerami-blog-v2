@@ -16,7 +16,7 @@
   --head: var(--sans);
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "JetBrains Mono Variable", ui-monospace, monospace;
-  --code: "JetBrainsMono Nerd Font", "JetBrains Mono Variable", ui-monospace, monospace;
+  --code: "JetBrains Mono Variable", "JetBrainsMono Nerd Font", ui-monospace, monospace;
   --hw: 600;
   --hls: -0.045em;
   --r: 14px;
@@ -27,6 +27,8 @@
   --rowt: clamp(19px, 2vw, 28px);
   --body: 17px;
   --prose: 19px;
+  /* the text column of a post and of a project */
+  --measure: 880px;
 }
 [data-theme="light"] {
   --bg: #f1f0ea;

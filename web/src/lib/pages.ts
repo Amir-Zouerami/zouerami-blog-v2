@@ -194,6 +194,21 @@ export interface ProjectPage {
   fellBack: boolean;
 }
 
+/** Highlighting code is the expensive part: done once per version of the text, as for posts. */
+async function renderProjectBody(project: Project) {
+  const key = createHash('sha1')
+    .update(`project\0${project.id}\0${project.lang}\0${project.bodyMd}`)
+    .digest('hex');
+  const hit = postBodies.get(key);
+  if (hit) return hit;
+  const fresh = await renderMarkdown(project.bodyMd, {
+    resolveImage: (name) => imageUrl(project, name, undefined, 'projects'),
+    lang: project.lang,
+  });
+  postBodies.set(key, fresh);
+  return fresh;
+}
+
 export const loadProjectPage = (slug: string, locale: Locale, token?: string) =>
   load<ProjectPage>('project', async () => {
     const get = (lang: Locale) => getProject(slug, lang, undefined, { token });
@@ -202,10 +217,7 @@ export const loadProjectPage = (slug: string, locale: Locale, token?: string) =>
     if (!project) return null;
     const [all, rendered] = await Promise.all([
       listProjects({ lang: locale }),
-      renderMarkdown(project.bodyMd, {
-        resolveImage: (name) => imageUrl(project, name, undefined, 'projects'),
-        lang: project.lang,
-      }),
+      renderProjectBody(project),
     ]);
     const i = all.findIndex((p) => p.slug === project.slug);
     return {

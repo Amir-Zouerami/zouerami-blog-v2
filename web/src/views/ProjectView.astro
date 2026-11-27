@@ -20,7 +20,7 @@ if (project?.preview) Astro.response.headers.set('cache-control', 'no-store');
   <main id="main">
     <header class="post-head pad"><div style="margin-bottom:26px"><a class="mono muted" href={localePath(locale, '/work')}>{tr.work.back}</a></div><h1 dir="ltr" style="text-align:start">{project.name}</h1></header>
     <div class="post-cover pad" aria-hidden="true"><div class="post-cover-frame">{project.cover ? <img src={`${project.cover}?thumb=1600x0`} srcset={`${project.cover}?thumb=960x0 960w, ${project.cover}?thumb=1600x0 1600w`} sizes="(min-width: 1360px) 1280px, 100vw" alt="" fetchpriority="high" decoding="async" /> : <Fragment set:html={cover(seedOf(project.slug))} />}</div></div>
-    <section class="pad p-grid">
+    <div class="art pad">
       <aside class="p-meta"><dl>
         <div><dt class="mono muted">{tr.work.category}</dt><dd>{project.category}</dd></div>
         <div><dt class="mono muted">{tr.work.year}</dt><dd>{formatNumber(project.year, locale).replace(/[,٬]/g, '')}</dd></div>
@@ -30,15 +30,16 @@ if (project?.preview) Astro.response.headers.set('cache-control', 'no-store');
           {!project.linkLive && !project.linkRepo && '—'}
         </dd></div>
       </dl></aside>
-      <div>
+      <article>
         {project.preview && <p class="notice" role="note">{tr.post.preview}</p>}
         {data.fellBack && <p class="notice" role="note">{project.lang === 'fa' ? tr.work.onlyPersian : tr.work.notTranslated}</p>}
         {project.metricValue !== 0 && <div class="nums">
           <div><b>{icon && <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icon.path} /></svg>}{formatNumber(project.metricValue, locale)}</b><span class="mono muted">{project.metricLabel}</span></div>
         </div>}
         <div class="prose" lang={project.lang} dir={project.lang === 'fa' ? 'rtl' : 'ltr'} set:html={data.html}></div>
-      </div>
-    </section>
+      </article>
+      <div></div>
+    </div>
     {data.next && <a class="big-next" href={localePath(locale, `/work/${data.next.slug}`)}><span class="mono muted">{tr.work.nextProject}</span><h3 dir="ltr" style="text-align:start">{data.next.name}</h3></a>}
   </main>
 </Base>

@@ -143,14 +143,14 @@ main[data-post-slug] article {
   position: absolute;
   top: 0;
   /* on the side of the text that has no table of contents: right in English, left in Persian */
-  left: calc(100% + 36px);
-  width: 240px;
+  left: calc(100% + 24px);
+  width: 240px; /* narrowed by scripts/references.ts when there is less room */
   height: 100%;
   pointer-events: none;
 }
 html[dir="rtl"] .ref-rail {
   left: auto;
-  right: calc(100% + 36px);
+  right: calc(100% + 24px);
 }
 .ref-card {
   position: absolute;
@@ -841,12 +841,12 @@ html[dir="rtl"] .ref-rail {
 
 /* comments sit under the references box, in the same column as the text */
 .post-comments {
-  max-width: 780px;
+  max-width: var(--measure);
   margin: 56px auto 0;
   padding-inline: var(--pad);
 }
 @media (min-width: 1001px) {
   .post-comments {
-    max-width: calc(780px + 2 * var(--pad));
+    max-width: calc(var(--measure) + 2 * var(--pad));
   }
 }

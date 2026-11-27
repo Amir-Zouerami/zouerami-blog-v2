@@ -675,3 +675,25 @@ fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
 .adm-icons-row {
   margin-bottom: 22px;
 }
+
+/* ---- narrow screens ---- */
+@media (max-width: 900px) {
+  /* a table wider than the screen scrolls sideways instead of losing its last columns */
+  .adm-table {
+    display: block;
+    overflow-x: auto;
+  }
+  .lay-pill {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+@media (max-width: 480px) {
+  .dtp-range {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .dtp-btn {
+    min-width: 0;
+  }
+}

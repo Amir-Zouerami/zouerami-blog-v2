@@ -4,13 +4,15 @@
 @import "@fontsource-variable/jetbrains-mono/wght.css";
 @import "@fontsource-variable/vazirmatn/wght.css";
 
-/* Code blocks: JetBrains Mono Nerd Font, self-hosted (converted from the Nerd Fonts release). */
+/* Code blocks use JetBrains Mono Variable. The Nerd Font copy (about 1 MB a weight) is fetched only when a page
+   really has one of its symbols: box drawing, block elements or the private-use icons. */
 @font-face {
   font-family: "JetBrainsMono Nerd Font";
   font-weight: 400;
   font-style: normal;
   font-display: swap;
   src: url("/fonts/JetBrainsMonoNerdFont-Regular.woff2") format("woff2");
+  unicode-range: U+2500-259F, U+E000-F8FF, U+F0000-F1AF0;
 }
 @font-face {
   font-family: "JetBrainsMono Nerd Font";
@@ -18,4 +20,5 @@
   font-style: normal;
   font-display: swap;
   src: url("/fonts/JetBrainsMonoNerdFont-Bold.woff2") format("woff2");
+  unicode-range: U+2500-259F, U+E000-F8FF, U+F0000-F1AF0;
 }

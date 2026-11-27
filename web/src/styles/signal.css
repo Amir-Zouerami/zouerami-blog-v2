@@ -903,7 +903,8 @@ html[dir='rtl'] .marq div { animation-name: marq-rtl; }
 }
 .art {
   display: grid;
-  grid-template-columns: 1fr minmax(0, 780px) 1fr;
+  /* the contents column keeps a usable width; the empty third one gives way first on smaller screens */
+  grid-template-columns: minmax(180px, 1fr) minmax(0, var(--measure)) minmax(0, 1fr);
   gap: 40px;
   padding-block: 70px 0;
 }
@@ -1188,16 +1189,18 @@ html[dir='rtl'] .marq div { animation-name: marq-rtl; }
 }
 
 /* project / about / 404 */
-.p-grid {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 60px;
-  padding-block: 50px;
-}
 .p-meta {
   position: sticky;
   top: 100px;
   align-self: start;
+  min-width: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1000px) {
+  .p-meta {
+    position: static;
+  }
 }
 .p-meta dl > div {
   padding-block: 14px;
@@ -1369,12 +1372,6 @@ html[dir='rtl'] .marq div { animation-name: marq-rtl; }
   }
   .side {
     display: none;
-  }
-  .p-grid {
-    grid-template-columns: 1fr;
-  }
-  .p-meta {
-    position: static;
   }
   .bento {
     grid-template-columns: repeat(2, 1fr);
@@ -1929,7 +1926,8 @@ html[lang='fa'] .rpill-left { font-family: "Vazirmatn Variable", sans-serif; fon
 /* ---- mobile / tablet pass ---- */
 .art > article, .art > aside { min-width: 0; }
 .prose { overflow-wrap: anywhere; }
-.prose pre, .prose .term { max-width: 100%; }
+.prose pre { max-width: 100%; }
+/* a code box reaches a little past the text on both sides (its negative margins), like figures and diagrams */
 .prose table {
   display: block;
   max-width: 100%;
@@ -1949,17 +1947,18 @@ html[lang='fa'] .rpill-left { font-family: "Vazirmatn Variable", sans-serif; fon
   word-break: normal;
 }
 .prose th { font-weight: 600; white-space: nowrap; }
-/* a shadow on the side where the table continues: it fades as you reach that end */
+/* a soft shade on the side where the table continues: it fades as you reach that end */
 .prose table {
+  --shade: color-mix(in srgb, var(--fg) 9%, transparent);
   background:
-    linear-gradient(to right, var(--bg) 30%, transparent) left center / 44px 100% no-repeat local,
-    linear-gradient(to left, var(--bg) 30%, transparent) right center / 44px 100% no-repeat local,
-    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--fg) 34%, transparent), transparent) left center / 16px 100% no-repeat scroll,
-    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--fg) 34%, transparent), transparent) right center / 16px 100% no-repeat scroll;
+    linear-gradient(to right, var(--bg) 50%, transparent) left center / 56px 100% no-repeat local,
+    linear-gradient(to left, var(--bg) 50%, transparent) right center / 56px 100% no-repeat local,
+    linear-gradient(to right, var(--shade), transparent) left center / 28px 100% no-repeat scroll,
+    linear-gradient(to left, var(--shade), transparent) right center / 28px 100% no-repeat scroll;
 }
 .prose img, .prose video, .prose iframe { max-width: 100%; height: auto; }
 @media (max-width: 1000px) {
-  .art { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-block: 28px 0; }
+  .art { grid-template-columns: minmax(0, var(--measure)); justify-content: center; gap: 20px; padding-block: 28px 0; }
   /* the sidebar's table of contents goes away, but like / save / share stay: shown as a row above the text */
   .side { display: block; position: static; order: -1; }
   .side > .mono, .side #toc { display: none; }
@@ -2078,4 +2077,25 @@ a.tagp-link:hover, a.tagp-link:focus-visible { color: var(--acc); border-color: 
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* ---- narrow screens ---- */
+/* an input's own minimum width must not push the Subscribe button or the search hint off a small phone */
+.sub input,
+.search-in input {
+  min-width: 0;
+}
+/* figures may be a little wider than the text only where there is room beside it */
+@media (max-width: 1000px) {
+  .prose figure,
+  .mermaid-block {
+    margin-inline: 0;
+  }
+}
+/* Persian timeline on a phone: it is a plain list, so undo the desktop offsets of the right-to-left layout */
+@media (max-width: 760px) {
+  [dir="rtl"] .tl-item {
+    left: auto;
+    right: auto;
+  }
 }

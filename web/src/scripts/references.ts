@@ -136,10 +136,14 @@ onPage((signal) => {
     rail.appendChild(card);
   }
   art.appendChild(rail);
-  const isWide = () => {
+  // the cards take the free space beside the text (24px away, 12px from the edge), 200 to 240px wide
+  const railWidth = () => {
     const r = art.getBoundingClientRect();
-    const room = document.documentElement.dir === 'rtl' ? r.left : innerWidth - r.right;
-    return room >= 36 + 240 + 16;
+    const room =
+      document.documentElement.dir === 'rtl'
+        ? r.left
+        : document.documentElement.clientWidth - r.right;
+    return Math.min(240, Math.floor(room) - 36);
   };
   let wide = false;
 
@@ -217,7 +221,9 @@ onPage((signal) => {
   document.body.appendChild(tip);
 
   const layout = () => {
-    wide = isWide();
+    const width = railWidth();
+    wide = width >= 200;
+    rail.style.width = `${width}px`;
     rail.style.display = wide ? 'block' : 'none';
     if (!wide) hidePop(true);
     const proseTop = prose.getBoundingClientRect().top + scrollY;
