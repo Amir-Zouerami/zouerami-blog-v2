@@ -1,4 +1,4 @@
-# Certificate manager for amir-zouerami.dev (see docs/cert-auto-renewal.md).
+# Certificate manager for amir-zouerami.dev (see the private server notes).
 # Caddy issues and renews two Let's Encrypt certificates on its own, about 30 days before they expire:
 #   *.amir-zouerami.dev   (wildcard: www, mail, and any other subdomain)
 #   amir-zouerami.dev     (the bare domain, which a wildcard does not cover)

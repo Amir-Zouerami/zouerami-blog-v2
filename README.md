@@ -129,8 +129,4 @@ GitHub unreachable? `deploy/deploy-local.sh` does the same from your own machine
 |---|---|
 | 🏛️ [Architecture](docs/architecture.md) | Code layout, API contract, content model |
 | ✍️ [Writing a post](docs/blog-post-format.md) | Everything the Markdown supports |
-| 🚢 [Deployment](docs/deploy.md) | Setting up a server from scratch |
-| 🔐 [Certificates](docs/cert-auto-renewal.md) | Automatic issuing and renewal |
-| ✉️ [Mail server](docs/mail-server.md) | Self-hosted email |
-| 🛡️ [VPN](docs/vpn.md) | Reaching private services |
 | 📌 [Versions](docs/versions.md) | What is pinned and why |

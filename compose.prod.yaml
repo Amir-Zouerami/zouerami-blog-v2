@@ -14,7 +14,7 @@ services:
       - pb_data:/pb_data
     ports:
       - '127.0.0.1:8090:8090' # admin UI via SSH tunnel
-      - '10.8.0.1:8090:8090' # admin UI through the VPN (WireGuard, docs/vpn.md): http://10.8.0.1:8090/_/
+      - '10.8.0.1:8090:8090' # admin UI through the VPN (WireGuard, the private server notes)
     security_opt: ['no-new-privileges:true']
     healthcheck:
       test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8090/api/health']
@@ -108,7 +108,7 @@ services:
     deploy: { resources: { limits: { memory: 256m } } }
 
   # Mail server (Stalwart): SMTP 25, SMTPS 465 and IMAPS 993 are public; the web admin / webmail / JMAP are reachable only
-  # through the VPN, via nginx on https://mail.<domain> (see nginx/prod.conf). Setup and operation: docs/mail-server.md
+  # through the VPN, via nginx on https://mail.<domain> (see nginx/prod.conf). Setup and operation: the private server notes
   mail:
     image: ${STALWART_IMAGE:-stalwartlabs/stalwart:v1.1.1}
     init: true

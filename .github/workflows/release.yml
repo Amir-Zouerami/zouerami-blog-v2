@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # add required reviewers in the repo settings if you want a manual approval gate
     env:
-      DEPLOY_HOST: ${{ vars.DEPLOY_HOST || 'SERVER_IP' }}
+      # the server's address is never written in this repository: see the "SSH setup" step
       DEPLOY_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/srv/zouerami' }}
     steps:
@@ -69,11 +69,18 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST_SECRET: ${{ secrets.DEPLOY_HOST }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # the address: the DEPLOY_HOST secret, or else the first host named in DEPLOY_KNOWN_HOSTS
+          host="$HOST_SECRET"
+          [ -n "$host" ] || host=$(awk 'NF && $1 !~ /^[#|@]/ { split($1, a, ","); gsub(/^\[|\]:[0-9]+$/, "", a[1]); print a[1]; exit }' ~/.ssh/known_hosts)
+          [ -n "$host" ] || { echo "No server address: set the DEPLOY_HOST secret"; exit 1; }
+          echo "::add-mask::$host" # this repository's logs are public
+          echo "DEPLOY_HOST=$host" >> "$GITHUB_ENV"
       - name: Ship compose, nginx and deploy files
         run: |
           tar czf - compose.prod.yaml nginx deploy caddy \

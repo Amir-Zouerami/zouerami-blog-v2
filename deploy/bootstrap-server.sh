@@ -26,4 +26,4 @@ ufw default deny incoming
 ufw allow 22/tcp && ufw allow 80/tcp && ufw allow 443/tcp
 ufw --force enable
 systemctl enable --now fail2ban
-echo "Server ready. Next: put /srv/zouerami/.env in place (see docs/deploy.md), then push to main."
+echo "Server ready. Next: put /srv/zouerami/.env in place (see the private server notes), then push to main."

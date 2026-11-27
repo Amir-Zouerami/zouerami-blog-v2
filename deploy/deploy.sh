@@ -9,7 +9,7 @@ set -eu
 : "${WEB_IMAGE:?}"
 : "${POCKETBASE_IMAGE:?}"
 cd "$(dirname "$0")/.."
-[ -f .env ] || { echo ".env is missing on the server (see docs/deploy.md)"; exit 1; }
+[ -f .env ] || { echo ".env is missing on the server (see the private server notes)"; exit 1; }
 COMPOSE="docker compose -f compose.prod.yaml"
 SITE_HOST=$(grep "^SERVER_NAME=" .env | head -1 | cut -d= -f2-)
 SITE_HOST=${SITE_HOST:-amir-zouerami.dev}
