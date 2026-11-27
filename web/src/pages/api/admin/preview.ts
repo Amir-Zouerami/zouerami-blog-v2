@@ -10,6 +10,8 @@ export const prerender = false;
 const Body = z.object({
   markdown: z.string().max(500_000),
   lang: z.enum(['en', 'fa']).optional(),
+  /** whose uploaded files `img:` points to */
+  collection: z.enum(['posts', 'projects']).optional(),
   postId: z
     .string()
     .regex(/^[a-z0-9]{15}$/)
@@ -27,7 +29,10 @@ export const POST = adminOnly(async ({ request }) => {
     : undefined;
   const { html, headings, references } = await renderMarkdown(body.data.markdown, {
     lang: body.data.lang,
-    resolveImage: (name) => (body.data.postId ? imageUrl({ id: body.data.postId }, name) : name),
+    resolveImage: (name) =>
+      body.data.postId
+        ? imageUrl({ id: body.data.postId }, name, undefined, body.data.collection)
+        : name,
     resolvePost: resolver,
     sourceLines: true,
   });

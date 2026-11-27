@@ -104,6 +104,7 @@ export const en = {
     repo: 'GitHub ↗',
     nextProject: 'Next project',
     notTranslated: 'This project page is only available in English.',
+    onlyPersian: 'This project page is only available in Persian.',
   },
   cv: {
     title: 'CV',

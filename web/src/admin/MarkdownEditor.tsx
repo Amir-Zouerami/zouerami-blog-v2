@@ -23,6 +23,8 @@ interface Props {
   lang: string;
   /** Post id so `img:` references resolve to the post's uploaded files in the preview. */
   postId?: string;
+  /** The collection `postId` belongs to (posts unless said otherwise). */
+  collection?: 'posts' | 'projects';
   /** Uploads files and returns the stored filenames (undefined = uploads unavailable). */
   onUpload?: (files: File[]) => Promise<string[]>;
   uploadHint?: string;
@@ -218,6 +220,7 @@ export default function MarkdownEditor({
   dir,
   lang,
   postId,
+  collection,
   onUpload,
   uploadHint,
 }: Props) {
@@ -480,7 +483,7 @@ export default function MarkdownEditor({
       // counted with the preview (debounced), not on every keystroke
       setWords(value.trim() ? value.trim().split(/\s+/).length : 0);
       if (!previewOn) return; // nothing to show (a phone writing): rendered when the preview is opened
-      previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'en')
+      previewMarkdown(value, postId, ctl.signal, lang === 'fa' ? 'fa' : 'en', collection)
         .then((r) => {
           setHtml(r.html);
           setPreviewErr(false);
@@ -499,7 +502,7 @@ export default function MarkdownEditor({
       clearTimeout(t);
       ctl.abort();
     };
-  }, [value, postId, lang, previewOn]);
+  }, [value, postId, lang, previewOn, collection]);
 
   // Scrolling either pane moves the other to the same place in the text (see scrollSync.ts).
   const align = useRef<() => void>(() => {});

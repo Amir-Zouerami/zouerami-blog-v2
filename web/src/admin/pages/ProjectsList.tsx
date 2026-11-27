@@ -16,12 +16,32 @@ export default function ProjectsList() {
       .then(setRows)
       .catch((e) => toast(errText(e), 'err'));
   }, [toast]);
+  const [moving, setMoving] = useState(false);
   const reload = () =>
     pb
       .collection('projects')
       .getFullList({ sort: 'sort,-year' })
       .then(setRows)
       .catch((e) => toast(errText(e), 'err'));
+  /** Swaps a project with its neighbour; the site lists projects in this order. */
+  const move = async (from: number, to: number) => {
+    if (!rows || moving || to < 0 || to >= rows.length) return;
+    const next = [...rows];
+    [next[from], next[to]] = [next[to] as Rec, next[from] as Rec];
+    const renumbered = next.map((p, i) => ({ ...p, sort: (i + 1) * 10 }));
+    setMoving(true);
+    setRows(renumbered);
+    try {
+      for (const p of renumbered)
+        if (rows.find((r) => r.id === p.id)?.sort !== p.sort)
+          await pb.collection('projects').update(p.id, { sort: p.sort });
+    } catch (e) {
+      toast(errText(e), 'err');
+      await reload();
+    } finally {
+      setMoving(false);
+    }
+  };
   const rowMenu = (p: Rec): MenuEntry[] => [
     {
       id: 'edit',
@@ -35,6 +55,25 @@ export default function ProjectsList() {
       icon: icons.external,
       hidden: p.status !== 'published',
       onSelect: () => openTab(`/work/${p.slug}`),
+    },
+    {
+      id: 'preview',
+      label: 'Open preview link',
+      icon: icons.external,
+      hidden: p.status === 'published' || !p.preview_token,
+      onSelect: () => openTab(`/work/${p.slug}?token=${p.preview_token}`),
+    },
+    {
+      id: 'copy-preview',
+      label: 'Copy preview link',
+      icon: icons.link,
+      hidden: p.status === 'published' || !p.preview_token,
+      onSelect: () =>
+        copyText(
+          `${location.origin}/work/${p.slug}?token=${p.preview_token}`,
+          toast,
+          'Preview link copied',
+        ),
     },
     {
       id: 'copy',
@@ -85,6 +124,7 @@ export default function ProjectsList() {
           New project
         </Button>
       </div>
+      <p className="muted">The site shows projects in this order. Use the arrows to change it.</p>
       {!rows ? (
         <p className="mono muted">Loading…</p>
       ) : (
@@ -92,10 +132,10 @@ export default function ProjectsList() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Category</th>
+              <th>Type</th>
               <th>Year</th>
               <th>Status</th>
-              <th>Order</th>
+              <th>Move</th>
             </tr>
           </thead>
           <tbody>
@@ -111,7 +151,30 @@ export default function ProjectsList() {
                 <td>
                   <span className={`adm-pill ${p.status}`}>{p.status}</span>
                 </td>
-                <td className="mono">{p.sort}</td>
+                <td>
+                  <div className="row-inline">
+                    <Button
+                      aria-label={`Move ${p.name} up`}
+                      disabled={moving || rows[0]?.id === p.id}
+                      onClick={() => {
+                        const i = rows.findIndex((r) => r.id === p.id);
+                        void move(i, i - 1);
+                      }}
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      aria-label={`Move ${p.name} down`}
+                      disabled={moving || rows.at(-1)?.id === p.id}
+                      onClick={() => {
+                        const i = rows.findIndex((r) => r.id === p.id);
+                        void move(i, i + 1);
+                      }}
+                    >
+                      ↓
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

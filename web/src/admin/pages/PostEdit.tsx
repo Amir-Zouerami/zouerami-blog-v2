@@ -129,7 +129,7 @@ export default function PostEdit({ id }: { id: string | null }) {
   const setTr = (l: Lang, patch: Partial<Tr>) => {
     setTrs((s) => ({ ...s, [l]: { ...s[l], ...patch } }));
     setDirty(true);
-    if (l === 'en' && patch.title !== undefined && !slugTouched && !id)
+    if (l === 'en' && patch.title !== undefined && !slugTouched && !post)
       setSlug(slugify(patch.title));
   };
   const touch =
@@ -207,6 +207,7 @@ export default function PostEdit({ id }: { id: string | null }) {
             ? await pb.collection('posts').update(post.id, data)
             : await pb.collection('posts').create(data);
         }
+        setPost(saved); // from here on this is an update, even if a translation below fails
         const nextTrs = { ...trs };
         for (const l of ['en', 'fa'] as Lang[]) {
           const t = trs[l];
@@ -222,9 +223,9 @@ export default function PostEdit({ id }: { id: string | null }) {
             ? await pb.collection('post_translations').update(t.id, body)
             : await pb.collection('post_translations').create(body);
           nextTrs[l] = { ...t, id: rec.id };
+          setTrs((s) => ({ ...s, [l]: { ...s[l], id: rec.id } })); // never create it twice
         }
         // update in place: no reload, so the cursor, scroll position and language tab stay put
-        setPost(saved);
         setStatus(saved.status);
         setImages(saved.images ?? images);
         setCover(saved.cover ?? '');

@@ -7,8 +7,10 @@ interface Props { project: ProjectSummary; size: 'sz-a' | 'sz-b'; locale: Locale
 const { project, size, locale, dim = false } = Astro.props;
 ---
 <a class={`tile ${size} ${dim ? 'dim' : ''}`} href={localePath(locale, `/work/${project.slug}`)}>
-  <div class="viz" set:html={cover(seedOf(project.slug))}></div>
+  {project.cover
+    ? <div class="viz"><img src={`${project.cover}?thumb=960x0`} srcset={`${project.cover}?thumb=480x0 480w, ${project.cover}?thumb=960x0 960w, ${project.cover}?thumb=1600x0 1600w`} sizes="(max-width: 900px) 100vw, 60vw" alt="" loading="lazy" decoding="async" /></div>
+    : <div class="viz" set:html={cover(seedOf(project.slug))}></div>}
   <div class="top"><span class="tagp">{project.category}</span><span class="mono muted">{project.year}</span></div>
-  <div dir="ltr" lang={project.langs[0]} style={locale === 'fa' ? 'text-align:left' : undefined}><h3>{project.name}</h3><p>{project.blurb}</p></div>
+  <div dir="ltr" lang={project.langs[0]} style={locale === 'fa' ? 'text-align:left' : undefined}><h3>{project.name}</h3><p dir="auto">{project.blurb}</p></div>
   <span class="go" set:html={UP}></span>
 </a>

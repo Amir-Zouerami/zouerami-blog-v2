@@ -1,5 +1,6 @@
 ---
 import { cover, seedOf } from '../lib/cover';
+import { metricIcon } from '../lib/metricIcons';
 import { formatNumber, type Locale, localePath, t } from '../i18n';
 import Base from '../layouts/Base.astro';
 import { loadProjectPage } from '../lib/pages';
@@ -8,30 +9,33 @@ import Unavailable from './Unavailable.astro';
 
 const { locale, slug } = Astro.props as { locale: Locale; slug: string };
 const tr = t(locale);
-const page = await loadProjectPage(slug, locale);
+const page = await loadProjectPage(slug, locale, Astro.url.searchParams.get('token') ?? undefined);
 const data = page.kind === 'ok' ? page.data : null;
 const project = data?.project ?? null;
+const icon = metricIcon(project?.metricIcon);
+if (project?.preview) Astro.response.headers.set('cache-control', 'no-store');
 ---
 {page.kind === 'unavailable' ? <Unavailable {locale} /> : !data || !project ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
-<Base title={`${project.name} — zouerami`} description={project.blurb} {locale} nav="work" alternates={data.alternates} path={localePath(locale, `/work/${project.slug}`)}>
+<Base title={`${project.name} — zouerami`} description={project.blurb} {locale} nav="work" noindex={project.preview} alternates={project.preview ? {} : data.alternates} path={localePath(locale, `/work/${project.slug}`)}>
   <main id="main">
     <section class="pad p-hero"><a class="mono muted" href={localePath(locale, '/work')}>{tr.work.back}</a><h1 dir="ltr" style="text-align:start">{project.name}</h1></section>
-    <div class="pad"><div class="shot" style="aspect-ratio:21/9;margin-top:0" aria-hidden="true" set:html={cover(seedOf(project.slug))}></div></div>
+    <div class="pad"><div class="shot" style="aspect-ratio:21/9;margin-top:0" aria-hidden="true">{project.cover ? <img src={`${project.cover}?thumb=1600x0`} alt="" fetchpriority="high" decoding="async" /> : <Fragment set:html={cover(seedOf(project.slug))} />}</div></div>
     <section class="pad p-grid">
       <aside class="p-meta"><dl>
         <div><dt class="mono muted">{tr.work.category}</dt><dd>{project.category}</dd></div>
         <div><dt class="mono muted">{tr.work.year}</dt><dd>{formatNumber(project.year, locale).replace(/[,٬]/g, '')}</dd></div>
-        <div><dt class="mono muted">{tr.work.stack}</dt><dd dir="ltr" style="text-align:start">{project.stack.join(' / ')}</dd></div>
+        {project.stack.length > 0 && <div><dt class="mono muted">{tr.work.stack}</dt><dd dir="ltr" style="text-align:start">{project.stack.join(' / ')}</dd></div>}
         <div><dt class="mono muted">{tr.work.links}</dt><dd>
           {project.linkLive && <a href={project.linkLive} rel="noopener noreferrer" target="_blank" style="border-bottom:1px solid var(--acc)">{tr.work.live}</a>} {project.linkRepo && <a href={project.linkRepo} rel="noopener noreferrer" target="_blank" style="border-bottom:1px solid var(--acc)">{tr.work.repo}</a>}
           {!project.linkLive && !project.linkRepo && '—'}
         </dd></div>
       </dl></aside>
       <div>
-        {data.fellBack && <p class="notice" role="note">{tr.work.notTranslated}</p>}
-        <div class="nums">
-          <div><b>{formatNumber(project.metricValue, locale)}</b><span class="mono muted">{project.metricLabel}</span></div>
-        </div>
+        {project.preview && <p class="notice" role="note">{tr.post.preview}</p>}
+        {data.fellBack && <p class="notice" role="note">{project.lang === 'fa' ? tr.work.onlyPersian : tr.work.notTranslated}</p>}
+        {project.metricValue !== 0 && <div class="nums">
+          <div><b>{icon && <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icon.path} /></svg>}{formatNumber(project.metricValue, locale)}</b><span class="mono muted">{project.metricLabel}</span></div>
+        </div>}
         <div class="prose" lang={project.lang} dir={project.lang === 'fa' ? 'rtl' : 'ltr'} set:html={data.html}></div>
       </div>
     </section>

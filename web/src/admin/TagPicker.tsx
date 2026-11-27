@@ -11,12 +11,17 @@ export default function TagPicker({
   selected,
   typing,
   onToggle,
+  noun = 'tag',
+  plural = 'tags',
 }: {
   all: string[];
   selected: string[];
   /** the word being typed after the last comma */
   typing: string;
   onToggle: (tag: string) => void;
+  /** what the chips are called */
+  noun?: string;
+  plural?: string;
 }) {
   const [open, setOpen] = useState(false);
   if (!all.length) return null;
@@ -43,11 +48,15 @@ export default function TagPicker({
             </button>
           );
         })}
-        {!list.length && <span className="mono muted">No tag matches “{typing.trim()}”</span>}
+        {!list.length && (
+          <span className="mono muted">
+            No {noun} matches “{typing.trim()}”
+          </span>
+        )}
       </div>
       {(hidden > 0 || open) && list.length > SHOWN && (
         <button type="button" className="adm-tagmore" onClick={() => setOpen((o) => !o)}>
-          {open ? 'Show fewer' : `Show all ${list.length} tags`}
+          {open ? 'Show fewer' : `Show all ${list.length} ${plural}`}
         </button>
       )}
     </div>

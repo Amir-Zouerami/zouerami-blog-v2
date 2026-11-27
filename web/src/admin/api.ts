@@ -60,11 +60,12 @@ export async function previewMarkdown(
   postId: string | undefined,
   signal: AbortSignal,
   lang?: 'en' | 'fa',
+  collection?: 'posts' | 'projects',
 ) {
   const r = await api<{ html: string; headings: { id: string; text: string }[] }>(
     '/api/admin/preview',
     {
-      json: { markdown, postId, lang },
+      json: { markdown, postId, lang, collection },
       signal,
     },
   );

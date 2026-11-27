@@ -72,14 +72,6 @@ const save = async (page: Page, board: Locator) => {
   await board.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
 };
-/** Opens a tile's "Change" dialog, searches, and chooses the post with that slug. */
-async function change(page: Page, board: Locator, tile: number, slug: string) {
-  await board.getByRole('button', { name: `Change post in tile ${tile}` }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog.getByRole('combobox', { name: 'Search posts' }).fill(slug);
-  await dialog.locator(`[data-result="${slug}"]`).click();
-  await expect(dialog).toHaveCount(0);
-}
 
 test.describe('layout page', () => {
   test('the homepage follows the order chosen by drag and drop, and goes back to the newest five', async ({

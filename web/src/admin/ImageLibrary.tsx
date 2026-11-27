@@ -7,17 +7,19 @@ interface Props {
   postId: string | null;
   images: string[];
   onRemove: (filename: string) => void;
+  collection?: 'posts' | 'projects';
 }
 
 /** The post's uploaded images with copy-markdown and remove actions. */
-export default function ImageLibrary({ postId, images, onRemove }: Props) {
+export default function ImageLibrary({ postId, images, onRemove, collection = 'posts' }: Props) {
+  const noun = collection === 'posts' ? 'post' : 'project';
   const toast = useToast();
   return (
     <section className="adm-images">
       <h3 className="mono muted">Images {postId ? `(${images.length})` : ''}</h3>
       {!postId && (
         <p className="muted">
-          Save the post once to enable image uploads. You can also paste or drop images straight
+          Save the {noun} once to enable image uploads. You can also paste or drop images straight
           into the editor.
         </p>
       )}
@@ -26,7 +28,7 @@ export default function ImageLibrary({ postId, images, onRemove }: Props) {
           images.map((name) => (
             <figure key={name}>
               <img
-                src={fileUrl('posts', postId, name, name.endsWith('.svg') ? undefined : '480x0')}
+                src={fileUrl(collection, postId, name, name.endsWith('.svg') ? undefined : '480x0')}
                 alt=""
                 loading="lazy"
               />
@@ -43,7 +45,7 @@ export default function ImageLibrary({ postId, images, onRemove }: Props) {
                 <Button
                   variant="danger"
                   onClick={() => {
-                    if (confirm('Remove this image? Posts that use it will show a broken image.'))
+                    if (confirm('Remove this image? Text that uses it will show a broken image.'))
                       onRemove(name);
                   }}
                 >

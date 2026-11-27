@@ -77,6 +77,7 @@ export const ProjectRecordSchema = z.object({
   link_live: z.string(),
   link_repo: z.string(),
   metric_value: z.number(),
+  metric_icon: z.string().default(''),
   sort: z.number(),
   status: StatusSchema,
 });
@@ -101,8 +102,19 @@ export type ProjectSummary = {
   blurb: string;
   metricValue: number;
   metricLabel: string;
+  /** a name from lib/metricIcons.ts, or '' */
+  metricIcon: string;
   linkLive: string;
   linkRepo: string;
   langs: Lang[];
+  /** URL of the uploaded cover, or null: then the generated artwork is drawn. */
+  cover: string | null;
 };
-export type Project = ProjectSummary & { lang: Lang; bodyMd: string };
+export type Project = ProjectSummary & {
+  lang: Lang;
+  bodyMd: string;
+  /** Id of the project record (file URLs). */
+  id: string;
+  /** True when served through a draft preview token. */
+  preview: boolean;
+};

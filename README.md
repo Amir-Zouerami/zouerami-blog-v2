@@ -1,47 +1,136 @@
-# amir-zouerami.dev — blog + portfolio v2
+# ⚡ zouerami
 
-Astro (server-rendered) + React 19 islands + Tailwind, content/auth in PocketBase, nginx in front, all in Docker Compose.
-Design source of truth: `../../design-mockups/round-2/s-signal-refined`. Spec and plans: `docs/planning/`.
+**A bilingual blog and portfolio with its own back office, built to run on one small server.**
+Live at **[amir-zouerami.dev](https://amir-zouerami.dev)** 🌍
 
-## Quick start
-```sh
-cp .env.example .env                      # edit the superuser password
-docker compose -f compose.yaml -f compose.dev.yaml up -d --build
-cd web && bun install && bun run seed     # sample posts/projects
-open http://localhost:8088                # site (nginx)   ·   PocketBase admin: http://127.0.0.1:8090/_/
+![Astro](https://img.shields.io/badge/Astro-SSR-BC52EE?logo=astro&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![PocketBase](https://img.shields.io/badge/PocketBase-data%20%2B%20auth-B8DBE4?logo=pocketbase&logoColor=black)
+![nginx](https://img.shields.io/badge/nginx-cache%20%2B%20TLS-009639?logo=nginx&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+
+---
+
+## ✨ What it does
+
+### 📖 For readers
+- 🌐 **English and Persian**, with real right-to-left layout, Persian fonts and dates, and a per-post language switch
+- 🧮 **Rich articles**: highlighted code, Mermaid diagrams, KaTeX maths, callouts, footnotes and cited references with hover cards
+- 🔎 **⌘K command palette** with search, plus a table of contents and a reading progress pill
+- 💬 **Comments, likes and bookmarks**, with email or GitHub / Google sign-in
+- 📬 **Newsletter**, RSS in both languages, sitemap and generated social preview cards
+- 🌗 Dark and light themes, custom right-click menus, and self-hosted fonts with no third-party trackers
+
+### ✍️ For the author (`/admin`)
+- 📝 **Markdown editor** with a live preview rendered by the same pipeline as the public site, synced scrolling, zen mode and image paste / drop
+- 👀 **Drafts with secret preview links**, for posts and projects
+- 🧱 **Layout board**: choose which posts appear on the homepage and the blog's featured collage, and where
+- 🗂️ **Projects** with covers, technology chips, case studies and an optional highlight number
+- 📄 CV files, comment moderation, subscribers (CSV export) and users
+- 💾 Unsaved writing is backed up in the browser
+
+---
+
+## 🏗️ How it fits together
+
+```mermaid
+flowchart LR
+    Reader([🧑 Browser]) -->|HTTPS| Nginx[🚦 nginx<br/>TLS · cache · rate limits]
+    Nginx --> Web[🚀 Astro SSR<br/>pages · API · admin]
+    Web -->|private network| PB[(🗄️ PocketBase<br/>content · auth · files)]
+    PB --> Mail[✉️ Mail server]
+    PB -.nightly.-> Backup[☁️ S3 backups]
+    Caddy[🔐 Caddy] -.certificates.-> Nginx
 ```
-Behind a host-side proxy (build containers without direct internet)? Set `BUILD_NETWORK=host` and `BUILD_PROXY=http://127.0.0.1:PORT` in `.env`.
 
-## Day-to-day
-| Task | Command (in `web/`) |
+| Folder | What lives there |
 |---|---|
-| Dev server with hot reload (against the Compose PocketBase) | `PB_URL=http://127.0.0.1:8090 PB_PUBLIC_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:4321 bun run dev` |
-| Lint + typecheck | `bun run check` |
-| Unit tests | `bun run test` |
-| Integration tests (needs PocketBase + seed) | `REQUIRE_PB=1 bun run test:integration` |
-| End-to-end smoke (needs the full stack on :8088) | `bun run test:e2e` |
+| `web/` | 🚀 Astro app, React islands, the admin and all tests |
+| `pocketbase/` | 🗄️ Schema and access rules (`pb_migrations/`), server hooks, email templates |
+| `nginx/` | 🚦 Reverse proxy, page cache, security headers |
+| `caddy/` | 🔐 Certificate issuing and renewal |
+| `deploy/` | 📦 Deploy, rollback and cache purge scripts |
+| `docs/` | 📚 The longer explanations |
 
-Pinned versions and why: `docs/versions.md`. PocketBase schema + access rules: `pocketbase/pb_migrations/`.
+---
 
-## Auth
-Login (`POST /api/auth/login`) verifies the password against PocketBase once, then sets two httpOnly cookies: a 10-minute signed JWT (`session`, checked statelessly in middleware — no DB/Redis) and a `refresh` cookie holding PocketBase's own token. When the JWT expires, middleware calls PocketBase `authRefresh` once; a deleted user or changed password stops refreshing, so revocation takes at most 10 minutes. Needs `AUTH_SECRET` (≥32 chars).
+## 🚀 Quick start
 
-## Accounts, comments, mail (dev)
-Sign-up sends a verification email; in dev all mail lands in Mailpit at <http://127.0.0.1:8025>. Comments from a user's first post are held for moderation (PocketBase admin → `comments` → set `status`). Sign-up, password reset, comments and the newsletter form are protected by a self-hosted proof-of-work check (`/api/guard`, `lib/guard.ts`) plus a hidden trap field; nothing leaves the server. Privacy page: `/privacy`.
+You need **Docker** and **[Bun](https://bun.sh)**.
 
-## Production
-See [`docs/deploy.md`](docs/deploy.md) and `compose.prod.yaml` / `nginx/prod.conf`. The VPS has not been touched yet.
+```sh
+cp .env.example .env          # set a superuser password and an AUTH_SECRET
+docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+cd web && bun install && bun run seed
+```
 
-## Back office (`/admin`)
-Write and manage everything without touching PocketBase's dashboard: posts (split Markdown editor with a live preview rendered by the same pipeline as the site, image upload/paste/drop, EN/FA tabs, draft preview links, publish/unpublish), projects, comment moderation, subscribers (CSV export) and users.
-Make an account an admin: `cd web && bun run make-admin you@example.com` (creates the user with a password as a 2nd arg if it doesn't exist). In dev, `bun run seed` creates `dev-admin@example.com` / `dev-admin-password-1`.
-Security model: the web app never holds PocketBase superuser credentials. Admin requests go through `/api/admin/pb/*`, which forwards the signed-in user's own PocketBase token; PocketBase rules (`role = "admin"`) are the real gate, and only content collections are reachable.
+| Open | Address |
+|---|---|
+| 🌍 Site | <http://localhost:8088> |
+| ✍️ Back office | <http://localhost:8088/admin> (`dev-admin@example.com` / `dev-admin-password-1`, created by the seed) |
+| 🗄️ PocketBase dashboard | <http://127.0.0.1:8090/_/> |
+| ✉️ Mailpit (all dev mail) | <http://127.0.0.1:8025> |
 
-## Logs and trace ids
-`docker compose -f compose.yaml -f compose.dev.yaml logs -f web` shows coloured pino logs (`LOG_LEVEL`, `LOG_PRETTY` in `.env`). Every API response carries a `traceId` (also the `x-trace-id` header); grep it in the logs to see that request's story. Browser failures print `[api] … trace=<id>` in the console, and server-side failures show `(ref xxxxxxxx)` in the UI.
+> 🧱 Building behind a proxy? Set `BUILD_NETWORK=host` and `BUILD_PROXY=http://127.0.0.1:PORT` in `.env`.
 
-## Emails
-Verification, password reset and newsletter confirmation use one design ("Signal Dark", English only) defined in `web/scripts/emails/design.ts`. After editing it run `cd web && bun run build:emails` to regenerate `pocketbase/pb_hooks/emails/*` (a unit test fails if they drift). Dev mail lands in Mailpit at <http://127.0.0.1:8025>.
+---
 
-## Right-click menus
-Links, images, selected text and headings on the public site, every row in the back office, and the Markdown editor have a custom context menu (keyboard: Menu key or Shift+F10; Shift+right-click for the browser's menu). See `docs/architecture.md`.
+## 🛠️ Day to day
+
+Run these in `web/`.
+
+| Task | Command |
+|---|---|
+| 🔥 Dev server with hot reload | `PB_URL=http://127.0.0.1:8090 PB_PUBLIC_URL=http://127.0.0.1:8090 SITE_URL=http://localhost:4321 bun run dev` |
+| 🧹 Lint and type check | `bun run check` |
+| 🧪 Unit tests | `bun run test` |
+| 🔌 Integration tests (PocketBase + seed) | `REQUIRE_PB=1 bun run test:integration` |
+| 🎭 Browser tests (full stack on `:8088`) | `bun run test:e2e` |
+| 📧 Rebuild email templates | `bun run build:emails` |
+| 👑 Make someone an admin | `bun run make-admin you@example.com` |
+
+---
+
+## 🔒 Security in short
+
+- 🍪 A **10-minute signed session cookie** plus PocketBase's own token, both `httpOnly`. A deleted user or changed password is locked out within 10 minutes.
+- 🛂 The web app **never holds superuser credentials**. Admin requests carry the signed-in user's token, and PocketBase's rules are the real gate.
+- 🚪 Only a handful of PocketBase endpoints are reachable from the internet.
+- 🤖 Forms are protected by a **self-hosted proof-of-work check** and a trap field, with no third-party captcha.
+- 🧯 Strict Content Security Policy, origin checks and rate limits.
+
+## 🔍 Logs and trace ids
+
+Every API response carries a `traceId` (also the `x-trace-id` header). Search the logs for it to see that request's whole story:
+
+```sh
+docker compose -f compose.yaml -f compose.dev.yaml logs -f web
+```
+
+---
+
+## 📦 Deploying
+
+Push to `main` and GitHub Actions does the rest:
+
+1. 🧪 Run every check and test
+2. 🏗️ Build the images
+3. 🚇 Send them through an SSH tunnel into a **private registry on the server**
+4. ❤️ Restart, check health, and **roll back automatically** if it fails
+
+GitHub unreachable? `deploy/deploy-local.sh` does the same from your own machine (copy `deploy/local.env.example` to `deploy/local.env` first).
+
+---
+
+## 📚 Further reading
+
+| | |
+|---|---|
+| 🏛️ [Architecture](docs/architecture.md) | Code layout, API contract, content model |
+| ✍️ [Writing a post](docs/blog-post-format.md) | Everything the Markdown supports |
+| 🚢 [Deployment](docs/deploy.md) | Setting up a server from scratch |
+| 🔐 [Certificates](docs/cert-auto-renewal.md) | Automatic issuing and renewal |
+| ✉️ [Mail server](docs/mail-server.md) | Self-hosted email |
+| 🛡️ [VPN](docs/vpn.md) | Reaching private services |
+| 📌 [Versions](docs/versions.md) | What is pinned and why |

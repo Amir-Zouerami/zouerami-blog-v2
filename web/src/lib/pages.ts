@@ -194,13 +194,18 @@ export interface ProjectPage {
   fellBack: boolean;
 }
 
-export const loadProjectPage = (slug: string, locale: Locale) =>
+export const loadProjectPage = (slug: string, locale: Locale, token?: string) =>
   load<ProjectPage>('project', async () => {
-    const project = (await getProject(slug, locale)) ?? (await getProject(slug, 'en'));
+    const get = (lang: Locale) => getProject(slug, lang, undefined, { token });
+    // the asked language, else whichever one is written
+    const project = (await get(locale)) ?? (await get('en')) ?? (await get('fa'));
     if (!project) return null;
     const [all, rendered] = await Promise.all([
       listProjects({ lang: locale }),
-      renderMarkdown(project.bodyMd, { resolveImage: (n) => n, lang: project.lang }),
+      renderMarkdown(project.bodyMd, {
+        resolveImage: (name) => imageUrl(project, name, undefined, 'projects'),
+        lang: project.lang,
+      }),
     ]);
     const i = all.findIndex((p) => p.slug === project.slug);
     return {

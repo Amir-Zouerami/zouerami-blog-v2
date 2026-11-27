@@ -627,3 +627,51 @@ fieldset.dtp-range { border: 0; padding: 0; margin: 0; min-width: 0; }
   .lay-side, .lay-half, .lay-third { grid-column: span 1; grid-row: span 1; }
   .pp-foot span { display: none; }
 }
+
+.adm-edit > .adm-field {
+  margin-bottom: 16px;
+}
+
+/* icon choice for a project's highlight number */
+.adm-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.adm-icons button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.adm-icons button.none {
+  width: auto;
+  padding: 0 12px;
+  font: 400 12px var(--mono);
+}
+.adm-icons button:hover {
+  color: var(--fg);
+  border-color: var(--acc);
+}
+.adm-icons button.on {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--on-acc);
+}
+.adm-icons svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.adm-icons-row {
+  margin-bottom: 22px;
+}

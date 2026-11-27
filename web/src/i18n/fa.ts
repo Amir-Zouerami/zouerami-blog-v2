@@ -105,6 +105,7 @@ export const fa: Dict = {
     repo: 'گیت‌هاب ↗',
     nextProject: 'پروژه بعدی',
     notTranslated: 'این صفحه پروژه فقط به انگلیسی موجود است.',
+    onlyPersian: 'این صفحه پروژه فقط به فارسی موجود است.',
   },
   cv: {
     title: 'رزومه',

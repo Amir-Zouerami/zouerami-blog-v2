@@ -2049,3 +2049,39 @@ a.tagp-link:hover, a.tagp-link:focus-visible { color: var(--acc); border-color: 
 }
 .prose .katex { font-size: 1.08em; }
 .prose .katex-display > .katex { white-space: nowrap; }
+
+/* uploaded project covers, in place of the generated artwork */
+.tile .viz img,
+.shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tile .viz:has(img) {
+  opacity: 1;
+}
+.tile .viz:has(img)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bg) 94%, transparent) 25%,
+    color-mix(in srgb, var(--bg) 35%, transparent)
+  );
+}
+
+/* the icon beside a project's highlight number */
+.nums b svg {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-inline-end: 0.25em;
+  vertical-align: -0.04em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

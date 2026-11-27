@@ -21,8 +21,9 @@ export function imageUrl(
   post: { id: string },
   filename: string,
   publicUrl: string = getConfig().pbPublicUrl,
+  collection: 'posts' | 'projects' = 'posts',
 ): string {
-  return `${publicUrl}/api/files/posts/${post.id}/${filename}`;
+  return `${publicUrl}/api/files/${collection}/${post.id}/${filename}`;
 }
 
 /** `prefer`: the reader's language; used for the title/summary when the post exists in it. */

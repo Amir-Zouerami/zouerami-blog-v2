@@ -1,5 +1,6 @@
 import type PocketBase from 'pocketbase';
 import { getPb, toUpstream } from './pb';
+import { imageUrl } from './posts';
 import {
   type Lang,
   type Project,
@@ -26,10 +27,12 @@ function summarize(p: ProjectRecord, trs: ProjectTranslationRecord[], prefer?: L
     stack: p.stack,
     blurb: shown.blurb,
     metricValue: p.metric_value,
+    metricIcon: p.metric_icon,
     metricLabel: shown.metric_label,
     linkLive: p.link_live,
     linkRepo: p.link_repo,
     langs,
+    cover: p.cover ? imageUrl(p, p.cover, undefined, 'projects') : null,
   };
   return { summary, tr: shown };
 }
@@ -69,16 +72,26 @@ export async function getProject(
   slug: string,
   lang: Lang,
   pb: PocketBase = getPb(),
+  /** `token`: draft preview token (matches the project's `preview_token`; PocketBase enforces it). */
+  opts: { token?: string } = {},
 ): Promise<Project | null> {
   if (!SlugSchema.safeParse(slug).success) return null;
+  const query = opts.token ? { token: opts.token } : undefined;
   let rec: ProjectRecord;
   let trs: ProjectTranslationRecord[];
   try {
     rec = ProjectRecordSchema.parse(
-      await pb.collection('projects').getFirstListItem(`slug = "${slug}" && status = "published"`),
+      await pb
+        .collection('projects')
+        .getFirstListItem(
+          opts.token ? `slug = "${slug}"` : `slug = "${slug}" && status = "published"`,
+          { query },
+        ),
     );
     trs = (
-      await pb.collection('project_translations').getFullList({ filter: `project = "${rec.id}"` })
+      await pb
+        .collection('project_translations')
+        .getFullList({ filter: `project = "${rec.id}"`, query })
     )
       .map((r) => ProjectTranslationRecordSchema.parse(r))
       .filter((t) => t.project === rec.id);
@@ -86,9 +99,10 @@ export async function getProject(
     if ((error as { status?: number }).status === 404) return null;
     toUpstream(error);
   }
-  if (rec.status !== 'published') return null;
+  const preview = rec.status !== 'published';
+  if (preview && !opts.token) return null;
   const tr = trs.find((t) => t.lang === lang);
   const s = summarize(rec, trs, lang);
   if (!tr || !s) return null;
-  return { ...s.summary, lang, bodyMd: tr.body_md };
+  return { ...s.summary, lang, bodyMd: tr.body_md, id: rec.id, preview };
 }
