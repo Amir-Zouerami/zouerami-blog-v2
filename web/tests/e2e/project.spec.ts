@@ -103,3 +103,30 @@ test('writing a project: draft preview, technology chips, cover, then publishing
   await expect(page.locator('.nums b')).toHaveText('1,200');
   await expect(page.locator('.nums b svg path')).toHaveCount(1);
 });
+
+test('a project page uses the same cover frame as a post', async ({ page }) => {
+  const frame = async (url: string, width: number) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url);
+    return page.locator('.post-cover-frame').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const title = getComputedStyle(document.querySelector('.post-head h1') as Element);
+      return {
+        titleSize: title.fontSize,
+        width: Math.round(r.width),
+        ratio: Math.round((r.width / r.height) * 100) / 100,
+        radius: getComputedStyle(el).borderRadius,
+      };
+    });
+  };
+  for (const [width, ratio] of [
+    [1920, 2],
+    [390, 1.78],
+  ] as const) {
+    const post = await frame('/blog/hello-bilingual', width);
+    const project = await frame('/work/lumen', width);
+    expect(project).toEqual(post);
+    expect(project.ratio).toBeCloseTo(ratio, 1);
+    expect(project.width).toBeLessThanOrEqual(1280);
+  }
+});

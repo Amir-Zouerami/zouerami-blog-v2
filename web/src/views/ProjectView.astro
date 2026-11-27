@@ -18,8 +18,8 @@ if (project?.preview) Astro.response.headers.set('cache-control', 'no-store');
 {page.kind === 'unavailable' ? <Unavailable {locale} /> : !data || !project ? <NotFoundView {locale} path={Astro.url.pathname} /> : (
 <Base title={`${project.name} — zouerami`} description={project.blurb} {locale} nav="work" noindex={project.preview} alternates={project.preview ? {} : data.alternates} path={localePath(locale, `/work/${project.slug}`)}>
   <main id="main">
-    <section class="pad p-hero"><a class="mono muted" href={localePath(locale, '/work')}>{tr.work.back}</a><h1 dir="ltr" style="text-align:start">{project.name}</h1></section>
-    <div class="pad"><div class="shot" style="aspect-ratio:21/9;margin-top:0" aria-hidden="true">{project.cover ? <img src={`${project.cover}?thumb=1600x0`} alt="" fetchpriority="high" decoding="async" /> : <Fragment set:html={cover(seedOf(project.slug))} />}</div></div>
+    <header class="post-head pad"><div style="margin-bottom:26px"><a class="mono muted" href={localePath(locale, '/work')}>{tr.work.back}</a></div><h1 dir="ltr" style="text-align:start">{project.name}</h1></header>
+    <div class="post-cover pad" aria-hidden="true"><div class="post-cover-frame">{project.cover ? <img src={`${project.cover}?thumb=1600x0`} srcset={`${project.cover}?thumb=960x0 960w, ${project.cover}?thumb=1600x0 1600w`} sizes="(min-width: 1360px) 1280px, 100vw" alt="" fetchpriority="high" decoding="async" /> : <Fragment set:html={cover(seedOf(project.slug))} />}</div></div>
     <section class="pad p-grid">
       <aside class="p-meta"><dl>
         <div><dt class="mono muted">{tr.work.category}</dt><dd>{project.category}</dd></div>
